@@ -1,0 +1,10 @@
+[package]
+name = "gecko-media"
+version = "0.1.0"
+authors = ["Chris Pearce <cpearce@mozilla.com>"]
+build = "build.rs"
+
+[dependencies]
+
+[build-dependencies]
+gcc = "0.3.53"
