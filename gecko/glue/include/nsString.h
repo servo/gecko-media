@@ -2,8 +2,6 @@
 #define gecko_media_nsString_h
 
 #include <string>
-#include <locale>
-#include <codecvt>
 
 template<typename StdStringType>
 class BaseString {
@@ -163,26 +161,14 @@ public:
 class NS_ConvertUTF16toUTF8 : public nsACString
 {
 public:
-  NS_ConvertUTF16toUTF8(const nsAString& aUTF16)
-    : nsACString(std::wstring_convert<
-      std::codecvt_utf8_utf16<char16_t>, char16_t>{}.to_bytes(aUTF16.AsStdStr()))
-  {
-  }
-  NS_ConvertUTF16toUTF8(nsString aUTF16)
-    : nsACString(std::wstring_convert<
-      std::codecvt_utf8_utf16<char16_t>, char16_t>{}.to_bytes(aUTF16.AsStdStr()))
-  {
-  }
+  NS_ConvertUTF16toUTF8(const nsAString& aUTF16);
+  NS_ConvertUTF16toUTF8(nsString aUTF16);
 };
 
 class NS_ConvertUTF8toUTF16 : public nsAString
 {
 public:
-  NS_ConvertUTF8toUTF16(const nsACString& aUTF8)
-    : nsAString(std::wstring_convert<
-      std::codecvt_utf8_utf16<char16_t>, char16_t>{}.from_bytes(aUTF8.AsStdStr()))
-  {
-  }
+  NS_ConvertUTF8toUTF16(const nsACString& aUTF8);
 };
 
 #define NS_LITERAL_STRING(s) static_cast<const nsString&>(nsString(u"" s))
