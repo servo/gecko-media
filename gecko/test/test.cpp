@@ -4,11 +4,8 @@
 #include <string>
 
 #include "nsString.h"
-// #include "nsTArray.h"
-// #include "mozilla/ArrayUtils.h"
-
-// #error "WTF!"
-
+#include "nsTArray.h"
+#include "mozilla/ArrayUtils.h"
 
 #define SIMPLE_STRING "I'm a simple ASCII string"
 #define UTF8_STRING "Андропов, Брежнев, Горбачёв, Ленин, Маленков, Сталин, Хрущёв, Черненко"
@@ -31,16 +28,16 @@ void TestString() {
   assert(std_utf16 == moz_utf16.get());
 }
 
-// void TestArray() {
-//   nsTArray<uint32_t> a;
-//   uint32_t data[] = {0,1,2,3,4,5,6,7,8,9,10};
-//   a.AppendElements(data, ArrayLength(data));
-
-// }
+void TestArray() {
+  // nsTArray<uint32_t> a;
+  // uint32_t data[] = {0,1,2,3,4,5,6,7,8,9,10};
+  // a.AppendElements(data, ArrayLength(data));
+  // assert(memcmp(a.Elements(), data, ArrayLength(data) * sizeof(data[0])) == 0);
+}
 
 }
 
 extern "C" void TestGecko() {
   mozilla::TestString();
-  // mozilla::TestArray();
+  mozilla::TestArray();
 }
