@@ -4,7 +4,7 @@
 #include <string>
 
 #include "nsString.h"
-#include "nsTArray.h"
+// #include "nsTArray.h"
 // #include "mozilla/ArrayUtils.h"
 
 // #error "WTF!"

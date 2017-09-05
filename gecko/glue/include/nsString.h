@@ -1,10 +1,11 @@
 #ifndef gecko_media_nsString_h
 #define gecko_media_nsString_h
 
+// #include "mozilla/mozalloc.h"
 #include <string>
 
-template class std::basic_string<char>;
-template class std::basic_string<char16_t>;
+// template class std::basic_string<char>;
+// template class std::basic_string<char16_t>;
 
 template<typename StdStringType>
 class BaseString {

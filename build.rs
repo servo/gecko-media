@@ -8,7 +8,7 @@ fn compile_memory() {
 	// build
 	// mozjemalloc
 	let src_files = [
-		"memory/mozalloc/mozalloc.cpp",
+		// "memory/mozalloc/mozalloc.cpp",
 		"memory/mozalloc/mozalloc_abort.cpp",
 		"memory/mozalloc/mozalloc_oom.cpp",
 		// "memory/mozjemalloc/mozjemalloc.cpp",
@@ -60,7 +60,7 @@ fn compile_gecko_media() {
 fn set_cxx_flags() {
 	let cxx_flags = [
 		// "-lstdc++",
-		"-I gecko/glue/include/stl_wrappers",
+		// "-I gecko/glue/include/stl_wrappers",
 		"-I gecko/include",
 		"-I gecko/glue/include",
 		"--include gecko/glue/include/mozilla-config.h",
@@ -90,30 +90,33 @@ fn compile_tests() {
 
 fn compile_glue() {
 	let src_files = [
-		"nsString.cpp",
+		// "gecko/test/test.cpp",
+		"gecko/glue/nsString.cpp",
 	];
 
 	set_cxx_flags();
 
 	let mut b = gcc::Build::new();
 	b.cpp(true);
-	b.cpp_link_stdlib("stdc++");
-	for file_path in src_files.iter().map(|&p| "gecko/glue/".to_owned() + p.clone()) {
+	// b.cpp_link_stdlib("stdc++");
+	for file_path in &src_files { //.iter().map(|&p| "gecko/glue/".to_owned() + p.clone()) {
 		b.file(file_path);
 	}
 	b.compile("geckoglue");
 }
 
 fn main() {
-	env::set_var("RUSTFLAGS", "-fno-exceptions");
+	//env::set_var("RUSTFLAGS", "-fno-exceptions");
 
   // for l in lib.libs {
-    println!("cargo:rustc-link-lib=stdc++");
+    // println!("cargo:rustc-link-lib=stdc++");
   // }
 	// println!("cargo:rustc-flags=-fno-exceptions");
 
-	compile_memory();
-	compile_gecko_media();
+	// compile_memory();
+	// compile_gecko_media();
 	compile_glue();
 	compile_tests();
+
+
 }
