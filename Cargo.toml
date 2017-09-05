@@ -4,6 +4,10 @@ version = "0.1.0"
 authors = ["Chris Pearce <cpearce@mozilla.com>"]
 build = "build.rs"
 
+[build]
+rustflags = ["-C link-arg=-fno-exceptions"]
+
+
 [dependencies]
 
 [build-dependencies]

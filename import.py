@@ -39,6 +39,7 @@ header_files = [
 	("memory/mozalloc/mozalloc_abort.h",		"mozilla/mozalloc_abort.h"),
 	("memory/mozalloc/mozalloc_oom.h",			"mozilla/mozalloc_oom.h"),
 	("memory/mozjemalloc/mozjemalloc_types.h",	"mozjemalloc_types.h"),
+	("memory/mozalloc/throw_gcc.h",				"mozilla/throw_gcc.h"),
 	("mozglue/misc/Printf.h",					"mozilla/Printf.h"),
 	("mfbt/Alignment.h", 						"mozilla/Alignment.h"),
 	("mfbt/AllocPolicy.h",						"mozilla/AllocPolicy.h"),

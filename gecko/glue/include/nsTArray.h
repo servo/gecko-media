@@ -31,6 +31,7 @@
 #include "nsISupportsImpl.h"
 #ifdef GECKO_MEDIA_CRATE
 #include "mozilla/Unused.h"
+#include "mozilla/RefPtr.h"
 #define NS_ABORT_OOM(x) \
   mozilla::Unused << x; \
   MOZ_CRASH()

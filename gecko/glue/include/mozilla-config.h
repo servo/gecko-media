@@ -135,7 +135,7 @@
 #define MOZ_LIBAV_FFT 1
 #define MOZ_LOGGING 1
 #define MOZ_MACBUNDLE_ID org.mozilla.nightlydebug
-#define MOZ_MEMORY 0
+#define MOZ_MEMORY 1
 #define MOZ_MEMORY_LINUX 0
 #define MOZ_PERMISSIONS 1
 #define MOZ_PHOENIX 1

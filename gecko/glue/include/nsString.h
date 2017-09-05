@@ -3,6 +3,9 @@
 
 #include <string>
 
+template class std::basic_string<char>;
+template class std::basic_string<char16_t>;
+
 template<typename StdStringType>
 class BaseString {
 public:
