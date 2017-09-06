@@ -1,5 +1,6 @@
 import os
 import re
+import subprocess
 import sys
 from pathlib import Path
 from shutil import copyfile
@@ -151,6 +152,15 @@ def remove_previous_copy(src_dir, dst_dir):
     rmtree(dst_dir + "include/")
     rmtree(dst_dir + "src/")
 
+
+def write_gecko_revision_file(src_dir):
+    result = subprocess.run(['hg', 'log', src_dir, '--limit', '1'], stdout=subprocess.PIPE)
+    first_line = result.stdout.splitlines()[0]
+    revision = re.match(b'changeset:\s+(.*)', first_line).group(1)
+    with open('GECKO_REVISION', 'w') as f:
+        f.write(revision.decode('utf-8') + '\n')
+        f.close()
+
 def main(args):
     if len(args) != 2:
         print("Usage: python3 import.py <src_dir> <dst_dir>")
@@ -163,6 +173,7 @@ def main(args):
         return 1
     remove_previous_copy(src_dir, dst_dir)
     copy_files(src_dir, dst_dir)
+    write_gecko_revision_file(src_dir)
     return 0
 
 if __name__ == "__main__":
