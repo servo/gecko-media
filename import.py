@@ -45,6 +45,7 @@ header_files = [
 	("mfbt/ArrayUtils.h", 						"mozilla/ArrayUtils.h"),
 	("mfbt/Assertions.h", 						"mozilla/Assertions.h"),
 	("mfbt/Attributes.h", 						"mozilla/Attributes.h"),
+	("mfbt/Atomics.h",							"mozilla/Atomics.h"),
 	("mfbt/BinarySearch.h", 					"mozilla/BinarySearch.h"),
 	("mfbt/Casting.h",				 			"mozilla/Casting.h"),
 	("mfbt/Char16.h",							"mozilla/Char16.h"),
@@ -92,6 +93,8 @@ header_files = [
 
 src_files = [
 	"dom/media/MediaInfo.cpp",
+	"mfbt/Assertions.cpp",
+	"mfbt/Unused.cpp",
 	"mozglue/misc/Printf.h",
 	"xpcom/ds/nsTArray.cpp",
 ]
