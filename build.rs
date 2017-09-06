@@ -32,6 +32,7 @@ fn compile_gecko_media() {
 
 	let src_files = [
 		"dom/media/MediaInfo.cpp",
+		"xpcom/ds/nsTArray.cpp",
 	];
 	for file_path in src_files.iter().map(|&p| "gecko/src/".to_owned() + p.clone()) {
 		b.file(file_path);

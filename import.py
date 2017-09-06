@@ -107,6 +107,7 @@ src_files = [
 	# "memory/build/malloc_decls.h",
 	# "memory/build/mozmemory_wrap.c",
 	"mozglue/misc/Printf.h",
+	"xpcom/ds/nsTArray.cpp",
 ]
 
 objdir_files = [
