@@ -103,48 +103,67 @@ objdir_files = [
         "ErrorList.h",
 ]
 
-src_dir = "/home/cpearce/src/firefox/"
-dst_dir = "/home/cpearce/src/gecko-media/gecko/"
-obj_dir = src_dir + "obj-x86_64-pc-linux-gnu/dist/include/"
+def get_obj_dir_path(src_dir):
+    if sys.platform == 'darwin':
+        obj_dir = "obj-x86_64-apple-darwin16.7.0"
+    elif sys.platform == 'linux':
+        obj_dir = "obj-x86_64-pc-linux-gnu"
+    else:
+        raise Exception("Unsupported platform: {}".format(sys.platform))
+    return os.path.join(src_dir, obj_dir, "dist", "include/")
 
-def verify_files_present():
+def verify_files_present(src_dir, dst_dir):
     had_error = False
     for (src, dst) in header_files:
-        if not Path(src_dir + src).is_file():
+        p = Path(src_dir + src)
+        if not p.is_file():
             print("ERROR: Header file '{}' is not a valid file.".format(src))
             had_error = True;
     for src in src_files:
         if not Path(src_dir + src).is_file():
             print("ERROR: Source file '{}' is not a valid file.".format(src))
             had_error = True;
+    obj_dir = get_obj_dir_path(src_dir)
     for src in objdir_files:
         if not(Path(obj_dir + src).is_file()):
             print("ERROR: Object dir file '{}' is not a valid file.".format(src))
             had_error = True;
-    if had_error:
-        sys.exit(1)
+    return not int(had_error)
 
 def ensure_dir_exists(dst_path):
     dirname = os.path.dirname(dst_path)
     if not os.path.exists(dirname):
         os.makedirs(dirname)
 
-def copy_files():
+def copy_files(src_dir, dst_dir):
     for (src, dst) in header_files:
         ensure_dir_exists(dst_dir + "include/" + dst)
         copyfile(src_dir + src, dst_dir + "include/" + dst)
     for src in src_files:
         ensure_dir_exists(dst_dir + "src/" + src)
         copyfile(src_dir + src, dst_dir + "src/" + src)
+    obj_dir = get_obj_dir_path(src_dir)
     for src in objdir_files:
         ensure_dir_exists(dst_dir + "include/" + src)
         copyfile(obj_dir + src, dst_dir + "include/" + src)
 
-def remove_previous_copy():
+def remove_previous_copy(src_dir, dst_dir):
     rmtree(dst_dir + "include/")
     rmtree(dst_dir + "src/")
 
+def main(args):
+    if len(args) != 2:
+        print("Usage: python3 import.py <src_dir> <dst_dir>")
+        return 1
+
+    src_dir = os.path.abspath(args[0]) + os.path.sep
+    dst_dir = os.path.abspath(args[1]) + os.path.sep
+
+    if not verify_files_present(src_dir, dst_dir):
+        return 1
+    remove_previous_copy(src_dir, dst_dir)
+    copy_files(src_dir, dst_dir)
+    return 0
+
 if __name__ == "__main__":
-    verify_files_present()
-    remove_previous_copy()
-    copy_files()
+    sys.exit(main(sys.argv[1:]))
