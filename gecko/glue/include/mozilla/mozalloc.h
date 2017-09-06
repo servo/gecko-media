@@ -8,6 +8,8 @@
 #ifndef mozilla_mozalloc_h
 #define mozilla_mozalloc_h
 
+#include "mozilla/Assertions.h" // for MOZ_CRASH
+
 /*
  * https://bugzilla.mozilla.org/show_bug.cgi?id=427099
  */
@@ -76,29 +78,56 @@ extern "C" {
  * passing that pointer to |free()|.
  */
 
-#define moz_xmalloc malloc
-#define moz_xcalloc calloc
-#define moz_xrealloc realloc
-#define moz_xstrdup strdup
-#define moz_malloc_usable_size malloc_usable_size
-#define moz_malloc_size_of malloc_size_of
+ MOZALLOC_INLINE
+ void* moz_xmalloc(size_t size) {
+    auto x = malloc(size);
+    if (!x) {
+        MOZ_CRASH("moz_xmalloc failure");
+    }
+    return x;
+}
 
-#if defined(HAVE_STRNDUP)
-#define moz_xstrndup strndup
-#endif /* if defined(HAVE_STRNDUP) */
+MOZALLOC_INLINE
+void* moz_xcalloc(size_t nmemb, size_t size) {
+    auto x = calloc(nmemb, size);
+    if (!x) {
+        MOZ_CRASH("moz_xcalloc failure");
+    }
+    return x;
+}
 
-#if defined(HAVE_POSIX_MEMALIGN)
-#define moz_xposix_memalign posix_memalign
-#endif /* if defined(HAVE_POSIX_MEMALIGN) */
+MOZALLOC_INLINE
+void* moz_xrealloc(void* ptr, size_t size) {
+    auto x = realloc(ptr, size);
+    if (!x) {
+        MOZ_CRASH("moz_xrealloc failure");
+    }
+    return x;
+}
 
-#if defined(HAVE_MEMALIGN)
-#define moz_xmemalign xmemalign
-#endif /* if defined(HAVE_MEMALIGN) */
+MOZALLOC_INLINE
+char* moz_xstrdup(const char* str) {
+    auto x = strdup(str);
+    if (!x) {
+        MOZ_CRASH("moz_xstrdup failure");
+    }
+    return x;
+}
 
+MOZALLOC_INLINE
+size_t moz_malloc_usable_size(void *ptr) {
+    auto x = moz_malloc_usable_size(ptr);
+    if (!x) {
+        MOZ_CRASH("moz_malloc_usable_size failure");
+    }
+    return x;
+}
 
-#if defined(HAVE_VALLOC)
-#define moz_xvalloc valloc
-#endif /* if defined(HAVE_VALLOC) */
+MOZALLOC_INLINE
+size_t moz_malloc_size_of(const void *ptr) {
+    return moz_malloc_usable_size((void*)ptr);
+}
+
 
 #ifdef __cplusplus
 } /* extern "C" */
