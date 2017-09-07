@@ -21,7 +21,7 @@ fn make_builder() -> gcc::Build {
     #[cfg(target_os = "linux")]
     env::set_var(
         "CXXFLAGS",
-        "--include gecko/glue/include/mozilla-config-x86_64-apple-darwin.h",
+        "--include gecko/glue/include/mozilla-config-x86_64-linux.h",
     );
 
     b.flag("-fno-exceptions");
