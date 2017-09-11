@@ -9,9 +9,9 @@
 #ifndef mozilla_Assertions_h
 #define mozilla_Assertions_h
 
-#if defined(MOZILLA_INTERNAL_API) && defined(__cplusplus)
-#define MOZ_DUMP_ASSERTION_STACK
-#endif
+// #if defined(MOZILLA_INTERNAL_API) && defined(__cplusplus)
+// #define MOZ_DUMP_ASSERTION_STACK
+// #endif
 
 #include "mozilla/Attributes.h"
 #include "mozilla/Compiler.h"

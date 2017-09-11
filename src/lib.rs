@@ -5,13 +5,15 @@
 #[cfg(test)]
 mod tests {
 
-	// #[link(name = "stdc++")] 
-	extern {
-	    fn TestGecko();
-	}
+    // #[link(name = "stdc++")]
+    extern "C" {
+        fn TestGecko();
+    }
 
     #[test]
     fn it_works() {
-    	unsafe { TestGecko(); };
+        unsafe {
+            TestGecko();
+        };
     }
 }

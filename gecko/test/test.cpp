@@ -7,6 +7,7 @@
 #include "nsString.h"
 #include "nsTArray.h"
 #include "mozilla/ArrayUtils.h"
+// #include "nsThreadUtils.h"
 
 #define SIMPLE_STRING "I'm a simple ASCII string"
 #define UTF8_STRING "Андропов, Брежнев, Горбачёв, Ленин, Маленков, Сталин, Хрущёв, Черненко"
@@ -67,10 +68,30 @@ void TestArray() {
     // printf("result: %d\n", result);
     printf("audioStream: %p\n", audioStream);
   }
+// void TestThreads() {
+//   RefPtr<nsIThread> thread;]]
+//   nsresult rv = NS_NewThread(getter_AddRefs(thread));
+//   int x = 0;
+//   RefPtr<Runnable> task(NS_NewRunnableFunction("TestFunction", [&]() {
+//     x = 1;
+//   }));
+//   assert(NS_SUCCEEDED(rv));
+//   assert(thread != nullptr);
+//   thread->Dispatch(task.forget());
+//   thread->Shutdown();
+//   assert(x == 1);
+// }
+
+void TestHashTables() {
+
 }
+
+} // namespace mozilla
 
 extern "C" void TestGecko() {
   mozilla::TestString();
   mozilla::TestArray();
   mozilla::TestAudioStream();
+  mozilla::TestHashTables();
+  // mozilla::TestThreads();
 }

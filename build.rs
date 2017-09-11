@@ -267,12 +267,15 @@ fn compile_gecko_media() {
         "dom/media/MediaInfo.cpp",
         "memory/fallible/fallible.cpp",
         "memory/mozalloc/mozalloc.cpp",
+        "memory/mozalloc/mozalloc_abort.cpp",
         "memory/mozalloc/mozalloc_oom.cpp",
+        "mfbt/Assertions.cpp",
         "mfbt/Assertions.cpp",
         "mfbt/Unused.cpp",
         "mozglue/misc/ConditionVariable_posix.cpp",
         "mozglue/misc/Mutex_posix.cpp",
         "nsprpub/pr/src/misc/prinit.c",
+        "xpcom/base/nsISupportsImpl.cpp",
         "xpcom/ds/nsTArray.cpp",
         "xpcom/string/nsReadableUtils.cpp",
         "xpcom/string/nsString.cpp",
@@ -286,7 +289,7 @@ fn compile_gecko_media() {
         cpp_builder.file(file_path);
     }
 
-    let glue_files = ["nsDebugImpl.cpp", "Logging.cpp"];
+    let glue_files = ["nsDebugImpl.cpp", "Logging.cpp", "nsString.cpp", "nsThreadUtils.cpp", "nsCRTGlue.cpp"];
     for file_path in glue_files
         .iter()
         .map(|&p| "gecko/glue/".to_owned() + p.clone())
