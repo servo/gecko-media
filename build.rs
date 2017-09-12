@@ -289,7 +289,13 @@ fn compile_gecko_media() {
         cpp_builder.file(file_path);
     }
 
-    let glue_files = ["nsDebugImpl.cpp", "Logging.cpp", "nsString.cpp", "nsThreadUtils.cpp", "nsCRTGlue.cpp"];
+    let glue_files = [
+        "nsDebugImpl.cpp",
+        "Logging.cpp",
+        "nsString.cpp",
+        "nsThreadUtils.cpp",
+        "nsCRTGlue.cpp",
+    ];
     for file_path in glue_files
         .iter()
         .map(|&p| "gecko/glue/".to_owned() + p.clone())
