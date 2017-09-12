@@ -86,6 +86,7 @@ fn configure_libsoundtouch(c_builder: &mut gcc::Build, cpp_builder: &mut gcc::Bu
         #[cfg(feature = "audio-sample-type-f32")]
         {
             // FIXME: set SSE2 cflags?
+            cpp_builder.define("SOUNDTOUCH_ALLOW_SSE", "1");
             cpp_builder.file("gecko/src/media/libsoundtouch/src/sse_optimized.cpp");
         }
         #[cfg(not(feature = "audio-sample-type-f32"))]
@@ -96,8 +97,9 @@ fn configure_libsoundtouch(c_builder: &mut gcc::Build, cpp_builder: &mut gcc::Bu
     }
     // #[cfg(not(target_os = "windows"))]
     // {
-    //     cpp_builder.flag(
-    //         "-include gecko/include/mozilla/media/libsoundtouch/src/soundtouch_perms.h",
+    //     env::set_var(
+    //         "CXXFLAGS",
+    //         "--include gecko/include/mozilla/media/libsoundtouch/src/soundtouch_perms.h",
     //     );
     // }
     #[cfg(target_os = "windows")]
@@ -260,12 +262,16 @@ fn compile_gecko_media() {
 
     let src_files = [
         "dom/media/AudioStream.cpp",
+        // Compiling this one opens a new can of #include worms..
+        //"dom/media/CubebUtils.cpp",
         "dom/media/MediaInfo.cpp",
         "memory/fallible/fallible.cpp",
         "memory/mozalloc/mozalloc.cpp",
         "memory/mozalloc/mozalloc_oom.cpp",
         "mfbt/Assertions.cpp",
         "mfbt/Unused.cpp",
+        "mozglue/misc/ConditionVariable_posix.cpp",
+        "mozglue/misc/Mutex_posix.cpp",
         "nsprpub/pr/src/misc/prinit.c",
         "xpcom/ds/nsTArray.cpp",
         "xpcom/string/nsReadableUtils.cpp",

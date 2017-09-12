@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <string>
 
+#include "AudioStream.h"
 #include "nsString.h"
 #include "nsTArray.h"
 #include "mozilla/ArrayUtils.h"
@@ -39,9 +40,37 @@ void TestArray() {
   }
 }
 
+  void TestAudioStream() {
+    class FakeChunk : public AudioStream::Chunk {
+    public:
+      FakeChunk() {}
+      const AudioDataValue* Data() const { return NULL; }
+      uint32_t Frames() const { return 0; }
+      uint32_t Channels() const { return 2; }
+      uint32_t Rate() const { return 44100; }
+      AudioDataValue* GetWritable() const { return NULL; }
+    };
+    class FakeAudioSource : public AudioStream::DataSource {
+    public:
+      FakeAudioSource() {}
+      UniquePtr<AudioStream::Chunk> PopFrames(uint32_t aFrames) {
+        return MakeUnique<FakeChunk>();
+      };
+      bool Ended() const { return false; };
+      void Drained() {};
+    };
+
+    auto* dataSource = new FakeAudioSource();
+    auto* audioStream = new AudioStream(*dataSource);
+    // FIXME: This doesn't work because CubebUtils doesn't build yet.
+    // auto result = audioStream->Init(2, 1, 44100);
+    // printf("result: %d\n", result);
+    printf("audioStream: %p\n", audioStream);
+  }
 }
 
 extern "C" void TestGecko() {
   mozilla::TestString();
   mozilla::TestArray();
+  mozilla::TestAudioStream();
 }

@@ -93,6 +93,7 @@ header_files = [
     ("memory/mozalloc/mozalloc_oom.h", "mozilla/mozalloc_oom.h"),
     ("memory/mozalloc/throw_gcc.h", "mozilla/throw_gcc.h"),
     ("memory/mozjemalloc/mozjemalloc_types.h", "mozjemalloc_types.h"),
+    ("mozglue/misc/MutexPlatformData_posix.h", "MutexPlatformData_posix.h"),
     ("mozglue/misc/Printf.h", "mozilla/Printf.h"),
     ("mfbt/double-conversion/source/double-conversion.h", "mozilla/double-conversion.h"),
     ("mfbt/double-conversion/source/utils.h", "mozilla/double-conversion/utils.h"),
@@ -157,6 +158,7 @@ header_files = [
     ("mozglue/build/SSE.h", "mozilla/SSE.h"),
     ("nsprpub/pr/include/nspr.h", "nspr.h"),
     ("nsprpub/pr/include/obsolete/probslet.h", "nspr/obsolete/probslet.h"),
+    ("nsprpub/pr/include/obsolete/protypes.h", "nspr/obsolete/protypes.h"),
     ("nsprpub/pr/include/pratom.h", "pratom.h"),
     ("nsprpub/pr/include/prbit.h", "prbit.h"),
     ("nsprpub/pr/include/prclist.h", "prclist.h"),
@@ -271,6 +273,7 @@ header_files = [
 
 src_files = [
     "dom/media/AudioStream.cpp",
+    "dom/media/CubebUtils.cpp",
     "dom/media/MediaInfo.cpp",
     "media/libcubeb/src/cubeb.c",
     "media/libcubeb/src/cubeb_alsa.c",
@@ -311,6 +314,8 @@ src_files = [
     "mfbt/Assertions.cpp",
     "mfbt/Unused.cpp",
     "mozglue/misc/Printf.h",
+    "mozglue/misc/ConditionVariable_posix.cpp",
+    "mozglue/misc/Mutex_posix.cpp",
     "nsprpub/pr/src/misc/prinit.c",
     "xpcom/ds/nsTArray.cpp",
     "xpcom/string/nsReadableUtils.cpp",
