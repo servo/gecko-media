@@ -5,6 +5,7 @@ import sys
 from pathlib import Path
 from shutil import copyfile
 from shutil import rmtree
+from os import listdir
 
 if sys.version_info[0] < 3:
     raise Exception("Python 3 or a more recent version is required.")
@@ -194,6 +195,7 @@ header_files = [
     ("nsprpub/pr/include/prtpool.h", "prtpool.h"),
     ("nsprpub/pr/include/prtrace.h", "prtrace.h"),
     ("nsprpub/pr/include/prtypes.h", "prtypes.h"),
+    ("nsprpub/lib/libc/include/plstr.h", "plstr.h"),
     # TODO: import more cfg files as needed.
     ("nsprpub/pr/include/md/_linux.cfg", "md/_linux.cfg"),
     ("nsprpub/pr/include/md/_linux.h", "md/_linux.h"),
@@ -233,6 +235,7 @@ header_files = [
     ("xpcom/ds/ArrayIterator.h", "mozilla/ArrayIterator.h"),
     ("xpcom/ds/nsBaseHashtable.h", "nsBaseHashtable.h"),
     ("xpcom/ds/nsClassHashtable.h", "nsClassHashtable.h"),
+    ("xpcom/ds/nsCRT.h", "nsCRT.h"),
     ("xpcom/ds/nsDataHashtable.h", "nsDataHashtable.h"),
     ("xpcom/ds/nsHashKeys.h", "nsHashKeys.h"),
     ("xpcom/ds/nsPointerHashKeys.h", "nsPointerHashKeys.h"),
@@ -265,7 +268,7 @@ header_files = [
     ("xpcom/string/nsTLiteralString.h", "nsTLiteralString.h"),
     ("xpcom/string/nsTPromiseFlatString.h", "nsTPromiseFlatString.h"),
     ("xpcom/string/nsTString.h", "nsTString.h"),
-    ("xpcom/string/nsTStringRepr.h", "nsTStringRepr.h"),   
+    ("xpcom/string/nsTStringRepr.h", "nsTStringRepr.h"),
     ("xpcom/string/nsTSubstring.h", "nsTSubstring.h"),
     ("xpcom/string/nsTSubstringTuple.h", "nsTSubstringTuple.h"),
     ("xpcom/string/nsUTF8Utils.h", "nsUTF8Utils.h"),
@@ -331,12 +334,28 @@ src_files = [
     "mozglue/misc/Printf.h",
     "nsprpub/pr/src/misc/prinit.c",
     "xpcom/base/nsISupportsImpl.cpp",
+    "xpcom/ds/PLDHashTable.cpp",
     "xpcom/ds/nsTArray.cpp",
+    "xpcom/string/nsASCIIMask.cpp",
+    "xpcom/string/nsDependentString.cpp",
+    "xpcom/string/nsDependentSubstring.cpp",
+    "xpcom/string/nsPromiseFlatString.cpp",
     "xpcom/string/nsReadableUtils.cpp",
     "xpcom/string/nsString.cpp",
+    "xpcom/string/nsStringComparator.cpp",
+    "xpcom/string/nsStringObsolete.cpp",
     "xpcom/string/nsSubstring.cpp",
+    "xpcom/string/nsSubstringTuple.cpp",
+    "xpcom/string/nsTDependentString.cpp",
+    "xpcom/string/nsTDependentSubstring.cpp",
+    "xpcom/string/nsTextFormatter.cpp",
+    "xpcom/string/nsTPromiseFlatString.cpp",
     "xpcom/string/nsTString.cpp",
+    "xpcom/string/nsTStringComparator.cpp",
+    "xpcom/string/nsTStringObsolete.cpp",
     "xpcom/string/nsTSubstring.cpp",
+    "xpcom/string/nsTSubstringTuple.cpp",
+    "xpcom/string/precompiled_templates.cpp",
     "xpcom/threads/BlockingResourceBase.cpp",
 ]
 
@@ -472,7 +491,6 @@ def remove_previous_copy(src_dir, dst_dir):
     rmtree(dst_dir + "include/")
     rmtree(dst_dir + "src/")
 
-
 def write_gecko_revision_file(src_dir):
     result = subprocess.run(['hg', 'log', src_dir, '--limit', '1'], stdout=subprocess.PIPE)
     first_line = result.stdout.splitlines()[0]
@@ -480,6 +498,13 @@ def write_gecko_revision_file(src_dir):
     with open('GECKO_REVISION', 'w') as f:
         f.write(revision.decode('utf-8') + '\n')
         f.close()
+
+def write_unified_cpp_file(dir):
+    cpps = sorted([f for f in listdir(dir)
+      if f.endswith(".cpp") and not os.path.basename(f).startswith("nsT")])
+    with open(dir + os.path.sep + "unified.cpp", "w") as f:
+      for cpp_file in cpps:
+        f.write("#include \"{}\"\n".format(cpp_file))
 
 def main(args):
     if len(args) != 2:
@@ -493,6 +518,8 @@ def main(args):
         return 1
     remove_previous_copy(src_dir, dst_dir)
     copy_files(src_dir, dst_dir)
+    # Gecko's string classes only build in unified mode...
+    write_unified_cpp_file(dst_dir + "src/xpcom/string")
     write_gecko_revision_file(src_dir)
     return 0
 
