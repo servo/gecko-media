@@ -14,3 +14,13 @@ NS_ABORT_OOM(size_t aSize)
 #endif
   MOZ_CRASH("OOM");
 }
+
+extern "C" {
+
+void
+NS_DebugBreak(uint32_t aSeverity, const char* aStr, const char* aExpr,
+              const char* aFile, int32_t aLine)
+{
+}
+
+}
