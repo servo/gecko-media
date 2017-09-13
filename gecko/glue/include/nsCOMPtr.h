@@ -30,7 +30,7 @@
 #include "nsISupportsUtils.h" // for |nsresult|, |NS_ADDREF|, |NS_GET_TEMPLATE_IID| et al
 #include "mozilla/RefPtr.h"
 
-#include "nsCycleCollectionNoteChild.h"
+// #include "nsCycleCollectionNoteChild.h"
 
 
 /*
@@ -1132,22 +1132,22 @@ public:
   }
 };
 
-template<typename T>
-inline void
-ImplCycleCollectionUnlink(nsCOMPtr<T>& aField)
-{
-  aField = nullptr;
-}
+// template<typename T>
+// inline void
+// ImplCycleCollectionUnlink(nsCOMPtr<T>& aField)
+// {
+//   aField = nullptr;
+// }
 
-template<typename T>
-inline void
-ImplCycleCollectionTraverse(nsCycleCollectionTraversalCallback& aCallback,
-                            nsCOMPtr<T>& aField,
-                            const char* aName,
-                            uint32_t aFlags = 0)
-{
-  CycleCollectionNoteChild(aCallback, aField.get(), aName, aFlags);
-}
+// template<typename T>
+// inline void
+// ImplCycleCollectionTraverse(nsCycleCollectionTraversalCallback& aCallback,
+//                             nsCOMPtr<T>& aField,
+//                             const char* aName,
+//                             uint32_t aFlags = 0)
+// {
+//   CycleCollectionNoteChild(aCallback, aField.get(), aName, aFlags);
+// }
 
 #ifndef NSCAP_FEATURE_USE_BASE
 template<class T>

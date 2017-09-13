@@ -11,7 +11,6 @@
 #include "mozilla/RefPtr.h"
 #include "mozilla/TypeTraits.h"
 
-#include "nsCycleCollectionNoteChild.h"
 #include "mozilla/MemoryReporting.h"
 
 /*****************************************************************************/

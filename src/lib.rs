@@ -1,17 +1,14 @@
-// extern crate libc;
-
-
-
 #[cfg(test)]
 mod tests {
 
-	// #[link(name = "stdc++")] 
-	extern {
-	    fn TestGecko();
-	}
+    extern "C" {
+        fn TestGecko();
+    }
 
     #[test]
     fn it_works() {
-    	unsafe { TestGecko(); };
+        unsafe {
+            TestGecko();
+        };
     }
 }
