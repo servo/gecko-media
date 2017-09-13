@@ -8,6 +8,12 @@ fn make_builder(cpp: bool) -> gcc::Build {
 
     if cpp {
         b.flag("-std=c++11");
+    } else {
+        #[cfg(target_arch = "x86_64")]
+        {
+            b.define("_LARGEFILE64_SOURCE", "");
+            b.define("_FILE_OFFSET_BITS", "64");
+        }
     }
 
     b.include("gecko/glue/include/stl_wrappers");
@@ -35,11 +41,12 @@ fn make_builder(cpp: bool) -> gcc::Build {
     );
 
     b.flag("-fno-exceptions");
-    // FIXME: not sure about this!
+
     b.define("MOZILLA_INTERNAL_API", "1");
-    //b.define("__x86_64__", "1");
-    //b.define("__i386__", "1");
+
+    b.define("_GNU_SOURCE", "");
     b.define("_PR_PTHREADS", "1");
+
     b.define("GECKO_MEDIA_CRATE", "1");
 
     if let Ok(profile) = env::var("PROFILE") {
@@ -266,7 +273,7 @@ fn compile_gecko_media() {
     configure_libcubeb(&mut c_builder, &mut cpp_builder);
     configure_libsoundtouch(&mut c_builder, &mut cpp_builder);
 
-    let src_files = [
+    let src_cpp_files = [
         "dom/media/AudioStream.cpp",
         // Compiling this one opens a new can of #include worms..
         //"dom/media/CubebUtils.cpp",
@@ -280,24 +287,64 @@ fn compile_gecko_media() {
         "mfbt/Unused.cpp",
         "mozglue/misc/ConditionVariable_posix.cpp",
         "mozglue/misc/Mutex_posix.cpp",
-        "nsprpub/pr/src/misc/prinit.c",
         "xpcom/base/nsISupportsImpl.cpp",
         "xpcom/ds/nsTArray.cpp",
         "xpcom/ds/PLDHashTable.cpp",
         "xpcom/string/unified.cpp",
         "xpcom/threads/BlockingResourceBase.cpp",
     ];
-    for file_path in src_files
+    for file_path in src_cpp_files
         .iter()
         .map(|&p| "gecko/src/".to_owned() + p.clone())
     {
         cpp_builder.file(file_path);
     }
 
+    let src_c_files = [
+        "nsprpub/pr/src/io/priometh.c",
+        "nsprpub/pr/src/io/prfdcach.c",
+        "nsprpub/pr/src/io/prlayer.c",
+        "nsprpub/pr/src/io/prlog.c",
+        "nsprpub/pr/src/io/prmapopt.c",
+        "nsprpub/pr/src/io/prmwait.c",
+        "nsprpub/pr/src/io/prprf.c",
+        "nsprpub/pr/src/linking/prlink.c",
+        "nsprpub/pr/src/malloc/prmem.c",
+        "nsprpub/pr/src/md/prosdep.c",
+        "nsprpub/pr/src/md/unix/linux.c",
+        "nsprpub/pr/src/md/unix/unix.c",
+        "nsprpub/pr/src/md/unix/unix_errors.c",
+        "nsprpub/pr/src/memory/prseg.c",
+        "nsprpub/pr/src/misc/pratom.c",
+        "nsprpub/pr/src/misc/prdtoa.c",
+        "nsprpub/pr/src/misc/prenv.c",
+        "nsprpub/pr/src/misc/prerr.c",
+        "nsprpub/pr/src/misc/prerror.c",
+        "nsprpub/pr/src/misc/prerrortable.c",
+        "nsprpub/pr/src/misc/prinit.c",
+        "nsprpub/pr/src/misc/prinrval.c",
+        "nsprpub/pr/src/misc/prnetdb.c",
+        "nsprpub/pr/src/misc/prtime.c",
+        "nsprpub/pr/src/pthreads/ptio.c",
+        "nsprpub/pr/src/pthreads/ptmisc.c",
+        "nsprpub/pr/src/pthreads/ptsynch.c",
+        "nsprpub/pr/src/pthreads/ptthread.c",
+        "nsprpub/pr/src/threads/prcmon.c",
+        "nsprpub/pr/src/threads/prrwlock.c",
+        "nsprpub/pr/src/threads/prtpd.c",
+    ];
+    for file_path in src_c_files
+        .iter()
+        .map(|&p| "gecko/src/".to_owned() + p.clone())
+    {
+        c_builder.file(file_path);
+    }
+
     let glue_files = [
         "nsDebugImpl.cpp",
         "Logging.cpp",
         "nsThreadUtils.cpp",
+        "nsTraceRefcnt.cpp",
         "nsCRTGlue.cpp",
     ];
     for file_path in glue_files
