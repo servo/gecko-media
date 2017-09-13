@@ -1,11 +1,6 @@
-// extern crate libc;
-
-
-
 #[cfg(test)]
 mod tests {
 
-    // #[link(name = "stdc++")]
     extern "C" {
         fn TestGecko();
     }
