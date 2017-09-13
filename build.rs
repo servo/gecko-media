@@ -283,6 +283,7 @@ fn compile_gecko_media() {
         "nsprpub/pr/src/misc/prinit.c",
         "xpcom/base/nsISupportsImpl.cpp",
         "xpcom/ds/nsTArray.cpp",
+        "xpcom/ds/PLDHashTable.cpp",
         "xpcom/string/unified.cpp",
         "xpcom/threads/BlockingResourceBase.cpp",
     ];
