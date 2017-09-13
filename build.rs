@@ -42,6 +42,12 @@ fn make_builder(cpp: bool) -> gcc::Build {
     b.define("_PR_PTHREADS", "1");
     b.define("GECKO_MEDIA_CRATE", "1");
 
+    if let Ok(profile) = env::var("PROFILE") {
+        if profile == "debug" {
+            b.define("DEBUG", "1");
+        }
+    }
+
     b
 }
 
@@ -292,7 +298,6 @@ fn compile_gecko_media() {
     let glue_files = [
         "nsDebugImpl.cpp",
         "Logging.cpp",
-        "nsString.cpp",
         "nsThreadUtils.cpp",
         "nsCRTGlue.cpp",
     ];
