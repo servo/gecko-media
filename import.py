@@ -366,6 +366,7 @@ src_files = [
     "mozglue/misc/ConditionVariable_posix.cpp",
     "mozglue/misc/Mutex_posix.cpp",
     "mozglue/misc/Printf.h",
+    "mozglue/misc/Printf.cpp",
     "mozglue/misc/TimeStamp_darwin.cpp",
     "mozglue/misc/TimeStamp_posix.cpp",
     "mozglue/misc/TimeStamp_windows.cpp",
