@@ -2,9 +2,11 @@
 #include <stdio.h>
 #include <string.h>
 #include <string>
+#include <unistd.h>
 
 #include "AudioStream.h"
 #include "mozilla/ArrayUtils.h"
+#include "mozilla/Logging.h"
 #include "mozilla/TimeStamp.h"
 #include "nsClassHashtable.h"
 #include "nsDataHashtable.h"
@@ -77,11 +79,18 @@ TestAudioStream()
 
   auto* dataSource = new FakeAudioSource();
   auto* audioStream = new AudioStream(*dataSource);
-  // FIXME: This doesn't work because CubebUtils doesn't build yet.
-  // auto result = audioStream->Init(2, 1, 44100);
-  // printf("result: %d\n", result);
-  printf("audioStream: %p\n", audioStream);
+  auto rv = audioStream->Init(2, 2, 44100);
+  assert(NS_SUCCEEDED(rv));
+  assert(audioStream != nullptr);
+
+  assert(audioStream->GetOutChannels() == 2);
+
+  audioStream->SetVolume(0.5);
+  audioStream->Start();
+  usleep(2000);
+  audioStream->Shutdown();
 }
+
 // void TestThreads() {
 //   RefPtr<nsIThread> thread;]]
 //   nsresult rv = NS_NewThread(getter_AddRefs(thread));
@@ -95,13 +104,6 @@ TestAudioStream()
 //   thread->Shutdown();
 //   assert(x == 1);
 // }
-
-// TODO: Remove this once the real implementation in nsThreadManager.cpp lands.
-PRThread*
-GetCurrentVirtualThread()
-{
-  return nullptr;
-}
 
 void
 TestHashTables()
@@ -174,6 +176,7 @@ TestTimeStamp()
 extern "C" void
 TestGecko()
 {
+  mozilla::LogModule::Init();
   mozilla::TestString();
   mozilla::TestArray();
   mozilla::TestAudioStream();
