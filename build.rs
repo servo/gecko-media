@@ -16,6 +16,8 @@ fn make_builder(cpp: bool) -> gcc::Build {
         }
     }
 
+    b.flag("-Wno-unused-parameter");
+
     b.include("gecko/glue/include/stl_wrappers");
     b.include("gecko/include/system_wrappers");
     b.include("gecko/include/nspr");
