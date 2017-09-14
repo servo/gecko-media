@@ -12,6 +12,7 @@
 #include "nsDataHashtable.h"
 #include "nsRefPtrHashtable.h"
 #include "nsString.h"
+#include "nsPrintfCString.h"
 #include "nsTArray.h"
 // #include "nsThreadUtils.h"
 
@@ -37,6 +38,9 @@ TestString()
   std_utf16 = u"" UTF8_STRING;
   moz_utf16 = NS_ConvertUTF8toUTF16(NS_LITERAL_CSTRING(UTF8_STRING));
   assert(std_utf16 == moz_utf16.get());
+
+  nsPrintfCString pcs("Hi there %s", "Bob");
+  assert(pcs.EqualsASCII("Hi there Bob"));
 }
 
 void

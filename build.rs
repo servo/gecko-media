@@ -288,6 +288,7 @@ fn compile_gecko_media() {
         "mfbt/ChaosMode.cpp",
         "mfbt/Unused.cpp",
         "mozglue/misc/ConditionVariable_posix.cpp",
+        "mozglue/misc/Printf.cpp",
         #[cfg(macos)]
         "mozglue/misc/TimeStamp_darwin.cpp",
         #[cfg(all(unix, not(macos)))]
