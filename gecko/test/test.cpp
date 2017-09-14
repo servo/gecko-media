@@ -1,23 +1,26 @@
+#include <assert.h>
 #include <stdio.h>
 #include <string.h>
-#include <assert.h>
 #include <string>
 
 #include "AudioStream.h"
+#include "mozilla/ArrayUtils.h"
+#include "nsClassHashtable.h"
+#include "nsDataHashtable.h"
+#include "nsRefPtrHashtable.h"
 #include "nsString.h"
 #include "nsTArray.h"
-#include "mozilla/ArrayUtils.h"
-#include "nsDataHashtable.h"
-#include "nsClassHashtable.h"
-#include "nsRefPtrHashtable.h"
 // #include "nsThreadUtils.h"
 
 #define SIMPLE_STRING "I'm a simple ASCII string"
-#define UTF8_STRING "Андропов, Брежнев, Горбачёв, Ленин, Маленков, Сталин, Хрущёв, Черненко"
+#define UTF8_STRING                                                            \
+  "Андропов, Брежнев, Горбачёв, Ленин, Маленков, Сталин, Хрущёв, Черненко"
 
 namespace mozilla {
 
-void TestString() {
+void
+TestString()
+{
   std::string std_utf8 = SIMPLE_STRING;
   std::u16string std_utf16 = u"" SIMPLE_STRING;
 
@@ -33,9 +36,11 @@ void TestString() {
   assert(std_utf16 == moz_utf16.get());
 }
 
-void TestArray() {
+void
+TestArray()
+{
   nsTArray<uint32_t> a;
-  uint32_t data[] = {0,1,2,3,4,5,6,7,8,9,10};
+  uint32_t data[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
   a.AppendElements(data, ArrayLength(data));
   assert(memcmp(a.Elements(), data, ArrayLength(data) * sizeof(data[0])) == 0);
   auto i = 0;
@@ -44,33 +49,38 @@ void TestArray() {
   }
 }
 
-  void TestAudioStream() {
-    class FakeChunk : public AudioStream::Chunk {
-    public:
-      FakeChunk() {}
-      const AudioDataValue* Data() const { return NULL; }
-      uint32_t Frames() const { return 0; }
-      uint32_t Channels() const { return 2; }
-      uint32_t Rate() const { return 44100; }
-      AudioDataValue* GetWritable() const { return NULL; }
+void
+TestAudioStream()
+{
+  class FakeChunk : public AudioStream::Chunk
+  {
+  public:
+    FakeChunk() {}
+    const AudioDataValue* Data() const { return NULL; }
+    uint32_t Frames() const { return 0; }
+    uint32_t Channels() const { return 2; }
+    uint32_t Rate() const { return 44100; }
+    AudioDataValue* GetWritable() const { return NULL; }
+  };
+  class FakeAudioSource : public AudioStream::DataSource
+  {
+  public:
+    FakeAudioSource() {}
+    UniquePtr<AudioStream::Chunk> PopFrames(uint32_t aFrames)
+    {
+      return MakeUnique<FakeChunk>();
     };
-    class FakeAudioSource : public AudioStream::DataSource {
-    public:
-      FakeAudioSource() {}
-      UniquePtr<AudioStream::Chunk> PopFrames(uint32_t aFrames) {
-        return MakeUnique<FakeChunk>();
-      };
-      bool Ended() const { return false; };
-      void Drained() {};
-    };
+    bool Ended() const { return false; };
+    void Drained(){};
+  };
 
-    auto* dataSource = new FakeAudioSource();
-    auto* audioStream = new AudioStream(*dataSource);
-    // FIXME: This doesn't work because CubebUtils doesn't build yet.
-    // auto result = audioStream->Init(2, 1, 44100);
-    // printf("result: %d\n", result);
-    printf("audioStream: %p\n", audioStream);
-  }
+  auto* dataSource = new FakeAudioSource();
+  auto* audioStream = new AudioStream(*dataSource);
+  // FIXME: This doesn't work because CubebUtils doesn't build yet.
+  // auto result = audioStream->Init(2, 1, 44100);
+  // printf("result: %d\n", result);
+  printf("audioStream: %p\n", audioStream);
+}
 // void TestThreads() {
 //   RefPtr<nsIThread> thread;]]
 //   nsresult rv = NS_NewThread(getter_AddRefs(thread));
@@ -86,10 +96,16 @@ void TestArray() {
 // }
 
 // TODO: Remove this once the real implementation in nsThreadManager.cpp lands.
-PRThread* GetCurrentVirtualThread() { return nullptr; }
+PRThread*
+GetCurrentVirtualThread()
+{
+  return nullptr;
+}
 
-void TestHashTables() {
-  static const char* values[] = {"zero", "one", "two", "three", "four"};
+void
+TestHashTables()
+{
+  static const char* values[] = { "zero", "one", "two", "three", "four" };
   {
     nsDataHashtable<nsUint32HashKey, const char*> table;
     for (uint32_t i = 0; i < ArrayLength(values); i++) {
@@ -116,10 +132,12 @@ void TestHashTables() {
     }
   }
   {
-    class Data {
+    class Data
+    {
     public:
       NS_INLINE_DECL_REFCOUNTING(Data);
       uint32_t mIndex = -1;
+
     private:
       ~Data() {}
     };
@@ -143,7 +161,9 @@ void TestHashTables() {
 
 } // namespace mozilla
 
-extern "C" void TestGecko() {
+extern "C" void
+TestGecko()
+{
   mozilla::TestString();
   mozilla::TestArray();
   mozilla::TestAudioStream();
