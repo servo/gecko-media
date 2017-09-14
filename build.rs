@@ -286,6 +286,13 @@ fn compile_gecko_media() {
         "mfbt/ChaosMode.cpp",
         "mfbt/Unused.cpp",
         "mozglue/misc/ConditionVariable_posix.cpp",
+        #[cfg(macos)]
+        "mozglue/misc/TimeStamp_darwin.cpp",
+        #[cfg(all(unix, not(macos)))]
+        "mozglue/misc/TimeStamp_posix.cpp",
+        #[cfg(windows)]
+        "mozglue/misc/TimeStamp_windows.cpp",
+        "mozglue/misc/TimeStamp.cpp",
         "mozglue/misc/Mutex_posix.cpp",
         "xpcom/base/nsISupportsImpl.cpp",
         "xpcom/ds/nsTArray.cpp",

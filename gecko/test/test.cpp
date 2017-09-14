@@ -5,6 +5,7 @@
 
 #include "AudioStream.h"
 #include "mozilla/ArrayUtils.h"
+#include "mozilla/TimeStamp.h"
 #include "nsClassHashtable.h"
 #include "nsDataHashtable.h"
 #include "nsRefPtrHashtable.h"
@@ -159,6 +160,15 @@ TestHashTables()
   }
 }
 
+void
+TestTimeStamp()
+{
+  TimeStamp now = TimeStamp::Now();
+  TimeStamp ahead = now + TimeDuration::FromSeconds(10);
+  TimeDuration delta = ahead - now;
+  assert(delta == TimeDuration::FromSeconds(10));
+}
+
 } // namespace mozilla
 
 extern "C" void
@@ -168,5 +178,6 @@ TestGecko()
   mozilla::TestArray();
   mozilla::TestAudioStream();
   mozilla::TestHashTables();
+  mozilla::TestTimeStamp();
   // mozilla::TestThreads();
 }
