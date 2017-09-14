@@ -277,8 +277,7 @@ fn compile_gecko_media() {
 
     let src_cpp_files = [
         "dom/media/AudioStream.cpp",
-        // Compiling this one opens a new can of #include worms..
-        //"dom/media/CubebUtils.cpp",
+        "dom/media/CubebUtils.cpp",
         "dom/media/MediaInfo.cpp",
         "memory/fallible/fallible.cpp",
         "memory/mozalloc/mozalloc.cpp",
@@ -301,6 +300,7 @@ fn compile_gecko_media() {
         "xpcom/ds/PLDHashTable.cpp",
         "xpcom/string/unified.cpp",
         "xpcom/threads/BlockingResourceBase.cpp",
+        "xpcom/threads/nsThreadManager.cpp",
     ];
     for file_path in src_cpp_files
         .iter()
@@ -352,9 +352,13 @@ fn compile_gecko_media() {
     let glue_files = [
         "nsDebugImpl.cpp",
         "Logging.cpp",
+        "nsAppRunner.cpp",
+        "nsCOMPtr.cpp",
         "nsThreadUtils.cpp",
         "nsTraceRefcnt.cpp",
         "nsCRTGlue.cpp",
+        "nsStringBundleService.cpp",
+        "Telemetry.cpp",
     ];
     for file_path in glue_files
         .iter()

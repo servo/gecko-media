@@ -211,21 +211,21 @@ public:
       }
     }
 
-    NSPRLogModulesParser(modules,
-        [&shouldAppend, &addTimestamp, &isSync, &rotate]
-            (const char* aName, LogLevel aLevel, int32_t aValue) mutable {
-          if (strcmp(aName, "append") == 0) {
-            shouldAppend = true;
-          } else if (strcmp(aName, "timestamp") == 0) {
-            addTimestamp = true;
-          } else if (strcmp(aName, "sync") == 0) {
-            isSync = true;
-          } else if (strcmp(aName, "rotate") == 0) {
-            rotate = (aValue << 20) / kRotateFilesNumber;
-          } else {
-            LogModule::Get(aName)->SetLevel(aLevel);
-          }
-    });
+    // NSPRLogModulesParser(modules,
+    //     [&shouldAppend, &addTimestamp, &isSync, &rotate]
+    //         (const char* aName, LogLevel aLevel, int32_t aValue) mutable {
+    //       if (strcmp(aName, "append") == 0) {
+    //         shouldAppend = true;
+    //       } else if (strcmp(aName, "timestamp") == 0) {
+    //         addTimestamp = true;
+    //       } else if (strcmp(aName, "sync") == 0) {
+    //         isSync = true;
+    //       } else if (strcmp(aName, "rotate") == 0) {
+    //         rotate = (aValue << 20) / kRotateFilesNumber;
+    //       } else {
+    //         LogModule::Get(aName)->SetLevel(aLevel);
+    //       }
+    // });
 
     // Rotate implies timestamp to make the files readable
     mAddTimestamp = addTimestamp || rotate > 0;

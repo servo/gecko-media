@@ -5,6 +5,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "nsTraceRefcnt.h"
+#include "nsISupportsBase.h"
 
 extern "C" {
 
@@ -31,4 +32,17 @@ NS_LogRelease(void* aPtr, nsrefcnt aRefcnt, const char* aClass)
 
 }
 
+EXPORT_XPCOM_API(void)
+NS_LogCOMPtrAddRef(void* aCOMPtr, nsISupports* aObject)
+{
+
 }
+
+EXPORT_XPCOM_API(void)
+NS_LogCOMPtrRelease(void* aCOMPtr, nsISupports* aObject)
+{
+
+}
+
+} // extern "C"
+

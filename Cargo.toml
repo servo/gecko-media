@@ -1,7 +1,7 @@
 [package]
 name = "gecko-media"
 version = "0.1.0"
-authors = ["Chris Pearce <cpearce@mozilla.com>"]
+authors = ["Chris Pearce <cpearce@mozilla.com>", "Philippe Normand <philn@igalia.com>"]
 build = "build.rs"
 
 [build]
@@ -14,7 +14,7 @@ rustflags = ["-C link-arg=-fno-exceptions"]
 gcc = "0.3.53"
 
 [features]
-default = []
+default = ["pulseaudio", "audio-sample-type-f32"]
 audio-sample-type-s16 = []
 audio-sample-type-f32 = []
 alsa = []
