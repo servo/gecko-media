@@ -7,6 +7,9 @@
 #include "nsString.h"
 #include "nsTArray.h"
 #include "mozilla/ArrayUtils.h"
+#include "nsDataHashtable.h"
+#include "nsClassHashtable.h"
+#include "nsRefPtrHashtable.h"
 // #include "nsThreadUtils.h"
 
 #define SIMPLE_STRING "I'm a simple ASCII string"
@@ -82,8 +85,60 @@ void TestArray() {
 //   assert(x == 1);
 // }
 
-void TestHashTables() {
+// TODO: Remove this once the real implementation in nsThreadManager.cpp lands.
+PRThread* GetCurrentVirtualThread() { return nullptr; }
 
+void TestHashTables() {
+  static const char* values[] = {"zero", "one", "two", "three", "four"};
+  {
+    nsDataHashtable<nsUint32HashKey, const char*> table;
+    for (uint32_t i = 0; i < ArrayLength(values); i++) {
+      table.Put(i, values[i]);
+    }
+    for (uint32_t i = 0; i < ArrayLength(values); i++) {
+      assert(table.Get(i) == values[i]);
+    }
+  }
+  {
+    nsClassHashtable<nsPtrHashKey<const char>, nsCString> table;
+    for (const char* value : values) {
+      table.Put(value, new nsCString(value));
+    }
+    for (uint32_t i = 0; i < ArrayLength(values); i++) {
+      assert(table.Get(values[i])->EqualsASCII(values[i]));
+    }
+
+    for (auto iter = table.Iter(); !iter.Done(); iter.Next()) {
+      const char* key = iter.Key();
+      const nsCString* data = iter.UserData();
+      assert(data->EqualsASCII(key));
+      assert(key != nullptr);
+    }
+  }
+  {
+    class Data {
+    public:
+      NS_INLINE_DECL_REFCOUNTING(Data);
+      uint32_t mIndex = -1;
+    private:
+      ~Data() {}
+    };
+    nsRefPtrHashtable<nsRefPtrHashKey<Data>, Data> table;
+    nsTArray<RefPtr<Data>> datas;
+    for (uint32_t i = 0; i < 5; i++) {
+      RefPtr<Data> d = new Data();
+      d->mIndex = i;
+      datas.AppendElement(d);
+      table.Put(d, d);
+    }
+    for (uint32_t i = 0; i < 5; i++) {
+      RefPtr<Data> d;
+      bool found = table.Get(datas[i], getter_AddRefs(d));
+      assert(found);
+      assert(d == datas[i]);
+      assert(d->mIndex == i);
+    }
+  }
 }
 
 } // namespace mozilla

@@ -283,7 +283,7 @@ fn compile_gecko_media() {
         "memory/mozalloc/mozalloc_abort.cpp",
         "memory/mozalloc/mozalloc_oom.cpp",
         "mfbt/Assertions.cpp",
-        "mfbt/Assertions.cpp",
+        "mfbt/ChaosMode.cpp",
         "mfbt/Unused.cpp",
         "mozglue/misc/ConditionVariable_posix.cpp",
         "mozglue/misc/Mutex_posix.cpp",
