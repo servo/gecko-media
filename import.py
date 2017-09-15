@@ -184,7 +184,6 @@ header_files = [
     ('media/libspeex_resampler/src/simd_detect.h', 'mozilla/media/libspeex_resampler/src/simd_detect.h'),
     ('media/libspeex_resampler/src/speex_resampler.h', 'mozilla/media/libspeex_resampler/src/speex_resampler.h'),
     ('media/libspeex_resampler/src/stack_alloc.h', 'mozilla/media/libspeex_resampler/src/stack_alloc.h'),
-    ("modules/libpref/Preferences.h", "mozilla/Preferences.h"),
     ("nsprpub/pr/include/prlink.h", "prlink.h"),
     ("nsprpub/pr/include/prlock.h", "prlock.h"),
     ("nsprpub/pr/include/prlog.h", "prlog.h"),
@@ -584,6 +583,80 @@ def write_unified_cpp_file(dir):
       for cpp_file in cpps:
         f.write("#include \"{}\"\n".format(cpp_file))
 
+def extract_pref_from_line(line):
+    m = re.match(r'pref\((".*?"),\s*(.*)\);', line)
+    if not m:
+        print("extract_pref_from_line() failed on {}".format(line))
+        sys.exit(1)
+    name = m.group(1)
+    val = m.group(2)
+    kind = ""
+    if val == "true" or val == "false":
+        kind = "bool"
+    elif val.startswith('"') and val.endswith('"'):
+        kind = "string"
+    else:
+        kind = "int"
+    return (name, val, kind)
+
+def is_preprocessor_line(line):
+    return (line.startswith("#if") or
+            line.startswith("#endif") or
+            line.startswith("#else"))
+
+def extract_preferences(lines):
+    # Returns a triple of lists of ((pref,value),[include-guard]).
+    #   ([((bool_pref, value), [guards])],
+    #    [((int_pref, value), [guards])],
+    #    [((string_pref, value), [guards])])
+    i = 0
+    guards = []
+    bool_prefs = []
+    int_prefs = []
+    string_prefs = []
+    prefs = dict({"bool": [], "int": [], "string": []});
+    while i < len(lines):
+        line = lines[i]
+        if line.startswith("#if"):
+            guards.append(line)
+        elif line.startswith("pref"):
+            (pref, value, kind) = extract_pref_from_line(line)
+            prefs[kind] += [((pref, value), guards[:])]
+        elif line.startswith("#endif"):
+            guards.pop()
+        i += 1
+    # Sort the lists based on pref name, so we can binary search it in
+    # the Preferences implementation.
+    bool_prefs = list(sorted(prefs["bool"], key=lambda x: x[0][0]))
+    int_prefs = list(sorted(prefs["int"], key=lambda x: x[0][0]))
+    string_prefs = list(sorted(prefs["string"], key=lambda x: x[0][0]))
+    return (bool_prefs, int_prefs, string_prefs)
+
+def write_pref_group(dst, prefs, prefix, pref_type):
+    dst.write("static const " + pref_type + " s" + prefix + "" + pref_type + "s[] = {\n")
+    for ((name, value),guards) in prefs:
+        for guard in guards:
+            dst.write(guard)
+        dst.write("  { " + name + ", " + value + " },\n")
+        for guard in guards:
+            dst.write("#endif // " + guard)
+    dst.write("};\n\n")
+
+def copy_media_prefs(src_pref_file, dst_pref_file, prefix):
+    is_media_pref = re.compile(r'pref\("media.')
+    with open(src_pref_file, "r") as src:
+        # Filter out non media pref and non preprocessor lines.
+        lines = []
+        for line in src:
+            if is_media_pref.match(line) or is_preprocessor_line(line):
+                lines += [line]
+
+        (bool_prefs, int_prefs, string_prefs) = extract_preferences(lines)
+        with open(dst_pref_file, "w") as dst:
+            write_pref_group(dst, bool_prefs, prefix, "BoolPref")
+            write_pref_group(dst, int_prefs, prefix, "IntPref")
+            write_pref_group(dst, string_prefs, prefix, "StringPref")
+
 def main(args):
     if len(args) != 2:
         print("Usage: python3 import.py <src_dir> <dst_dir>")
@@ -594,6 +667,12 @@ def main(args):
 
     if not verify_files_present(src_dir, dst_dir):
         return 1
+
+    # Create copies of Gecko's media prefs.
+    copy_media_prefs(src_dir + "modules/libpref/init/all.js", dst_dir + "glue/prefs_common.cpp", "Common")
+    copy_media_prefs(src_dir + "browser/app/profile/firefox.js", dst_dir + "glue/prefs_desktop.cpp", "Desktop")
+    copy_media_prefs(src_dir + "mobile/android/app/mobile.js", dst_dir + "glue/prefs_android.cpp", "Android")
+
     remove_previous_copy(src_dir, dst_dir)
     copy_files(src_dir, dst_dir)
     # Gecko's string classes only build in unified mode...

@@ -359,6 +359,7 @@ fn compile_gecko_media() {
         "nsTraceRefcnt.cpp",
         "nsCRTGlue.cpp",
         "nsStringBundleService.cpp",
+        "Preferences.cpp",
         "Telemetry.cpp",
     ];
     for file_path in glue_files

@@ -7,12 +7,13 @@
 #include "AudioStream.h"
 #include "mozilla/ArrayUtils.h"
 #include "mozilla/Logging.h"
+#include "mozilla/Preferences.h"
 #include "mozilla/TimeStamp.h"
 #include "nsClassHashtable.h"
 #include "nsDataHashtable.h"
+#include "nsPrintfCString.h"
 #include "nsRefPtrHashtable.h"
 #include "nsString.h"
-#include "nsPrintfCString.h"
 #include "nsTArray.h"
 // #include "nsThreadUtils.h"
 
@@ -54,6 +55,47 @@ TestArray()
   for (auto value : a) {
     assert(data[i++] == value);
   }
+}
+
+struct PrefCallbackTestData
+{
+  const char* mName;
+  int32_t mCount;
+};
+
+void
+PrefChanged(const char* aPref, void* aClosure)
+{
+  PrefCallbackTestData* data =
+    reinterpret_cast<PrefCallbackTestData*>(aClosure);
+  assert(strcmp(aPref, data->mName) == 0);
+  data->mCount += 1;
+}
+
+void
+TestPreferences()
+{
+  assert(Preferences::GetBool("expect.default", false) == false);
+  assert(Preferences::GetBool("media.autoplay.enabled", true) == true);
+  assert(Preferences::GetInt("media.dormant-on-pause-timeout-ms", 0) == 5000);
+  nsresult rv;
+
+  nsAutoCString utf8;
+  rv = Preferences::GetCString("media.gmp-manager.certs.1.commonName", utf8);
+  assert(NS_SUCCEEDED(rv) && utf8.EqualsLiteral("aus5.mozilla.org"));
+
+  nsAutoString utf16;
+  rv = Preferences::GetString("media.gmp-manager.certs.1.issuerName", utf16);
+  assert(NS_SUCCEEDED(rv));
+  // TODO: This fails.
+  // assert(utf16.EqualsASCII("CN=thawte SSL CA - G2,O=\"thawte, Inc.\",C=US"));
+
+  const char* PREF_VOLUME_SCALE = "media.volume_scale";
+  PrefCallbackTestData data;
+  data.mName = PREF_VOLUME_SCALE;
+  data.mCount = 0;
+  Preferences::RegisterCallbackAndCall(PrefChanged, PREF_VOLUME_SCALE, &data);
+  assert(data.mCount == 1);
 }
 
 void
@@ -180,6 +222,7 @@ TestTimeStamp()
 extern "C" void
 TestGecko()
 {
+  mozilla::TestPreferences();
   mozilla::LogModule::Init();
   mozilla::TestString();
   mozilla::TestArray();
