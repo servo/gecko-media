@@ -50,6 +50,7 @@ fn make_builder(cpp: bool) -> gcc::Build {
     b.define("_PR_PTHREADS", "1");
 
     b.define("GECKO_MEDIA_CRATE", "1");
+    b.define("RUST_BINDGEN", "1");
 
     if let Ok(profile) = env::var("PROFILE") {
         if profile == "debug" {
