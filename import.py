@@ -328,6 +328,7 @@ header_files = [
 ]
 
 src_files = [
+    "dom/media/AudioChannelFormat.cpp",
     "dom/media/AudioSegment.cpp",
     "dom/media/AudioStream.cpp",
     "dom/media/CubebUtils.cpp",

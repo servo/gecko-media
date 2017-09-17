@@ -277,6 +277,7 @@ fn compile_gecko_media() {
     configure_libsoundtouch(&mut c_builder, &mut cpp_builder);
 
     let src_cpp_files = [
+        "dom/media/AudioChannelFormat.cpp",
         "dom/media/AudioSegment.cpp",
         "dom/media/AudioStream.cpp",
         "dom/media/CubebUtils.cpp",
