@@ -282,6 +282,7 @@ fn compile_gecko_media() {
         "dom/media/AudioStream.cpp",
         "dom/media/CubebUtils.cpp",
         "dom/media/MediaInfo.cpp",
+        "dom/media/webaudio/AudioBlock.cpp",
         "memory/fallible/fallible.cpp",
         "memory/mozalloc/mozalloc.cpp",
         "memory/mozalloc/mozalloc_abort.cpp",
