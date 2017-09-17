@@ -22,6 +22,7 @@ fn make_builder(cpp: bool) -> gcc::Build {
     b.include("gecko/include/system_wrappers");
     b.include("gecko/include/nspr");
     b.include("gecko/include/nspr/private");
+    b.include("gecko/include/webaudio");
     b.include("gecko/include");
     b.include("gecko/glue/include");
     b.include("gecko/include/mozilla/");
@@ -276,6 +277,7 @@ fn compile_gecko_media() {
     configure_libsoundtouch(&mut c_builder, &mut cpp_builder);
 
     let src_cpp_files = [
+        "dom/media/AudioSegment.cpp",
         "dom/media/AudioStream.cpp",
         "dom/media/CubebUtils.cpp",
         "dom/media/MediaInfo.cpp",
