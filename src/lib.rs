@@ -1,3 +1,8 @@
+#[allow(unused_extern_crates)]
+
+#[cfg(feature = "pulseaudio")]
+extern crate cubeb_pulse;
+
 #[cfg(test)]
 mod tests {
 
