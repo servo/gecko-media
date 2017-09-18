@@ -206,8 +206,7 @@ fn configure_libcubeb(c_builder: &mut gcc::Build, cpp_builder: &mut gcc::Build) 
     {
         c_builder.file("gecko/src/media/libcubeb/src/cubeb_pulse.c");
         defines.push(("USE_PULSE", "1"));
-        // FIXME: import cubeb pulse-rs
-        //defines.push(("USE_PULSE_RUST", "1"));
+        defines.push(("USE_PULSE_RUST", "1"));
     }
 
     #[cfg(feature = "jack")]
