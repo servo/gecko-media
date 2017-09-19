@@ -7,9 +7,7 @@ build = "build.rs"
 [build]
 rustflags = ["-C link-arg=-fno-exceptions"]
 
-# FIXME: Switch to target dependencies when https://github.com/rust-lang/cargo/issues/3512 is fixed.
-#[target.'cfg(unix)'.dependencies]
-[dependencies]
+[target.'cfg(unix)'.dependencies]
 cubeb-pulse = { git = "https://github.com/djg/cubeb-pulse-rs", branch = "upstream-pa-sink-flag-fix", optional = true, features = ["pulse-dlopen"]}
 
 
