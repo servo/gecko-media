@@ -3,7 +3,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-extern "C" {
+#include "nsXULAppAPI.h"
+
 bool
 XRE_IsContentProcess()
 {
@@ -11,4 +12,12 @@ XRE_IsContentProcess()
   return true;
 }
 
+/**
+ * Returns true in the e10s parent process and in the main process when e10s
+ * is disabled.
+ */
+bool
+XRE_IsParentProcess()
+{
+  return true;
 }

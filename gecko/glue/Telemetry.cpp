@@ -5,6 +5,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "mozilla/TelemetryHistogramEnums.h"
+#include "nsStringFwd.h"
 
 namespace mozilla {
 namespace Telemetry {
@@ -22,11 +23,11 @@ Accumulate(HistogramID aHistogram, uint32_t aSample)
   // TelemetryHistogram::Accumulate(aHistogram, aSample);
 }
 
-// void
-// Accumulate(HistogramID aID, const nsCString& aKey, uint32_t aSample)
-// {
-//   // TelemetryHistogram::Accumulate(aID, aKey, aSample);
-// }
+void
+Accumulate(HistogramID aID, const nsCString& aKey, uint32_t aSample)
+{
+  // TelemetryHistogram::Accumulate(aID, aKey, aSample);
+}
 
 // void
 // Accumulate(const char* name, uint32_t sample)

@@ -9,7 +9,7 @@
 void
 NS_ABORT_OOM(size_t aSize)
 {
-#if 0 // defined(MOZ_CRASHREPORTER)
+#if !defined(GECKO_MEDIA_CRATE) && defined(MOZ_CRASHREPORTER)
   CrashReporter::AnnotateOOMAllocationSize(aSize);
 #endif
   MOZ_CRASH("OOM");

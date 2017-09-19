@@ -15,7 +15,8 @@
 #include "nsRefPtrHashtable.h"
 #include "nsString.h"
 #include "nsTArray.h"
-// #include "nsThreadUtils.h"
+#include "nsThreadManager.h"
+#include "nsThreadUtils.h"
 
 #define SIMPLE_STRING "I'm a simple ASCII string"
 #define UTF8_STRING                                                            \
@@ -137,19 +138,19 @@ TestAudioStream()
   audioStream->Shutdown();
 }
 
-// void TestThreads() {
-//   RefPtr<nsIThread> thread;]]
-//   nsresult rv = NS_NewThread(getter_AddRefs(thread));
-//   int x = 0;
-//   RefPtr<Runnable> task(NS_NewRunnableFunction("TestFunction", [&]() {
-//     x = 1;
-//   }));
-//   assert(NS_SUCCEEDED(rv));
-//   assert(thread != nullptr);
-//   thread->Dispatch(task.forget());
-//   thread->Shutdown();
-//   assert(x == 1);
-// }
+void TestThreads() {
+  RefPtr<nsIThread> thread;
+  nsresult rv = NS_NewThread(getter_AddRefs(thread));
+  int x = 0;
+  RefPtr<Runnable> task(NS_NewRunnableFunction("TestFunction", [&]() {
+    x = 1;
+  }));
+  assert(NS_SUCCEEDED(rv));
+  assert(thread != nullptr);
+  thread->Dispatch(task.forget());
+  thread->Shutdown();
+  assert(x == 1);
+}
 
 void
 TestHashTables()
@@ -222,12 +223,16 @@ TestTimeStamp()
 extern "C" void
 TestGecko()
 {
-  mozilla::TestPreferences();
+  // TODO: Move these Init calls to a top-level function? See also XPCOMInit.
   mozilla::LogModule::Init();
+  NS_SetMainThread();
+  nsThreadManager::get().Init();
+
+  mozilla::TestPreferences();
   mozilla::TestString();
   mozilla::TestArray();
   mozilla::TestAudioStream();
   mozilla::TestHashTables();
   mozilla::TestTimeStamp();
-  // mozilla::TestThreads();
+  mozilla::TestThreads();
 }
