@@ -2,6 +2,9 @@
 
 Firefox's Media stack in a Rust crate.
 
-Build with `cargo build`.
+Due to our use of target dependencies declarations in Cargo.toml, a nightly Rust
+toolchain is required to build this crate.
 
-Run tests with `cargo test`.
+Build with `rustup run nightly cargo build`.
+
+Run tests with `rustup run nightly cargo test`.
