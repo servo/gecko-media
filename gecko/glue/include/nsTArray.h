@@ -20,6 +20,7 @@
 #include "mozilla/ReverseIterator.h"
 #include "mozilla/TypeTraits.h"
 #include "mozilla/Span.h"
+#include "mozilla/Unused.h"
 
 #include <string.h>
 
@@ -27,15 +28,8 @@
 #include "nsAlgorithm.h"
 // #include "nscore.h"
 // #include "nsQuickSort.h"
-// #include "nsDebug.h"
+#include "nsDebug.h"
 #include "nsISupportsImpl.h"
-#ifdef GECKO_MEDIA_CRATE
-#include "mozilla/Unused.h"
-#include "mozilla/RefPtr.h"
-#define NS_ABORT_OOM(x) \
-  mozilla::Unused << x; \
-  MOZ_CRASH()
-#endif // GECKO_MEDIA_CRATE
 // #include "nsRegionFwd.h"
 #include <functional>
 #include <initializer_list>

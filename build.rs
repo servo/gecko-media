@@ -295,13 +295,26 @@ fn compile_gecko_media() {
         #[cfg(windows)]
         "mozglue/misc/TimeStamp_windows.cpp",
         "mozglue/misc/TimeStamp.cpp",
+        #[cfg(all(unix, not(macos)))]
         "mozglue/misc/Mutex_posix.cpp",
+        "xpcom/base/ClearOnShutdown.cpp",
+        "xpcom/base/nsClassInfoImpl.cpp",
         "xpcom/base/nsISupportsImpl.cpp",
-        "xpcom/ds/nsTArray.cpp",
+        "xpcom/base/nsMemory.cpp",
         "xpcom/ds/PLDHashTable.cpp",
+        "xpcom/ds/nsTArray.cpp",
+        "xpcom/ds/nsTObserverArray.cpp",
         "xpcom/string/unified.cpp",
-        "xpcom/threads/BlockingResourceBase.cpp",
+        "xpcom/threads/EventQueue.cpp",
         "xpcom/threads/nsThreadManager.cpp",
+        "xpcom/threads/nsThreadUtils.cpp",
+        "xpcom/threads/nsTimerImpl.cpp",
+        "xpcom/threads/PrioritizedEventQueue.cpp",
+        "xpcom/threads/SynchronizedEventQueue.cpp",
+        "xpcom/threads/SystemGroup.cpp",
+        "xpcom/threads/ThreadEventQueue.cpp",
+        "xpcom/threads/ThreadEventTarget.cpp",
+        "xpcom/threads/TimerThread.cpp",
     ];
     for file_path in src_cpp_files
         .iter()
@@ -351,16 +364,27 @@ fn compile_gecko_media() {
     }
 
     let glue_files = [
+        "AbstractThread.cpp",
+        "BlockingResourceBase.cpp",
+        "CooperativeThreadPool.cpp",
+        "InputEventStatistics.cpp",
         "nsDebugImpl.cpp",
+        "LabeledEventQueue.cpp",
         "Logging.cpp",
+        "MainThreadIdlePeriod.cpp",
         "nsAppRunner.cpp",
+        "nsComponentManagerUtils.cpp",
         "nsCOMPtr.cpp",
-        "nsThreadUtils.cpp",
+        "nsThread.cpp",
         "nsTraceRefcnt.cpp",
         "nsCRTGlue.cpp",
         "nsStringBundleService.cpp",
         "Preferences.cpp",
+        "Scheduler.cpp",
+        "SchedulerGroup.cpp",
         "Telemetry.cpp",
+        "ThreadAnnotation.cpp",
+        "XPCOMInit.cpp",
     ];
     for file_path in glue_files
         .iter()

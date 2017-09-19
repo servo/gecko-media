@@ -25,9 +25,11 @@
 #include "mozilla/Mutex.h"
 #include "mozilla/RWLock.h"
 
+#ifndef GECKO_MEDIA_CRATE
 #if defined(MOZILLA_INTERNAL_API)
 #include "GeckoProfiler.h"
 #endif //MOZILLA_INTERNAL_API
+#endif
 
 #endif // ifdef DEBUG
 
@@ -506,7 +508,7 @@ ReentrantMonitor::Wait(PRIntervalTime aInterval)
   mChainPrev = 0;
 
   nsresult rv;
-#if defined(MOZILLA_INTERNAL_API)
+#if !defined(GECKO_MEDIA_CRATE) && defined(MOZILLA_INTERNAL_API)
   {
     AutoProfilerThreadSleep sleep;
 #endif //MOZILLA_INTERNAL_API
@@ -515,7 +517,7 @@ ReentrantMonitor::Wait(PRIntervalTime aInterval)
     rv = PR_Wait(mReentrantMonitor, aInterval) == PR_SUCCESS ? NS_OK :
                                                                NS_ERROR_FAILURE;
 
-#if defined(MOZILLA_INTERNAL_API)
+#if !defined(GECKO_MEDIA_CRATE) && defined(MOZILLA_INTERNAL_API)
   }
 #endif //MOZILLA_INTERNAL_API
 
