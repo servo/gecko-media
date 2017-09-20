@@ -140,7 +140,7 @@ ExpandPIDMarker(const char* aFilename, char (&buffer)[2048])
   static const char kPIDToken[] = "%PID";
   const char* pidTokenPtr = strstr(aFilename, kPIDToken);
   if (pidTokenPtr &&
-    SprintfLiteral(buffer, "%.*s%s%d%s",
+    SprintfLiteral(buffer, "%d%s%s%s%s",
                    static_cast<int>(pidTokenPtr - aFilename), aFilename,
                    "-main.",
                    "procId",
