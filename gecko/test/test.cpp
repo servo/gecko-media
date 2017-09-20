@@ -186,20 +186,20 @@ TestHashTables()
     {
     public:
       NS_INLINE_DECL_REFCOUNTING(Data);
-      uint32_t mIndex = -1;
+      int32_t mIndex = -1;
 
     private:
       ~Data() {}
     };
     nsRefPtrHashtable<nsRefPtrHashKey<Data>, Data> table;
     nsTArray<RefPtr<Data>> datas;
-    for (uint32_t i = 0; i < 5; i++) {
+    for (int32_t i = 0; i < 5; i++) {
       RefPtr<Data> d = new Data();
       d->mIndex = i;
       datas.AppendElement(d);
       table.Put(d, d);
     }
-    for (uint32_t i = 0; i < 5; i++) {
+    for (int32_t i = 0; i < 5; i++) {
       RefPtr<Data> d;
       bool found = table.Get(datas[i], getter_AddRefs(d));
       assert(found);
