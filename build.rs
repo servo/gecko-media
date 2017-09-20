@@ -14,6 +14,7 @@ fn make_builder(cpp: bool) -> gcc::Build {
             b.define("_LARGEFILE64_SOURCE", "");
             b.define("_FILE_OFFSET_BITS", "64");
         }
+        b.define("_GNU_SOURCE", "");
     }
 
     b.flag("-Wno-unused-parameter");
@@ -46,7 +47,6 @@ fn make_builder(cpp: bool) -> gcc::Build {
 
     b.define("MOZILLA_INTERNAL_API", "1");
 
-    b.define("_GNU_SOURCE", "");
     b.define("_PR_PTHREADS", "1");
 
     b.define("GECKO_MEDIA_CRATE", "1");
