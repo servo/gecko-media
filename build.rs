@@ -75,7 +75,7 @@ fn compile_tests() {
     b.compile("geckotest");
 }
 
-fn configure_libsoundtouch(c_builder: &mut gcc::Build, cpp_builder: &mut gcc::Build) {
+fn configure_libsoundtouch(_c_builder: &mut gcc::Build, cpp_builder: &mut gcc::Build) {
     let src_files = [
         "media/libsoundtouch/src/cpu_detect_x86.cpp",
         "media/libsoundtouch/src/RateTransposer.cpp",
