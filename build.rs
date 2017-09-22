@@ -22,6 +22,7 @@ fn make_builder(cpp: bool) -> gcc::Build {
     b.include("gecko/include/system_wrappers");
     b.include("gecko/include/nspr");
     b.include("gecko/include/nspr/private");
+    b.include("gecko/include/webaudio");
     b.include("gecko/include");
     b.include("gecko/glue/include");
     b.include("gecko/include/mozilla/");
@@ -75,7 +76,7 @@ fn compile_tests() {
     b.compile("geckotest");
 }
 
-fn configure_libsoundtouch(c_builder: &mut gcc::Build, cpp_builder: &mut gcc::Build) {
+fn configure_libsoundtouch(_c_builder: &mut gcc::Build, cpp_builder: &mut gcc::Build) {
     let src_files = [
         "media/libsoundtouch/src/cpu_detect_x86.cpp",
         "media/libsoundtouch/src/RateTransposer.cpp",
@@ -277,9 +278,12 @@ fn compile_gecko_media() {
     configure_libsoundtouch(&mut c_builder, &mut cpp_builder);
 
     let src_cpp_files = [
+        "dom/media/AudioChannelFormat.cpp",
+        "dom/media/AudioSegment.cpp",
         "dom/media/AudioStream.cpp",
         "dom/media/CubebUtils.cpp",
         "dom/media/MediaInfo.cpp",
+        "dom/media/webaudio/AudioBlock.cpp",
         "memory/fallible/fallible.cpp",
         "memory/mozalloc/mozalloc.cpp",
         "memory/mozalloc/mozalloc_abort.cpp",
