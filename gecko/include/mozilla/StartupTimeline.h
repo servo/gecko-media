@@ -31,7 +31,7 @@ mozilla_StartupTimeline_Event(PROFILE_BEFORE_CHANGE, "profileBeforeChange")
 #include "mozilla/TimeStamp.h"
 #include "nscore.h"
 
-#ifdef MOZILLA_INTERNAL_API
+#ifdef MOZ_GECKO_PROFILER
 #include "GeckoProfiler.h"
 #endif
 
@@ -57,7 +57,7 @@ public:
     return sStartupTimelineDesc[ev];
   }
 
-#ifdef MOZILLA_INTERNAL_API
+#ifdef MOZ_GECKO_PROFILER
   static void Record(Event ev) {
     profiler_add_marker(Describe(ev));
     Record(ev, TimeStamp::Now());
