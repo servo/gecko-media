@@ -6,7 +6,6 @@
 
 #include "Scheduler.h"
 
-#include "jsfriendapi.h"
 #include "LabeledEventQueue.h"
 #include "LeakRefPtr.h"
 #include "MainThreadQueue.h"
@@ -19,6 +18,7 @@
 #include "PrioritizedEventQueue.h"
 
 #ifndef GECKO_MEDIA_CRATE
+#include "jsfriendapi.h"
 #include "mozilla/dom/ScriptSettings.h"
 #include "mozilla/ipc/BackgroundChild.h"
 #include "nsCycleCollector.h"
@@ -111,6 +111,7 @@ public:
   static void StartEvent(Scheduler::EventLoopActivation& aActivation);
   static void FinishEvent(Scheduler::EventLoopActivation& aActivation);
 
+#ifndef GECKO_MEDIA_CRATE
   void SetJSContext(size_t aIndex, JSContext* aCx)
   {
     mContexts[aIndex] = aCx;
@@ -118,6 +119,7 @@ public:
 
   static void YieldCallback(JSContext* aCx);
   static bool InterruptCallback(JSContext* aCx);
+#endif
 
   CooperativeThreadPool* GetThreadPool() { return mThreadPool.get(); }
 
@@ -135,8 +137,10 @@ public:
   static bool sPrefUseMultipleQueues;
 
 private:
+#ifndef GECKO_MEDIA_CRATE
   void Interrupt(JSContext* aCx);
   void YieldFromJS(JSContext* aCx);
+#endif
 
   static void SwitcherThread(void* aData);
   void Switcher();
@@ -212,7 +216,9 @@ private:
   static size_t sNumThreadsRunning;
   static bool sUnlabeledEventRunning;
 
+#ifndef GECKO_MEDIA_CRATE
   JSContext* mContexts[CooperativeThreadPool::kMaxThreads];
+#endif
 };
 
 bool SchedulerImpl::sPrefScheduler = false;
@@ -393,10 +399,13 @@ SchedulerImpl::SchedulerImpl(SchedulerEventQueue* aQueue)
   , mQueueResource(this)
   , mSystemZoneResource(this)
   , mController(this, aQueue)
+#ifndef GECKO_MEDIA_CRATE
   , mContexts()
+#endif
 {
 }
 
+#ifndef GECKO_MEDIA_CRATE
 void
 SchedulerImpl::Interrupt(JSContext* aCx)
 {
@@ -423,6 +432,7 @@ SchedulerImpl::YieldCallback(JSContext* aCx)
 {
   Scheduler::sScheduler->YieldFromJS(aCx);
 }
+#endif
 
 void
 SchedulerImpl::Switcher()
@@ -533,9 +543,12 @@ SchedulerImpl::SystemZoneResource::IsAvailable(const MutexAutoLock& aProofOfLock
 {
   mScheduler->mLock.AssertCurrentThreadOwns();
 
+#ifdef GECKO_MEDIA_CRATE
   return false;
-  // JSContext* cx = dom::danger::GetJSContext();
-  // return js::SystemZoneAvailable(cx);
+#else
+  JSContext* cx = dom::danger::GetJSContext();
+  return js::SystemZoneAvailable(cx);
+#endif
 }
 
 MOZ_THREAD_LOCAL(Scheduler::EventLoopActivation*) Scheduler::EventLoopActivation::sTopActivation;

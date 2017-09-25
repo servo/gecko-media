@@ -9,7 +9,10 @@
 
 #include "mozilla/MemoryReporting.h"
 #include "nsTArray.h"
+
+#ifndef GECKO_MEDIA_CRATE
 #include "nsCycleCollectionNoteChild.h"
+#endif
 
 #include <functional>
 
@@ -475,6 +478,7 @@ public:
   }
 };
 
+#ifndef GECKO_MEDIA_CRATE
 template<typename T, size_t N>
 inline void
 ImplCycleCollectionUnlink(nsAutoTObserverArray<T, N>& aField)
@@ -495,6 +499,7 @@ ImplCycleCollectionTraverse(nsCycleCollectionTraversalCallback& aCallback,
     ImplCycleCollectionTraverse(aCallback, aField.ElementAt(i), aName, aFlags);
   }
 }
+#endif
 
 // XXXbz I wish I didn't have to pass in the observer type, but I
 // don't see a way to get it out of array_.
