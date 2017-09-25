@@ -25,13 +25,13 @@
 #include "nsCOMPtr.h"
 #include "nsQueryObject.h"
 #include "pratom.h"
-#include "mozilla/CycleCollectedJSContext.h"
 #include "mozilla/Logging.h"
 #include "nsIObserverService.h"
 #include "mozilla/HangMonitor.h"
 #include "mozilla/IOInterposer.h"
 #include "mozilla/Scheduler.h"
 #include "mozilla/SchedulerGroup.h"
+#include "mozilla/ScopeExit.h"
 #include "mozilla/Services.h"
 #include "mozilla/SystemGroup.h"
 #include "nsXPCOMPrivate.h"
@@ -44,6 +44,7 @@
 #include "ThreadEventTarget.h"
 
 #ifndef GECKO_MEDIA_CRATE
+#include "mozilla/CycleCollectedJSContext.h"
 #include "mozilla/ipc/MessageChannel.h"
 #include "mozilla/ipc/BackgroundChild.h"
 #include "mozilla/dom/ScriptSettings.h"
@@ -1210,6 +1211,7 @@ nsThread::RemoveObserver(nsIThreadObserver* aObserver)
   return NS_OK;
 }
 
+#ifndef GECKO_MEDIA_CRATE
 void
 nsThread::SetScriptObserver(mozilla::CycleCollectedJSContext* aScriptObserver)
 {
@@ -1221,6 +1223,7 @@ nsThread::SetScriptObserver(mozilla::CycleCollectedJSContext* aScriptObserver)
   MOZ_ASSERT(!mScriptObserver);
   mScriptObserver = aScriptObserver;
 }
+#endif
 
 void
 nsThread::DoMainThreadSpecificProcessing(bool aReallyWait)

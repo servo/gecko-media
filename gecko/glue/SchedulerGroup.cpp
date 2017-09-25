@@ -6,7 +6,6 @@
 
 #include "mozilla/SchedulerGroup.h"
 
-#include "jsfriendapi.h"
 #include "mozilla/AbstractThread.h"
 #include "mozilla/Atomics.h"
 #include "mozilla/Move.h"
@@ -16,6 +15,7 @@
 #include "nsThreadUtils.h"
 
 #ifndef GECKO_MEDIA_CRATE
+#include "jsfriendapi.h"
 #include "mozilla/dom/ScriptSettings.h"
 #endif
 
@@ -98,10 +98,10 @@ AutoCollectVsyncTelemetry::CollectTelemetry()
   mozilla::Telemetry::HistogramID eventsId =
     mIsBackground ? Telemetry::CONTENT_JS_BACKGROUND_TICK_DELAY_EVENTS_MS
                   : Telemetry::CONTENT_JS_FOREGROUND_TICK_DELAY_EVENTS_MS;
-#endif
   mozilla::Telemetry::HistogramID totalId =
     mIsBackground ? Telemetry::CONTENT_JS_BACKGROUND_TICK_DELAY_TOTAL_MS
                   : Telemetry::CONTENT_JS_FOREGROUND_TICK_DELAY_TOTAL_MS;
+#endif
 
   uint64_t lastSeenVsync = gEarliestUnprocessedVsync;
   if (!lastSeenVsync) {
@@ -126,8 +126,8 @@ AutoCollectVsyncTelemetry::CollectTelemetry()
 
 #ifndef GECKO_MEDIA_CRATE
   Telemetry::Accumulate(eventsId, mKey, duration);
-#endif
   Telemetry::Accumulate(totalId, duration);
+#endif
 
   if (pendingVsync > mStart) {
     return;

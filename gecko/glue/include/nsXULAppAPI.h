@@ -13,7 +13,10 @@
 #include "nsISupports.h"
 #include "mozilla/Logging.h"
 #include "mozilla/XREAppData.h"
+
+#ifndef GECKO_MEDIA_CRATE
 #include "js/TypeDecls.h"
+#endif
 
 #include "mozilla/ArrayUtils.h"
 #include "mozilla/Assertions.h"
@@ -481,10 +484,13 @@ XRE_API(void,
 XRE_API(MessageLoop*,
         XRE_GetIOMessageLoop, ())
 
+#ifndef GECKO_MEDIA_CRATE
 XRE_API(bool,
         XRE_SendTestShellCommand, (JSContext* aCx,
                                    JSString* aCommand,
                                    void* aCallback))
+#endif
+
 XRE_API(bool,
         XRE_ShutdownTestShell, ())
 

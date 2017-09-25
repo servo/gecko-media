@@ -30,7 +30,9 @@
 #include "nsISupportsUtils.h" // for |nsresult|, |NS_ADDREF|, |NS_GET_TEMPLATE_IID| et al
 #include "mozilla/RefPtr.h"
 
+#ifndef GECKO_MEDIA_CRATE
 #include "nsCycleCollectionNoteChild.h"
+#endif
 
 
 /*

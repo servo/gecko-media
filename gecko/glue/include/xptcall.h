@@ -12,8 +12,11 @@
 #include "nsISupports.h"
 #include "xpt_struct.h"
 #include "xptinfo.h"
-#include "js/Value.h"
 #include "mozilla/MemoryReporting.h"
+
+#ifndef GECKO_MEDIA_CRATE
+#include "js/Value.h"
+#endif
 
 struct nsXPTCMiniVariant
 {
@@ -39,7 +42,9 @@ struct nsXPTCMiniVariant
         // Types below here are unknown to the assembly implementations, and
         // therefore _must_ be passed with indirect semantics. We put them in
         // the union here for type safety, so that we can avoid void* tricks.
+#ifndef GECKO_MEDIA_CRATE
         JS::Value j;
+#endif
     } val;
 };
 
