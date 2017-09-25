@@ -8,5 +8,4 @@
 #include "nsStringObsolete.cpp"
 #include "nsSubstring.cpp"
 #include "nsSubstringTuple.cpp"
-#include "nsUTF8UtilsSSE2.cpp"
 #include "precompiled_templates.cpp"
