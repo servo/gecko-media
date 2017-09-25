@@ -394,7 +394,6 @@ nsThread::ThreadFunc(void* aArg)
   char stackTop;
 #endif
 
-  printf("ThreadFunc start\n");
   ThreadInitData* initData = static_cast<ThreadInitData*>(aArg);
   nsThread* self = initData->thread;  // strong reference
 
@@ -462,6 +461,11 @@ nsThread::ThreadFunc(void* aArg)
   }
 
   mozilla::IOInterposer::UnregisterCurrentThread();
+#else
+  self->mShutdownNow = false;
+  while (!self->mShutdownNow) {
+    NS_ProcessPendingEvents(self);
+  }
 #endif
 
   // Inform the threadmanager that this thread is going away
@@ -469,7 +473,7 @@ nsThread::ThreadFunc(void* aArg)
 
 #ifndef GECKO_MEDIA_CRATE
   profiler_unregister_thread();
-
+#endif
   // Dispatch shutdown ACK
   NotNull<nsThreadShutdownContext*> context =
     WrapNotNull(self->mShutdownContext);
@@ -480,7 +484,6 @@ nsThread::ThreadFunc(void* aArg)
   } else {
     context->mJoiningThread->Dispatch(event, NS_DISPATCH_NORMAL);
   }
-#endif
 
   // Release any observer of the thread here.
   self->SetObserver(nullptr);
@@ -490,7 +493,6 @@ nsThread::ThreadFunc(void* aArg)
 #endif
 
   NS_RELEASE(self);
-  printf("ThreadFunc stop\n");
 }
 
 //-----------------------------------------------------------------------------
@@ -581,6 +583,9 @@ nsThread::nsThread(NotNull<SynchronizedEventQueue*> aQueue,
   , mIsMainThread(aMainThread)
   , mLastUnlabeledRunnable(TimeStamp::Now())
   , mCanInvokeJS(false)
+#ifdef GECKO_MEDIA_CRATE
+  , mShutdownNow(false)
+#endif
 {
 }
 
@@ -770,6 +775,10 @@ nsThread::ShutdownComplete(NotNull<nsThreadShutdownContext*> aContext)
 
   // Now, it should be safe to join without fear of dead-locking.
 
+#ifdef GECKO_MEDIA_CRATE
+  mShutdownNow = true;
+#endif
+
   PR_JoinThread(mThread);
   mThread = nullptr;
 
@@ -810,7 +819,11 @@ nsThread::Shutdown()
     return NS_OK;
   }
 
-  nsThreadShutdownContext* maybeContext = ShutdownInternal(/* aSync = */ true);
+  bool aSync = true;
+#ifdef GECKO_MEDIA_CRATE
+  aSync = false;
+#endif
+  nsThreadShutdownContext* maybeContext = ShutdownInternal(aSync);
   NS_ENSURE_TRUE(maybeContext, NS_ERROR_UNEXPECTED);
   NotNull<nsThreadShutdownContext*> context = WrapNotNull(maybeContext);
 

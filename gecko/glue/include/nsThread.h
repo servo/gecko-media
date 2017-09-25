@@ -182,6 +182,10 @@ protected:
 #ifndef RELEASE_OR_BETA
   mozilla::TimeStamp mNextIdleDeadline;
 #endif
+
+#ifdef GECKO_MEDIA_CRATE
+  bool mShutdownNow;
+#endif
 };
 
 #if defined(XP_UNIX) && !defined(ANDROID) && !defined(DEBUG) && HAVE_UALARM \

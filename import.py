@@ -359,7 +359,6 @@ header_files = [
     ("xpcom/threads/nsICancelableRunnable.h", "nsICancelableRunnable.h"),
     ("xpcom/threads/nsILabelableRunnable.h", "nsILabelableRunnable.h"),
     ("xpcom/threads/nsMemoryPressure.h", "nsMemoryPressure.h"),
-    ("xpcom/threads/nsThread.h", "nsThread.h"),
     ("xpcom/threads/nsThreadManager.h", "nsThreadManager.h"),
     ("xpcom/threads/nsThreadUtils.h", "nsThreadUtils.h"),
     ("xpcom/threads/nsThreadSyncDispatch.h", "nsThreadSyncDispatch.h"),
