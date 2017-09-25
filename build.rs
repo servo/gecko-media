@@ -314,6 +314,8 @@ fn compile_gecko_media() {
         "xpcom/ds/nsTArray.cpp",
         "xpcom/ds/nsTObserverArray.cpp",
         "xpcom/io/nsDirectoryService.cpp",
+        "xpcom/string/nsReadableUtilsSSE2.cpp",
+        "xpcom/string/nsUTF8UtilsSSE2.cpp",
         "xpcom/string/unified.cpp",
         "xpcom/threads/EventQueue.cpp",
         "xpcom/threads/nsILabelableRunnable.cpp",

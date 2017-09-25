@@ -477,6 +477,7 @@ src_files = [
     "xpcom/string/nsDependentSubstring.cpp",
     "xpcom/string/nsPromiseFlatString.cpp",
     "xpcom/string/nsReadableUtils.cpp",
+    "xpcom/string/nsReadableUtilsSSE2.cpp",
     "xpcom/string/nsString.cpp",
     "xpcom/string/nsStringComparator.cpp",
     "xpcom/string/nsStringObsolete.cpp",
@@ -670,7 +671,7 @@ def write_gecko_revision_file(src_dir):
 
 def write_unified_cpp_file(dir):
     cpps = sorted([f for f in listdir(dir)
-      if f.endswith(".cpp") and not os.path.basename(f).startswith("nsT")])
+      if f.endswith(".cpp") and not os.path.basename(f).startswith("nsT") and not "SSE" in f])
     with open(dir + os.path.sep + "unified.cpp", "w") as f:
       for cpp_file in cpps:
         f.write("#include \"{}\"\n".format(cpp_file))
