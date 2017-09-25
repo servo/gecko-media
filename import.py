@@ -255,7 +255,6 @@ header_files = [
     ("toolkit/components/telemetry/Telemetry.h", "mozilla/Telemetry.h"),
     ("toolkit/crashreporter/nsExceptionHandler.h", "nsExceptionHandler.h"),
     ("toolkit/crashreporter/ThreadAnnotation.h", "ThreadAnnotation.h"),
-    ("tools/profiler/public/GeckoProfiler.h", "GeckoProfiler.h"),
     ("xpcom/base/ClearOnShutdown.h", "mozilla/ClearOnShutdown.h"),
     ("xpcom/base/CycleCollectedJSContext.h", "mozilla/CycleCollectedJSContext.h"),
     ("xpcom/base/DeferredFinalize.h", "mozilla/DeferredFinalize.h"),

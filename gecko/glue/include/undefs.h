@@ -1,0 +1,2 @@
+
+#undef MOZ_GECKO_PROFILER

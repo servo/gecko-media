@@ -34,21 +34,19 @@ fn make_builder(cpp: bool) -> gcc::Build {
     #[cfg(target_os = "macos")]
     env::set_var(
         "CXXFLAGS",
-        "--include gecko/glue/include/mozilla-config-x86_64-apple-darwin.h",
+        "--include gecko/glue/include/mozilla-config-x86_64-apple-darwin.h --include gecko/glue/include/undefs.h",
     );
 
     #[cfg(target_os = "linux")]
     env::set_var(
         "CXXFLAGS",
-        "--include gecko/glue/include/mozilla-config-x86_64-linux.h",
+        "--include gecko/glue/include/mozilla-config-x86_64-linux.h --include gecko/glue/include/undefs.h",
     );
 
     b.flag("-fno-exceptions");
 
     b.define("MOZILLA_INTERNAL_API", "1");
-
     b.define("_PR_PTHREADS", "1");
-
     b.define("GECKO_MEDIA_CRATE", "1");
     b.define("RUST_BINDGEN", "1");
 
