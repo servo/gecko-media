@@ -1,2 +1,3 @@
 
 #undef MOZ_GECKO_PROFILER
+#undef MOZ_MEMORY

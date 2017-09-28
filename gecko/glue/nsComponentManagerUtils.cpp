@@ -43,20 +43,6 @@ CallGetService(const char* aContractID, const nsIID& aIID, void** aResult)
   return status;
 }
 
-#elif defined(GECKO_MEDIA_CRATE)
-
-nsresult
-CallGetService(const nsCID& aCID, const nsIID& aIID, void** aResult)
-{
-  return NS_ERROR_NOT_IMPLEMENTED;
-}
-
-nsresult
-CallGetService(const char* aContractID, const nsIID& aIID, void** aResult)
-{
-  return NS_ERROR_NOT_IMPLEMENTED;
-}
-
 #else
 
 #include "nsComponentManager.h"
@@ -133,34 +119,6 @@ CallGetClassObject(const char* aContractID, const nsIID& aIID, void** aResult)
     status = compMgr->GetClassObjectByContractID(aContractID, aIID,
                                                  aResult);
   return status;
-}
-
-#elif defined(GECKO_MEDIA_CRATE)
-
-nsresult
-CallCreateInstance(const nsCID& aCID, nsISupports* aDelegate,
-                   const nsIID& aIID, void** aResult)
-{
-  return NS_ERROR_NOT_IMPLEMENTED;
-}
-
-nsresult
-CallCreateInstance(const char* aContractID, nsISupports* aDelegate,
-                   const nsIID& aIID, void** aResult)
-{
-  return NS_ERROR_NOT_IMPLEMENTED;
-}
-
-nsresult
-CallGetClassObject(const nsCID& aCID, const nsIID& aIID, void** aResult)
-{
-  return NS_ERROR_NOT_IMPLEMENTED;
-}
-
-nsresult
-CallGetClassObject(const char* aContractID, const nsIID& aIID, void** aResult)
-{
-  return NS_ERROR_NOT_IMPLEMENTED;
 }
 
 #else

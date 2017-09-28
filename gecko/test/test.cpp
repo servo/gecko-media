@@ -8,6 +8,8 @@
 #include "mozilla/ArrayUtils.h"
 #include "mozilla/Logging.h"
 #include "mozilla/Preferences.h"
+#include "mozilla/SharedThreadPool.h"
+#include "mozilla/TaskQueue.h"
 #include "mozilla/TimeStamp.h"
 #include "nsClassHashtable.h"
 #include "nsDataHashtable.h"
@@ -17,6 +19,7 @@
 #include "nsTArray.h"
 #include "nsThreadManager.h"
 #include "nsThreadUtils.h"
+#include "VideoUtils.h"
 
 #define SIMPLE_STRING "I'm a simple ASCII string"
 #define UTF8_STRING                                                            \
@@ -152,6 +155,56 @@ void TestThreads() {
   assert(x == 1);
 }
 
+template<typename FunctionType>
+void
+RunOnTaskQueue(TaskQueue* aQueue, FunctionType aFun)
+{
+  nsCOMPtr<nsIRunnable> r = NS_NewRunnableFunction("RunOnTaskQueue", aFun);
+  aQueue->Dispatch(r.forget());
+}
+
+void
+TestMozPromise()
+{
+  class MOZ_STACK_CLASS AutoTaskQueue
+  {
+  public:
+    AutoTaskQueue()
+      : mTaskQueue(new TaskQueue(GetMediaThreadPool(MediaThreadType::PLAYBACK)))
+      {}
+
+    ~AutoTaskQueue()
+      {
+        mTaskQueue->AwaitShutdownAndIdle();
+      }
+
+    TaskQueue* Queue() { return mTaskQueue; }
+  private:
+    RefPtr<TaskQueue> mTaskQueue;
+  };
+
+  typedef MozPromise<int, double, false> TestPromise;
+  typedef TestPromise::ResolveOrRejectValue RRValue;
+#define DO_FAIL []() { assert(true == false); return TestPromise::CreateAndReject(0, __func__); }
+
+#define EXPECT_EQ(a, b) assert(a == b)
+
+  AutoTaskQueue atq;
+  RefPtr<TaskQueue> queue = atq.Queue();
+  RunOnTaskQueue(queue, [queue] () -> void {
+      TestPromise::CreateAndResolve(42, __func__)->Then(queue, __func__,
+                                                        [queue] (int aResolveValue) -> void { EXPECT_EQ(aResolveValue, 42); queue->BeginShutdown(); },
+                                                        DO_FAIL);
+    });
+
+  RunOnTaskQueue(queue, [queue] () -> void {
+      TestPromise::CreateAndReject(42.0, __func__)->Then(queue, __func__,
+                                                         DO_FAIL,
+                                                         [queue] (int aRejectValue) -> void { EXPECT_EQ(aRejectValue, 42.0); queue->BeginShutdown(); });
+    });
+
+}
+
 void
 TestHashTables()
 {
@@ -227,6 +280,8 @@ TestGecko()
   mozilla::LogModule::Init();
   NS_SetMainThread();
   nsThreadManager::get().Init();
+  NS_InitMinimalXPCOM();
+  mozilla::SharedThreadPool::InitStatics();
 
   mozilla::TestPreferences();
   mozilla::TestString();
@@ -235,4 +290,7 @@ TestGecko()
   mozilla::TestHashTables();
   mozilla::TestTimeStamp();
   mozilla::TestThreads();
+  mozilla::TestMozPromise();
+
+  NS_ShutdownXPCOM(nullptr);
 }
