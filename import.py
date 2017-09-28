@@ -494,6 +494,7 @@ src_files = [
     "xpcom/string/nsUTF8UtilsSSE2.cpp",
     "xpcom/string/precompiled_templates.cpp",
     "xpcom/threads/EventQueue.cpp",
+    "xpcom/threads/nsILabelableRunnable.cpp",
     "xpcom/threads/nsThreadManager.cpp",
     "xpcom/threads/nsThreadPool.cpp",
     "xpcom/threads/nsThreadUtils.cpp",
