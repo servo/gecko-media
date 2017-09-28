@@ -316,6 +316,7 @@ fn compile_gecko_media() {
         "xpcom/io/nsDirectoryService.cpp",
         "xpcom/string/unified.cpp",
         "xpcom/threads/EventQueue.cpp",
+        "xpcom/threads/nsILabelableRunnable.cpp",
         "xpcom/threads/nsThreadManager.cpp",
         "xpcom/threads/nsThreadPool.cpp",
         "xpcom/threads/nsThreadUtils.cpp",

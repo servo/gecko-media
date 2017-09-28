@@ -151,12 +151,12 @@ public:
    * returns the null-terminated string
    */
 
-  template <typename U> struct raw_type { typedef const U* type; };
+  template <typename U, typename Dummy> struct raw_type { typedef const U* type; };
 #if defined(MOZ_USE_CHAR16_WRAPPER)
-  template <> struct raw_type<char16_t> { typedef char16ptr_t type; };
+  template <typename Dummy> struct raw_type<char16_t, Dummy> { typedef char16ptr_t type; };
 #endif
 
-  MOZ_NO_DANGLING_ON_TEMPORARIES typename raw_type<T>::type get() const
+  MOZ_NO_DANGLING_ON_TEMPORARIES typename raw_type<T, int>::type get() const
   {
     return this->mData;
   }
@@ -501,8 +501,8 @@ protected:
   {
   }
 
-  friend const nsTString<char>& NullCString();
-  friend const nsTString<char16_t>& NullString();
+  friend const nsTString<char>& VoidCString();
+  friend const nsTString<char16_t>& VoidString();
 
   // Used by Null[C]String.
   explicit nsTString(DataFlags aDataFlags)

@@ -234,12 +234,7 @@ static const BoolPref sCommonBoolPrefs[] = {
 #endif // #ifdef MOZ_RAW
   { "media.resume-bkgnd-video-on-tabhover", true },
   { "media.seekToNextFrame.enabled", true },
-#ifdef RELEASE_OR_BETA
-  { "media.suspend-bkgnd-video.enabled", false },
-#endif // #ifdef RELEASE_OR_BETA
-#ifdef RELEASE_OR_BETA
   { "media.suspend-bkgnd-video.enabled", true },
-#endif // #ifdef RELEASE_OR_BETA
   { "media.throttle-regardless-of-download-rate", false },
   { "media.track.enabled", false },
   { "media.use-blank-decoder", false },
@@ -259,12 +254,6 @@ static const BoolPref sCommonBoolPrefs[] = {
   { "media.webvtt.pseudo.enabled", true },
   { "media.webvtt.regions.enabled", false },
 #ifdef MOZ_WMF
-  { "media.windows-media-foundation.allow-d3d11-dxva", true },
-#endif // #ifdef MOZ_WMF
-#ifdef MOZ_WMF
-  { "media.windows-media-foundation.use-nv12-format", true },
-#endif // #ifdef MOZ_WMF
-#ifdef MOZ_WMF
   { "media.wmf.allow-unsupported-resolutions", false },
 #endif // #ifdef MOZ_WMF
 #ifdef MOZ_WMF
@@ -274,13 +263,28 @@ static const BoolPref sCommonBoolPrefs[] = {
   { "media.wmf.deblacklisting-for-telemetry-in-gpu-process", true },
 #endif // #ifdef MOZ_WMF
 #ifdef MOZ_WMF
+  { "media.wmf.dxva.d3d11.enabled", true },
+#endif // #ifdef MOZ_WMF
+#ifdef MOZ_WMF
+  { "media.wmf.dxva.enabled", true },
+#endif // #ifdef MOZ_WMF
+#ifdef MOZ_WMF
   { "media.wmf.enabled", true },
 #endif // #ifdef MOZ_WMF
 #ifdef MOZ_WMF
   { "media.wmf.low-latency.enabled", false },
 #endif // #ifdef MOZ_WMF
 #ifdef MOZ_WMF
+  { "media.wmf.play-stand-alone", true },
+#endif // #ifdef MOZ_WMF
+#ifdef MOZ_WMF
   { "media.wmf.skip-blacklist", false },
+#endif // #ifdef MOZ_WMF
+#ifdef MOZ_WMF
+  { "media.wmf.use-nv12-format", true },
+#endif // #ifdef MOZ_WMF
+#ifdef MOZ_WMF
+  { "media.wmf.use-sync-texture", true },
 #endif // #ifdef MOZ_WMF
 #ifdef MOZ_WMF
   { "media.wmf.vp9.enabled", true },
@@ -437,6 +441,9 @@ static const IntPref sCommonIntPrefs[] = {
 #endif // #ifdef MOZ_WEBRTC
 #ifdef MOZ_WMF
   { "media.wmf.decoder.thread-count", -1 },
+#endif // #ifdef MOZ_WMF
+#ifdef MOZ_WMF
+  { "media.wmf.dxva.max-videos", 8 },
 #endif // #ifdef MOZ_WMF
 };
 
