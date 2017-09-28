@@ -764,6 +764,10 @@ nsThread::ShutdownInternal(bool aSync)
 void
 nsThread::ShutdownComplete(NotNull<nsThreadShutdownContext*> aContext)
 {
+#ifdef GECKO_MEDIA_CRATE
+  if (mShutdownNow)
+    return;
+#endif
   MOZ_ASSERT(mThread);
   MOZ_ASSERT(aContext->mTerminatingThread == this);
 
