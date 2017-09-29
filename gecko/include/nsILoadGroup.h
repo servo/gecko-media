@@ -59,7 +59,7 @@ class NS_NO_VTABLE nsILoadGroup : public nsIRequest {
   NS_IMETHOD GetNotificationCallbacks(nsIInterfaceRequestor * *aNotificationCallbacks) = 0;
   NS_IMETHOD SetNotificationCallbacks(nsIInterfaceRequestor *aNotificationCallbacks) = 0;
 
-  /* [noscript] readonly attribute unsigned long long requestContextID; */
+  /* readonly attribute unsigned long long requestContextID; */
   NS_IMETHOD GetRequestContextID(uint64_t *aRequestContextID) = 0;
 
   /* attribute nsLoadFlags defaultLoadFlags; */

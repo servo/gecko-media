@@ -9,9 +9,9 @@
 
 #include "prmon.h"
 
-#ifdef MOZ_GECKO_PROFILER
+#ifdef MOZILLA_INTERNAL_API
 #include "GeckoProfiler.h"
-#endif //MOZ_GECKO_PROFILER
+#endif //MOZILLA_INTERNAL_API
 
 #include "mozilla/BlockingResourceBase.h"
 
@@ -85,9 +85,9 @@ public:
    **/
   nsresult Wait(PRIntervalTime aInterval = PR_INTERVAL_NO_TIMEOUT)
   {
-#ifdef MOZ_GECKO_PROFILER
+#ifdef MOZILLA_INTERNAL_API
     AutoProfilerThreadSleep sleep;
-#endif //MOZ_GECKO_PROFILER
+#endif //MOZILLA_INTERNAL_API
     return PR_Wait(mReentrantMonitor, aInterval) == PR_SUCCESS ?
       NS_OK : NS_ERROR_FAILURE;
   }
