@@ -98,7 +98,6 @@
 #define MOZ_FFMPEG 1
 #define MOZ_FFVPX 1
 #define MOZ_FMP4 1
-#define MOZ_GECKO_PROFILER 1
 #define MOZ_GMP_SANDBOX 1
 #define MOZ_INSTRUMENT_EVENT_LOOP 1
 #define MOZ_LIBAV_FFT 1

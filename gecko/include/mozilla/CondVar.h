@@ -11,9 +11,9 @@
 #include "mozilla/PlatformConditionVariable.h"
 #include "mozilla/Mutex.h"
 
-#ifdef MOZ_GECKO_PROFILER
+#ifdef MOZILLA_INTERNAL_API
 #include "GeckoProfiler.h"
-#endif //MOZ_GECKO_PROFILER
+#endif //MOZILLA_INTERNAL_API
 
 namespace mozilla {
 
@@ -61,9 +61,9 @@ public:
   nsresult Wait(PRIntervalTime aInterval = PR_INTERVAL_NO_TIMEOUT)
   {
 
-#ifdef MOZ_GECKO_PROFILER
+#ifdef MOZILLA_INTERNAL_API
     AutoProfilerThreadSleep sleep;
-#endif //MOZ_GECKO_PROFILER
+#endif //MOZILLA_INTERNAL_API
     if (aInterval == PR_INTERVAL_NO_TIMEOUT) {
       mImpl.wait(*mLock);
     } else {

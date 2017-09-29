@@ -10,6 +10,7 @@
 #include "nsThreadManager.h"
 #include "nsThreadUtils.h"
 #include "pratom.h"
+#include "GeckoProfiler.h"
 #include "mozilla/Atomics.h"
 #include "mozilla/IntegerPrintfMacros.h"
 #include "mozilla/Logging.h"
@@ -18,10 +19,6 @@
 #ifdef MOZ_TASK_TRACER
 #include "GeckoTaskTracerImpl.h"
 using namespace mozilla::tasktracer;
-#endif
-
-#ifdef MOZ_GECKO_PROFILER
-#include "GeckoProfiler.h"
 #endif
 
 #ifdef XP_WIN
@@ -486,9 +483,7 @@ nsTimerImpl::Fire(int32_t aGeneration)
     kungFuDeathGrip = mITimer;
   }
 
-#ifdef MOZ_GECKO_PROFILER
   AUTO_PROFILER_LABEL("nsTimerImpl::Fire", OTHER);
-#endif
 
   TimeStamp now = TimeStamp::Now();
   if (MOZ_LOG_TEST(GetTimerLog(), LogLevel::Debug)) {
