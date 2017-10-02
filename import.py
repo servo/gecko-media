@@ -182,7 +182,6 @@ header_files = [
     ('media/libsoundtouch/src/SoundTouch.h', 'mozilla/media/libsoundtouch/src/SoundTouch.h'),
     ('media/libsoundtouch/src/soundtouch_config.h', 'mozilla/media/libsoundtouch/src/soundtouch_config.h'),
     ('media/libsoundtouch/src/soundtouch_perms.h', 'mozilla/media/libsoundtouch/src/soundtouch_perms.h'),
-    ('media/libsoundtouch/src/SoundTouchFactory.h', 'mozilla/media/libsoundtouch/src/SoundTouchFactory.h'),
     ('media/libsoundtouch/src/STTypes.h', 'mozilla/media/libsoundtouch/src/STTypes.h'),
     ('media/libsoundtouch/src/TDStretch.h', 'mozilla/media/libsoundtouch/src/TDStretch.h'),
     ('media/libspeex_resampler/src/arch.h', 'mozilla/media/libspeex_resampler/src/arch.h'),
@@ -586,16 +585,8 @@ objdir_files = [
     "soundtouch/FIFOSamplePipe.h",
     "soundtouch/SoundTouch.h",
     "soundtouch/soundtouch_config.h",
-    "soundtouch/SoundTouchFactory.h",
     "soundtouch/STTypes.h",
     "speex/speex_resampler.h",
-]
-
-objdir_config_files = [
-    "system_wrappers/prcpucfg.h",
-    "system_wrappers/prthread.h",
-    "system_wrappers/prwin16.h",
-    "system_wrappers/soundtouch/SoundTouchFactory.h",
 ]
 
 def get_obj_dir_path(src_dir):
@@ -629,11 +620,6 @@ def verify_files_present(src_dir, dst_dir):
         if not(Path(obj_include_dir + src).is_file()):
             print("ERROR: Object dir file '{}' is not a valid file.".format(src))
             had_error = True;
-    obj_config_dir = get_obj_dir_config_path(src_dir)
-    for src in objdir_config_files:
-        if not(Path(obj_config_dir + src).is_file()):
-            print("ERROR: Object dir file '{}' is not a valid file.".format(src))
-            had_error = True;
     return not int(had_error)
 
 def ensure_dir_exists(dst_path):
@@ -652,10 +638,6 @@ def copy_files(src_dir, dst_dir):
     for src in objdir_files:
         ensure_dir_exists(dst_dir + "include/" + src)
         copyfile(obj_include_dir + src, dst_dir + "include/" + src)
-    obj_config_dir = get_obj_dir_config_path(src_dir)
-    for src in objdir_config_files:
-        ensure_dir_exists(dst_dir + "include/" + src)
-        copyfile(obj_config_dir + src, dst_dir + "include/" + src)
 
 def remove_previous_copy(src_dir, dst_dir):
     rmtree(dst_dir + "include/")
