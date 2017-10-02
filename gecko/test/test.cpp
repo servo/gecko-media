@@ -5,6 +5,7 @@
 #include <unistd.h>
 
 #include "AudioStream.h"
+#include "gecko_media_prefs.h"
 #include "mozilla/ArrayUtils.h"
 #include "mozilla/Logging.h"
 #include "mozilla/Preferences.h"
@@ -76,24 +77,103 @@ PrefChanged(const char* aPref, void* aClosure)
   data->mCount += 1;
 }
 
+#include "../glue/prefs_common.cpp"
+#if defined(MOZ_WIDGET_ANDROID)
+#include "../glue/prefs_android.cpp"
+#define PLATFORM_STRING_PREFS sAndroidStringPrefs
+#define PLATFORM_BOOL_PREFS sAndroidBoolPrefs
+#define PLATFORM_INT_PREFS sAndroidIntPrefs
+#else
+#include "../glue/prefs_desktop.cpp"
+#define PLATFORM_STRING_PREFS sDesktopStringPrefs
+#define PLATFORM_BOOL_PREFS sDesktopBoolPrefs
+#define PLATFORM_INT_PREFS sDesktopIntPrefs
+#endif
+
+template<class PrefType>
+static nsTArray<PrefType>
+MergePrefList(const PrefType* aCommonPrefs,
+              size_t aCommonPrefsLen,
+              const PrefType* aPlatformPrefs,
+              size_t aPlatformPrefsLen)
+{
+  nsTArray<PrefType> rv;
+  const PrefType* commonEnd = aCommonPrefs + aCommonPrefsLen;
+  const PrefType* platformEnd = aPlatformPrefs + aPlatformPrefsLen;
+  while (aCommonPrefs < commonEnd && aPlatformPrefs < platformEnd) {
+    int cmp = strcmp(aCommonPrefs->mName, aPlatformPrefs->mName);
+    if (cmp < 0) {
+      rv.AppendElement(*aCommonPrefs);
+      aCommonPrefs++;
+    } else if (cmp > 0) {
+      rv.AppendElement(*aPlatformPrefs);
+      aPlatformPrefs++;
+    } else {
+      // Platform overrides.
+      rv.AppendElement(*aPlatformPrefs);
+      aPlatformPrefs++;
+      aCommonPrefs++;
+    }
+  }
+  while (aCommonPrefs < commonEnd) {
+    rv.AppendElement(*aCommonPrefs);
+    aCommonPrefs++;
+  }
+  while (aPlatformPrefs < platformEnd) {
+    rv.AppendElement(*aPlatformPrefs);
+    aPlatformPrefs++;
+  }
+  return rv;
+}
+
 void
 TestPreferences()
 {
-  assert(Preferences::GetBool("expect.default", false) == false);
-  assert(Preferences::GetBool("media.autoplay.enabled", true) == true);
-  assert(Preferences::GetInt("media.dormant-on-pause-timeout-ms", 0) == 5000);
-  nsresult rv;
+  // Check all string prefs work.
+  nsTArray<StringPref> stringPrefs =
+    MergePrefList(sCommonStringPrefs,
+                  sizeof(sCommonStringPrefs) / sizeof(StringPref),
+                  PLATFORM_STRING_PREFS,
+                  sizeof(PLATFORM_STRING_PREFS) / sizeof(StringPref));
+  for (const StringPref& pref : stringPrefs) {
+    nsAutoCString utf8;
+    nsresult rv = Preferences::GetCString(pref.mName, utf8);
+    assert(NS_SUCCEEDED(rv));
+    assert(utf8.EqualsASCII(pref.mValue));
 
-  nsAutoCString utf8;
-  rv = Preferences::GetCString("media.gmp-manager.certs.1.commonName", utf8);
-  assert(NS_SUCCEEDED(rv) && utf8.EqualsLiteral("aus5.mozilla.org"));
+    nsAutoString utf16;
+    rv = Preferences::GetString(pref.mName, utf16);
+    assert(NS_SUCCEEDED(rv));
+    assert(utf8.EqualsASCII(pref.mValue));
 
-  nsAutoString utf16;
-  rv = Preferences::GetString("media.gmp-manager.certs.1.issuerName", utf16);
-  assert(NS_SUCCEEDED(rv));
-  // TODO: This fails.
-  // assert(utf16.EqualsASCII("CN=thawte SSL CA - G2,O=\"thawte, Inc.\",C=US"));
+    assert(NS_ConvertUTF8toUTF16(utf8) == utf16);
+  }
 
+  // Check all bool prefs work.
+  nsTArray<BoolPref> boolPrefs =
+    MergePrefList(sCommonBoolPrefs,
+                  sizeof(sCommonBoolPrefs) / sizeof(BoolPref),
+                  PLATFORM_BOOL_PREFS,
+                  sizeof(PLATFORM_BOOL_PREFS) / sizeof(IntPref));
+  for (const BoolPref& pref : boolPrefs) {
+    assert(Preferences::GetBool(pref.mName) == pref.mValue);
+  }
+
+  // Check all int prefs work.
+  nsTArray<IntPref> intPrefs =
+    MergePrefList(sCommonIntPrefs,
+                  sizeof(sCommonIntPrefs) / sizeof(IntPref),
+                  PLATFORM_INT_PREFS,
+                  sizeof(PLATFORM_INT_PREFS) / sizeof(IntPref));
+  for (const IntPref& pref : intPrefs) {
+    assert(Preferences::GetInt(pref.mName) == pref.mValue);
+  }
+
+  // Check unknown pref provides the default.
+  assert(Preferences::GetBool("unknown.pref", false) == false);
+  assert(Preferences::GetBool("unknown.pref", true) == true);
+
+  // Check pref change callback calls us back immediately.
   const char* PREF_VOLUME_SCALE = "media.volume_scale";
   PrefCallbackTestData data;
   data.mName = PREF_VOLUME_SCALE;
