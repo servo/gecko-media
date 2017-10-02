@@ -21,6 +21,7 @@ static const BoolPref sCommonBoolPrefs[] = {
 #endif // #if defined(XP_MACOSX)
 #if defined(MOZ_FFMPEG)
 #if defined(XP_MACOSX)
+#else
   { "media.ffmpeg.enabled", true },
 #endif // #if defined(MOZ_FFMPEG)
 #endif // #if defined(XP_MACOSX)
@@ -41,6 +42,7 @@ static const BoolPref sCommonBoolPrefs[] = {
 #endif // #if defined(MOZ_WEBRTC_HARDWARE_AEC_NS)
 #ifdef MOZ_WEBRTC
 #if defined(MOZ_WEBRTC_HARDWARE_AEC_NS)
+#else
   { "media.getusermedia.aec_enabled", true },
 #endif // #ifdef MOZ_WEBRTC
 #endif // #if defined(MOZ_WEBRTC_HARDWARE_AEC_NS)
@@ -61,6 +63,7 @@ static const BoolPref sCommonBoolPrefs[] = {
 #endif // #if defined(MOZ_WEBRTC_HARDWARE_AEC_NS)
 #ifdef MOZ_WEBRTC
 #if defined(MOZ_WEBRTC_HARDWARE_AEC_NS)
+#else
   { "media.getusermedia.noise_enabled", true },
 #endif // #ifdef MOZ_WEBRTC
 #endif // #if defined(MOZ_WEBRTC_HARDWARE_AEC_NS)
@@ -88,6 +91,7 @@ static const BoolPref sCommonBoolPrefs[] = {
   { "media.mediasource.webm.enabled", false },
 #endif // #if defined(XP_WIN) || defined(XP_MACOSX) || defined(MOZ_WIDGET_ANDROID)
 #if defined(XP_WIN) || defined(XP_MACOSX) || defined(MOZ_WIDGET_ANDROID)
+#else
   { "media.mediasource.webm.enabled", true },
 #endif // #if defined(XP_WIN) || defined(XP_MACOSX) || defined(MOZ_WIDGET_ANDROID)
 #ifdef MOZ_APPLEMEDIA
@@ -120,6 +124,7 @@ static const BoolPref sCommonBoolPrefs[] = {
 #endif // #if defined(XP_MACOSX)
 #ifdef MOZ_WEBRTC
 #if defined(XP_MACOSX)
+#else
   { "media.navigator.audio.full_duplex", false },
 #endif // #ifdef MOZ_WEBRTC
 #endif // #if defined(XP_MACOSX)
@@ -335,6 +340,7 @@ static const IntPref sCommonIntPrefs[] = {
 #endif // #if defined(XP_MACOSX)
 #ifdef MOZ_WEBRTC
 #if defined(XP_MACOSX)
+#else
   { "media.getusermedia.playout_delay", 50 },
 #endif // #ifdef MOZ_WEBRTC
 #endif // #if defined(XP_MACOSX)
@@ -402,6 +408,7 @@ static const IntPref sCommonIntPrefs[] = {
 #endif // #if defined(XP_MACOSX)
 #ifdef MOZ_WEBRTC
 #if defined(XP_MACOSX)
+#else
   { "media.peerconnection.capture_delay", 50 },
 #endif // #ifdef MOZ_WEBRTC
 #endif // #if defined(XP_MACOSX)
@@ -456,6 +463,7 @@ static const StringPref sCommonStringPrefs[] = {
   { "media.decoder-doctor.notifications-allowed", "MediaWMFNeeded,MediaWidevineNoWMF,MediaCannotInitializePulseAudio,MediaCannotPlayNoDecoders,MediaUnsupportedLibavcodec,MediaDecodeError" },
 #endif // #ifdef NIGHTLY_BUILD
 #ifdef NIGHTLY_BUILD
+#else
   { "media.decoder-doctor.notifications-allowed", "MediaWMFNeeded,MediaWidevineNoWMF,MediaCannotInitializePulseAudio,MediaCannotPlayNoDecoders,MediaUnsupportedLibavcodec" },
 #endif // #ifdef NIGHTLY_BUILD
   { "media.default_volume", "1.0" },
@@ -463,6 +471,7 @@ static const StringPref sCommonStringPrefs[] = {
   { "media.getusermedia.screensharing.allowed_domains", "webex.com,*.webex.com,ciscospark.com,*.ciscospark.com,projectsquared.com,*.projectsquared.com,*.room.co,room.co,beta.talky.io,talky.io,*.clearslide.com,appear.in,*.appear.in,tokbox.com,*.tokbox.com,*.sso.francetelecom.fr,*.si.francetelecom.fr,*.sso.infra.ftgroup,*.multimedia-conference.orange-business.com,*.espacecollaboration.orange-business.com,free.gotomeeting.com,g2m.me,*.g2m.me,*.mypurecloud.com,*.mypurecloud.com.au,spreed.me,*.spreed.me,*.spreed.com,air.mozilla.org,*.circuit.com,*.yourcircuit.com,circuit.siemens.com,yourcircuit.siemens.com,circuitsandbox.net,*.unify.com,tandi.circuitsandbox.net,*.ericsson.net,*.cct.ericsson.net,*.opentok.com,*.conf.meetecho.com,meet.jit.si,*.meet.jit.si,web.stage.speakeasyapp.net,web.speakeasyapp.net,*.hipchat.me,*.beta-wspbx.com,*.wspbx.com,*.unifiedcloudit.com,*.smartboxuc.com,*.smartbox-uc.com,*.panterranetworks.com,pexipdemo.com,*.pexipdemo.com,pex.me,*.pex.me,*.rd.pexip.com,1click.io,*.1click.io,*.fuze.com,*.fuzemeeting.com,*.thinkingphones.com,gotomeeting.com,*.gotomeeting.com,gotowebinar.com,*.gotowebinar.com,gototraining.com,*.gototraining.com,citrix.com,*.citrix.com,expertcity.com,*.expertcity.com,citrixonline.com,*.citrixonline.com,g2m.me,*.g2m.me,gotomeet.me,*.gotomeet.me,gotomeet.at,*.gotomeet.at,miriadaxdes.miriadax.net,certificacion.miriadax.net,miriadax.net,*.wire.com,sylaps.com,*.sylaps.com,bluejeans.com,*.bluejeans.com,*.a.bluejeans.com,*.bbcollab.com" },
 #endif // #ifdef RELEASE_OR_BETA
 #ifdef RELEASE_OR_BETA
+#else
   { "media.getusermedia.screensharing.allowed_domains", "mozilla.github.io,webex.com,*.webex.com,ciscospark.com,*.ciscospark.com,projectsquared.com,*.projectsquared.com,*.room.co,room.co,beta.talky.io,talky.io,*.clearslide.com,appear.in,*.appear.in,tokbox.com,*.tokbox.com,*.sso.francetelecom.fr,*.si.francetelecom.fr,*.sso.infra.ftgroup,*.multimedia-conference.orange-business.com,*.espacecollaboration.orange-business.com,free.gotomeeting.com,g2m.me,*.g2m.me,*.mypurecloud.com,*.mypurecloud.com.au,spreed.me,*.spreed.me,*.spreed.com,air.mozilla.org,*.circuit.com,*.yourcircuit.com,circuit.siemens.com,yourcircuit.siemens.com,circuitsandbox.net,*.unify.com,tandi.circuitsandbox.net,*.ericsson.net,*.cct.ericsson.net,*.opentok.com,*.conf.meetecho.com,meet.jit.si,*.meet.jit.si,web.stage.speakeasyapp.net,web.speakeasyapp.net,*.hipchat.me,*.beta-wspbx.com,*.wspbx.com,*.unifiedcloudit.com,*.smartboxuc.com,*.smartbox-uc.com,*.panterranetworks.com,pexipdemo.com,*.pexipdemo.com,pex.me,*.pex.me,*.rd.pexip.com,1click.io,*.1click.io,*.fuze.com,*.fuzemeeting.com,*.thinkingphones.com,gotomeeting.com,*.gotomeeting.com,gotowebinar.com,*.gotowebinar.com,gototraining.com,*.gototraining.com,citrix.com,*.citrix.com,expertcity.com,*.expertcity.com,citrixonline.com,*.citrixonline.com,g2m.me,*.g2m.me,gotomeet.me,*.gotomeet.me,gotomeet.at,*.gotomeet.at,miriadaxdes.miriadax.net,certificacion.miriadax.net,miriadax.net,*.wire.com,sylaps.com,*.sylaps.com,bluejeans.com,*.bluejeans.com,*.a.bluejeans.com,*.bbcollab.com" },
 #endif // #ifdef RELEASE_OR_BETA
   { "media.gmp-manager.certs.1.commonName", "aus5.mozilla.org" },

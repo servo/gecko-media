@@ -3,12 +3,14 @@ static const BoolPref sDesktopBoolPrefs[] = {
   { "media.eme.enabled", false },
 #endif // #ifdef XP_LINUX
 #ifdef XP_LINUX
+#else
   { "media.eme.enabled", true },
 #endif // #ifdef XP_LINUX
 #ifdef NIGHTLY_BUILD
   { "media.eme.vp9-in-mp4.enabled", true },
 #endif // #ifdef NIGHTLY_BUILD
 #ifdef NIGHTLY_BUILD
+#else
   { "media.eme.vp9-in-mp4.enabled", false },
 #endif // #ifdef NIGHTLY_BUILD
   { "media.gmp-provider.enabled", true },

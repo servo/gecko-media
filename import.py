@@ -715,7 +715,11 @@ def extract_preferences(lines):
         elif line.startswith("pref"):
             (pref, value, kind) = extract_pref_from_line(line)
             prefs[kind] += [((pref, value), guards[:])]
+        elif line.startswith("#else"):
+            guards.append(line)
         elif line.startswith("#endif"):
+            if guards[-1].startswith("#else"):
+                guards.pop()
             guards.pop()
         i += 1
     # Sort the lists based on pref name, so we can binary search it in
@@ -732,7 +736,8 @@ def write_pref_group(dst, prefs, prefix, pref_type):
             dst.write(guard)
         dst.write("  { " + name + ", " + value + " },\n")
         for guard in guards:
-            dst.write("#endif // " + guard)
+            if not guard.startswith("#else"):
+                dst.write("#endif // " + guard)
     dst.write("};\n\n")
 
 def copy_media_prefs(src_pref_file, dst_pref_file, prefix):
