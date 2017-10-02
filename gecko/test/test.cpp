@@ -5,6 +5,7 @@
 #include <unistd.h>
 
 #include "AudioStream.h"
+#include "VideoUtils.h"
 #include "gecko_media_prefs.h"
 #include "mozilla/ArrayUtils.h"
 #include "mozilla/Logging.h"
@@ -20,7 +21,6 @@
 #include "nsTArray.h"
 #include "nsThreadManager.h"
 #include "nsThreadUtils.h"
-#include "VideoUtils.h"
 
 #define SIMPLE_STRING "I'm a simple ASCII string"
 #define UTF8_STRING                                                            \
@@ -221,13 +221,14 @@ TestAudioStream()
   audioStream->Shutdown();
 }
 
-void TestThreads() {
+void
+TestThreads()
+{
   RefPtr<nsIThread> thread;
   nsresult rv = NS_NewThread(getter_AddRefs(thread));
   int x = 0;
-  RefPtr<Runnable> task(NS_NewRunnableFunction("TestFunction", [&]() {
-    x = 1;
-  }));
+  RefPtr<Runnable> task(
+    NS_NewRunnableFunction("TestFunction", [&]() { x = 1; }));
   assert(NS_SUCCEEDED(rv));
   assert(thread != nullptr);
   thread->Dispatch(task.forget());
@@ -251,38 +252,47 @@ TestMozPromise()
   public:
     AutoTaskQueue()
       : mTaskQueue(new TaskQueue(GetMediaThreadPool(MediaThreadType::PLAYBACK)))
-      {}
+    {
+    }
 
-    ~AutoTaskQueue()
-      {
-        mTaskQueue->AwaitShutdownAndIdle();
-      }
+    ~AutoTaskQueue() { mTaskQueue->AwaitShutdownAndIdle(); }
 
     TaskQueue* Queue() { return mTaskQueue; }
+
   private:
     RefPtr<TaskQueue> mTaskQueue;
   };
 
   typedef MozPromise<int, double, false> TestPromise;
   typedef TestPromise::ResolveOrRejectValue RRValue;
-#define DO_FAIL []() { assert(true == false); return TestPromise::CreateAndReject(0, __func__); }
+#define DO_FAIL                                                                \
+  []() {                                                                       \
+    assert(true == false);                                                     \
+    return TestPromise::CreateAndReject(0, __func__);                          \
+  }
 
 #define EXPECT_EQ(a, b) assert(a == b)
 
   AutoTaskQueue atq;
   RefPtr<TaskQueue> queue = atq.Queue();
-  RunOnTaskQueue(queue, [queue] () -> void {
-      TestPromise::CreateAndResolve(42, __func__)->Then(queue, __func__,
-                                                        [queue] (int aResolveValue) -> void { EXPECT_EQ(aResolveValue, 42); queue->BeginShutdown(); },
-                                                        DO_FAIL);
-    });
+  RunOnTaskQueue(queue, [queue]() -> void {
+    TestPromise::CreateAndResolve(42, __func__)
+      ->Then(queue,
+             __func__,
+             [queue](int aResolveValue) -> void {
+               EXPECT_EQ(aResolveValue, 42);
+               queue->BeginShutdown();
+             },
+             DO_FAIL);
+  });
 
-  RunOnTaskQueue(queue, [queue] () -> void {
-      TestPromise::CreateAndReject(42.0, __func__)->Then(queue, __func__,
-                                                         DO_FAIL,
-                                                         [queue] (int aRejectValue) -> void { EXPECT_EQ(aRejectValue, 42.0); queue->BeginShutdown(); });
-    });
-
+  RunOnTaskQueue(queue, [queue]() -> void {
+    TestPromise::CreateAndReject(42.0, __func__)
+      ->Then(queue, __func__, DO_FAIL, [queue](int aRejectValue) -> void {
+        EXPECT_EQ(aRejectValue, 42.0);
+        queue->BeginShutdown();
+      });
+  });
 }
 
 void
