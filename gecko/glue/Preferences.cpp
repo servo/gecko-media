@@ -9,6 +9,7 @@
 #include "mozilla/BinarySearch.h"
 #include "nsString.h"
 #include "mozilla/StaticPtr.h"
+#include "gecko_media_prefs.h"
 
 namespace mozilla {
 
@@ -108,24 +109,6 @@ Preferences::GetDirty(bool* _retval)
   MOZ_CRASH("Called unimplemented Preferences::GetDirty");
   return NS_ERROR_NOT_IMPLEMENTED;
 }
-
-struct BoolPref
-{
-  const char* mName;
-  const bool mValue;
-};
-
-struct IntPref
-{
-  const char* mName;
-  const int32_t mValue;
-};
-
-struct StringPref
-{
-  const char* mName;
-  const char* mValue;
-};
 
 #include "prefs_common.cpp"
 #if defined(MOZ_WIDGET_ANDROID)
