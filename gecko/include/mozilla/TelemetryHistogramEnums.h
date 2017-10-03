@@ -786,6 +786,10 @@ enum HistogramID : uint32_t {
   FX_PREFERENCES_CATEGORY_OPENED,
   FX_PREFERENCES_CATEGORY_OPENED_V2,
   FX_PREFERENCES_OPENED_VIA,
+  FX_PAGE_ACTION_ADDED,
+  FX_PAGE_ACTION_REMOVED,
+  FX_PAGE_ACTION_URLBAR_USED,
+  FX_PAGE_ACTION_PANEL_USED,
   INPUT_EVENT_RESPONSE_MS,
   INPUT_EVENT_RESPONSE_COALESCED_MS,
   INPUT_EVENT_RESPONSE_STARTUP_MS,
@@ -2005,6 +2009,50 @@ enum class LABELS_FX_PREFERENCES_OPENED_VIA : uint32_t {
   autofillDoorhanger
 };
 
+enum class LABELS_FX_PAGE_ACTION_ADDED : uint32_t {
+  bookmark,
+  pocket,
+  screenshots,
+  webcompat,
+  copyURL,
+  emailLink,
+  sendToDevice,
+  other
+};
+
+enum class LABELS_FX_PAGE_ACTION_REMOVED : uint32_t {
+  bookmark,
+  pocket,
+  screenshots,
+  webcompat,
+  copyURL,
+  emailLink,
+  sendToDevice,
+  other
+};
+
+enum class LABELS_FX_PAGE_ACTION_URLBAR_USED : uint32_t {
+  bookmark,
+  pocket,
+  screenshots,
+  webcompat,
+  copyURL,
+  emailLink,
+  sendToDevice,
+  other
+};
+
+enum class LABELS_FX_PAGE_ACTION_PANEL_USED : uint32_t {
+  bookmark,
+  pocket,
+  screenshots,
+  webcompat,
+  copyURL,
+  emailLink,
+  sendToDevice,
+  other
+};
+
 enum class LABELS_FX_URLBAR_SELECTED_RESULT_METHOD : uint32_t {
   enter,
   enterSelection,
@@ -2120,6 +2168,10 @@ template<> struct IsCategoricalLabelEnum<LABELS_FX_TAB_SWITCH_REQUEST_TAB_WARMIN
 template<> struct IsCategoricalLabelEnum<LABELS_FX_PREFERENCES_CATEGORY_OPENED> : TrueType {};
 template<> struct IsCategoricalLabelEnum<LABELS_FX_PREFERENCES_CATEGORY_OPENED_V2> : TrueType {};
 template<> struct IsCategoricalLabelEnum<LABELS_FX_PREFERENCES_OPENED_VIA> : TrueType {};
+template<> struct IsCategoricalLabelEnum<LABELS_FX_PAGE_ACTION_ADDED> : TrueType {};
+template<> struct IsCategoricalLabelEnum<LABELS_FX_PAGE_ACTION_REMOVED> : TrueType {};
+template<> struct IsCategoricalLabelEnum<LABELS_FX_PAGE_ACTION_URLBAR_USED> : TrueType {};
+template<> struct IsCategoricalLabelEnum<LABELS_FX_PAGE_ACTION_PANEL_USED> : TrueType {};
 template<> struct IsCategoricalLabelEnum<LABELS_FX_URLBAR_SELECTED_RESULT_METHOD> : TrueType {};
 template<> struct IsCategoricalLabelEnum<LABELS_FX_SEARCHBAR_SELECTED_RESULT_METHOD> : TrueType {};
 template<> struct IsCategoricalLabelEnum<LABELS_TELEMETRY_SEND_FAILURE_TYPE> : TrueType {};
@@ -2148,6 +2200,10 @@ template<> struct CategoricalLabelId<LABELS_FX_TAB_SWITCH_REQUEST_TAB_WARMING_ST
 template<> struct CategoricalLabelId<LABELS_FX_PREFERENCES_CATEGORY_OPENED> : IntegralConstant<uint32_t, FX_PREFERENCES_CATEGORY_OPENED> {};
 template<> struct CategoricalLabelId<LABELS_FX_PREFERENCES_CATEGORY_OPENED_V2> : IntegralConstant<uint32_t, FX_PREFERENCES_CATEGORY_OPENED_V2> {};
 template<> struct CategoricalLabelId<LABELS_FX_PREFERENCES_OPENED_VIA> : IntegralConstant<uint32_t, FX_PREFERENCES_OPENED_VIA> {};
+template<> struct CategoricalLabelId<LABELS_FX_PAGE_ACTION_ADDED> : IntegralConstant<uint32_t, FX_PAGE_ACTION_ADDED> {};
+template<> struct CategoricalLabelId<LABELS_FX_PAGE_ACTION_REMOVED> : IntegralConstant<uint32_t, FX_PAGE_ACTION_REMOVED> {};
+template<> struct CategoricalLabelId<LABELS_FX_PAGE_ACTION_URLBAR_USED> : IntegralConstant<uint32_t, FX_PAGE_ACTION_URLBAR_USED> {};
+template<> struct CategoricalLabelId<LABELS_FX_PAGE_ACTION_PANEL_USED> : IntegralConstant<uint32_t, FX_PAGE_ACTION_PANEL_USED> {};
 template<> struct CategoricalLabelId<LABELS_FX_URLBAR_SELECTED_RESULT_METHOD> : IntegralConstant<uint32_t, FX_URLBAR_SELECTED_RESULT_METHOD> {};
 template<> struct CategoricalLabelId<LABELS_FX_SEARCHBAR_SELECTED_RESULT_METHOD> : IntegralConstant<uint32_t, FX_SEARCHBAR_SELECTED_RESULT_METHOD> {};
 template<> struct CategoricalLabelId<LABELS_TELEMETRY_SEND_FAILURE_TYPE> : IntegralConstant<uint32_t, TELEMETRY_SEND_FAILURE_TYPE> {};
