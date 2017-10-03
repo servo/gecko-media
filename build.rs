@@ -31,6 +31,7 @@ fn make_builder(cpp: bool) -> cc::Build {
     b.include("gecko/include/mozilla/media/libsoundtouch/src");
     b.include("gecko/include/mozilla/media/libspeex_resampler/src");
     b.include("gecko/include/mozilla/media/libcubeb/src");
+    b.include("gecko/include/mozilla/media/libvorbis/lib");
 
     #[cfg(target_os = "macos")] {
         // (lack of) space matters. This is not a bug, it'safeature.
@@ -348,6 +349,27 @@ fn compile_gecko_media() {
         "media/libogg/src/ogg_alloc.c",
         "media/libogg/src/ogg_bitwise.c",
         "media/libogg/src/ogg_framing.c",
+        "media/libvorbis/lib/vorbis_analysis.c",
+        "media/libvorbis/lib/vorbis_bitrate.c",
+        "media/libvorbis/lib/vorbis_block.c",
+        "media/libvorbis/lib/vorbis_codebook.c",
+        "media/libvorbis/lib/vorbis_envelope.c",
+        "media/libvorbis/lib/vorbis_floor0.c",
+        "media/libvorbis/lib/vorbis_floor1.c",
+        "media/libvorbis/lib/vorbis_info.c",
+        "media/libvorbis/lib/vorbis_lookup.c",
+        "media/libvorbis/lib/vorbis_lpc.c",
+        "media/libvorbis/lib/vorbis_lsp.c",
+        "media/libvorbis/lib/vorbis_mapping0.c",
+        "media/libvorbis/lib/vorbis_mdct.c",
+        "media/libvorbis/lib/vorbis_psy.c",
+        "media/libvorbis/lib/vorbis_registry.c",
+        "media/libvorbis/lib/vorbis_res0.c",
+        "media/libvorbis/lib/vorbis_sharedbook.c",
+        "media/libvorbis/lib/vorbis_smallft.c",
+        "media/libvorbis/lib/vorbis_synthesis.c",
+        "media/libvorbis/lib/vorbis_window.c",
+        "media/libvorbis/lib/vorbisenc.c",
         "nsprpub/pr/src/io/priometh.c",
         "nsprpub/pr/src/io/prfdcach.c",
         "nsprpub/pr/src/io/prlayer.c",
