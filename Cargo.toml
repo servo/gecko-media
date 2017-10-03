@@ -15,10 +15,9 @@ cubeb-pulse = { git = "https://github.com/djg/cubeb-pulse-rs", branch = "dev", o
 gcc = "0.3.53"
 
 [features]
-default = ["pulseaudio", "audio-sample-type-f32"]
+default = ["audio-sample-type-f32"]
 audio-sample-type-s16 = []
 audio-sample-type-f32 = []
 alsa = []
 pulseaudio = ["cubeb-pulse"]
 jack = []
-widget-toolkit-cocoa = []

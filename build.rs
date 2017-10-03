@@ -31,11 +31,15 @@ fn make_builder(cpp: bool) -> gcc::Build {
     b.include("gecko/include/mozilla/media/libspeex_resampler/src");
     b.include("gecko/include/mozilla/media/libcubeb/src");
 
-    #[cfg(target_os = "macos")]
-    env::set_var(
-        "CXXFLAGS",
-        "--include gecko/glue/include/mozilla-config-x86_64-apple-darwin.h --include gecko/glue/include/undefs.h",
-    );
+    #[cfg(target_os = "macos")] {
+        // (lack of) space matters. This is not a bug, it'safeature.
+        let flags = "-Xpreprocessor -includemozilla-config-x86_64-apple-darwin.h -Xpreprocessor -includeundefs.h";
+        env::set_var("CFLAGS", flags);
+        env::set_var("CXXFLAGS", flags);
+        b.define("DARWIN", "");
+        b.flag("-Wno-inline-new-delete");
+        b.warnings(false);
+    }
 
     #[cfg(target_os = "linux")]
     env::set_var(
@@ -233,10 +237,7 @@ fn configure_libcubeb(c_builder: &mut gcc::Build, cpp_builder: &mut gcc::Build) 
             cpp_builder.file(file_path);
         }
 
-        #[cfg(feature = "widget-toolkit-cocoa")]
-        {
-            c_builder.file("gecko/src/media/libcubeb/src/cubeb_osx_run_loop.c");
-        }
+        c_builder.file("gecko/src/media/libcubeb/src/cubeb_osx_run_loop.c");
         defines.push(("USE_AUDIOUNIT", "1"));
     }
 
@@ -277,6 +278,7 @@ fn compile_gecko_media() {
         "dom/media/AudioStream.cpp",
         "dom/media/CubebUtils.cpp",
         "dom/media/MediaInfo.cpp",
+        "dom/media/systemservices/OSXRunLoopSingleton.cpp",
         "memory/fallible/fallible.cpp",
         "memory/mozalloc/mozalloc.cpp",
         "memory/mozalloc/mozalloc_abort.cpp",
@@ -287,14 +289,14 @@ fn compile_gecko_media() {
         "mfbt/Unused.cpp",
         "mozglue/misc/ConditionVariable_posix.cpp",
         "mozglue/misc/Printf.cpp",
-        #[cfg(macos)]
+        #[cfg(target_os = "macos")]
         "mozglue/misc/TimeStamp_darwin.cpp",
-        #[cfg(all(unix, not(macos)))]
+        #[cfg(target_os = "linux")]
         "mozglue/misc/TimeStamp_posix.cpp",
-        #[cfg(windows)]
+        #[cfg(target_os = "windows")]
         "mozglue/misc/TimeStamp_windows.cpp",
         "mozglue/misc/TimeStamp.cpp",
-        #[cfg(all(unix, not(macos)))]
+        #[cfg(unix)]
         "mozglue/misc/Mutex_posix.cpp",
         "toolkit/library/StaticXULComponentsStart.cpp",
         "toolkit/library/StaticXULComponentsEnd/StaticXULComponentsEnd.cpp",
@@ -345,11 +347,15 @@ fn compile_gecko_media() {
         "nsprpub/pr/src/io/prlayer.c",
         "nsprpub/pr/src/io/prlog.c",
         "nsprpub/pr/src/io/prmapopt.c",
+        "nsprpub/pr/src/io/prmmap.c",
         "nsprpub/pr/src/io/prmwait.c",
         "nsprpub/pr/src/io/prprf.c",
         "nsprpub/pr/src/linking/prlink.c",
         "nsprpub/pr/src/malloc/prmem.c",
         "nsprpub/pr/src/md/prosdep.c",
+        #[cfg(target_os = "macos")]
+        "nsprpub/pr/src/md/unix/darwin.c",
+        #[cfg(target_os = "linux")]
         "nsprpub/pr/src/md/unix/linux.c",
         "nsprpub/pr/src/md/unix/unix.c",
         "nsprpub/pr/src/md/unix/unix_errors.c",
