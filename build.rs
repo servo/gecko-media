@@ -27,6 +27,7 @@ fn make_builder(cpp: bool) -> cc::Build {
     b.include("gecko/glue/include");
     b.include("gecko/include/mozilla/");
     b.include("gecko/include/mozilla/double-conversion");
+    b.include("gecko/include/mozilla/media/libogg/include");
     b.include("gecko/include/mozilla/media/libsoundtouch/src");
     b.include("gecko/include/mozilla/media/libspeex_resampler/src");
     b.include("gecko/include/mozilla/media/libcubeb/src");
@@ -344,6 +345,9 @@ fn compile_gecko_media() {
     }
 
     let src_c_files = [
+        "media/libogg/src/ogg_alloc.c",
+        "media/libogg/src/ogg_bitwise.c",
+        "media/libogg/src/ogg_framing.c",
         "nsprpub/pr/src/io/priometh.c",
         "nsprpub/pr/src/io/prfdcach.c",
         "nsprpub/pr/src/io/prlayer.c",
