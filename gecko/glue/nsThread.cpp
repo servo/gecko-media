@@ -474,7 +474,6 @@ nsThread::ThreadFunc(void* aArg)
 
 #ifndef GECKO_MEDIA_CRATE
   profiler_unregister_thread();
-#endif
   // Dispatch shutdown ACK
   NotNull<nsThreadShutdownContext*> context =
     WrapNotNull(self->mShutdownContext);
@@ -485,6 +484,7 @@ nsThread::ThreadFunc(void* aArg)
   } else {
     context->mJoiningThread->Dispatch(event, NS_DISPATCH_NORMAL);
   }
+#endif
 
   // Release any observer of the thread here.
   self->SetObserver(nullptr);

@@ -8,3 +8,6 @@ toolchain is required to build this crate.
 Build with `rustup run nightly cargo build`.
 
 Run tests with `rustup run nightly cargo test`.
+
+On Linux both commands currently require the --features pulseaudio argument.
+Otherwise the tests will fail.
