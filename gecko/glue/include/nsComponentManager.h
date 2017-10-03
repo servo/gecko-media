@@ -9,7 +9,12 @@
 
 #include "nsXPCOM.h"
 
+#if defined(XP_MACOSX)
+#include "xpcom-private-darwin.h"
+#else
 #include "xpcom-private.h"
+#endif
+
 #include "nsIComponentManager.h"
 #include "nsIComponentRegistrar.h"
 #include "nsIMemoryReporter.h"
