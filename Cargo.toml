@@ -8,7 +8,7 @@ build = "build.rs"
 rustflags = ["-C link-arg=-fno-exceptions"]
 
 [target.'cfg(unix)'.dependencies]
-cubeb-pulse = { git = "https://github.com/djg/cubeb-pulse-rs", branch = "upstream-pa-sink-flag-fix", optional = true, features = ["pulse-dlopen"]}
+cubeb-pulse = { git = "https://github.com/djg/cubeb-pulse-rs", branch = "dev", optional = true, features = ["pulse-dlopen"]}
 
 
 [build-dependencies]
