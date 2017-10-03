@@ -1,9 +1,9 @@
-extern crate gcc;
+extern crate cc;
 
 use std::env;
 
-fn make_builder(cpp: bool) -> gcc::Build {
-    let mut b = gcc::Build::new();
+fn make_builder(cpp: bool) -> cc::Build {
+    let mut b = cc::Build::new();
     b.cpp(cpp);
 
     if cpp {
@@ -77,7 +77,7 @@ fn compile_tests() {
     b.compile("geckotest");
 }
 
-fn configure_libsoundtouch(_c_builder: &mut gcc::Build, cpp_builder: &mut gcc::Build) {
+fn configure_libsoundtouch(_c_builder: &mut cc::Build, cpp_builder: &mut cc::Build) {
     let src_files = [
         "media/libsoundtouch/src/cpu_detect_x86.cpp",
         "media/libsoundtouch/src/RateTransposer.cpp",
@@ -128,7 +128,7 @@ fn configure_libsoundtouch(_c_builder: &mut gcc::Build, cpp_builder: &mut gcc::B
     cpp_builder.define("ST_NO_EXCEPTION_HANDLING", "1");
 }
 
-fn configure_libspeex_resampler(c_builder: &mut gcc::Build, cpp_builder: &mut gcc::Build) {
+fn configure_libspeex_resampler(c_builder: &mut cc::Build, cpp_builder: &mut cc::Build) {
     c_builder.file("gecko/src/media/libspeex_resampler/src/resample.c");
     cpp_builder.file("gecko/src/media/libspeex_resampler/src/simd_detect.cpp");
 
@@ -166,7 +166,7 @@ fn configure_libspeex_resampler(c_builder: &mut gcc::Build, cpp_builder: &mut gc
     }
 }
 
-fn configure_libcubeb(c_builder: &mut gcc::Build, cpp_builder: &mut gcc::Build) {
+fn configure_libcubeb(c_builder: &mut cc::Build, cpp_builder: &mut cc::Build) {
     let src_c_files = [
         "media/libcubeb/src/cubeb.c",
         "media/libcubeb/src/cubeb_strings.c",
