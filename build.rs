@@ -278,6 +278,7 @@ fn compile_gecko_media() {
         "dom/media/AudioStream.cpp",
         "dom/media/CubebUtils.cpp",
         "dom/media/MediaInfo.cpp",
+        #[cfg(target_os = "macos")]
         "dom/media/systemservices/OSXRunLoopSingleton.cpp",
         "memory/fallible/fallible.cpp",
         "memory/mozalloc/mozalloc.cpp",
@@ -417,6 +418,13 @@ fn compile_gecko_media() {
         .map(|&p| "gecko/glue/".to_owned() + p.clone())
     {
         cpp_builder.file(file_path);
+    }
+
+    #[cfg(target_os = "macos")] {
+        let frameworks = vec!["CoreFoundation", "CoreAudio", "AudioUnit"];
+        for framework in &frameworks {
+            println!("cargo:rustc-link-lib=framework={}", framework);
+        }
     }
 
     c_builder.compile("gecko_media_c");
