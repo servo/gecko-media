@@ -388,6 +388,7 @@ fn compile_gecko_media() {
         "LabeledEventQueue.cpp",
         "Logging.cpp",
         "MainThreadIdlePeriod.cpp",
+        "MediaData.cpp",
         "nsAppRunner.cpp",
         "nsCategoryManager.cpp",
         "nsComponentManager.cpp",
