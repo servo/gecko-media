@@ -48,7 +48,7 @@
  * When Releasing, if we're not on the main thread, we post an event to
  * the main thread to do the actual release.
  */
-class nsMainThreadSourceSurfaceRef;
+// class nsMainThreadSourceSurfaceRef;
 
 // template <>
 // class nsAutoRefTraits<nsMainThreadSourceSurfaceRef> {
@@ -166,22 +166,22 @@ class NVImage;
 class D3D11YCbCrRecycleAllocator;
 #endif
 
-struct ImageBackendData
-{
-  virtual ~ImageBackendData() {}
+// struct ImageBackendData
+// {
+//   virtual ~ImageBackendData() {}
 
-protected:
-  ImageBackendData() {}
-};
+// protected:
+//   ImageBackendData() {}
+// };
 
 /* Forward declarations for Image derivatives. */
-class GLImage;
-class SharedRGBImage;
-#ifdef MOZ_WIDGET_ANDROID
-class SurfaceTextureImage;
-#elif defined(XP_MACOSX)
-class MacIOSurfaceImage;
-#endif
+// class GLImage;
+// class SharedRGBImage;
+// #ifdef MOZ_WIDGET_ANDROID
+// class SurfaceTextureImage;
+// #elif defined(XP_MACOSX)
+// class MacIOSurfaceImage;
+// #endif
 
 /**
  * A class representing a buffer of pixel data. The data can be in one
@@ -235,15 +235,15 @@ public:
 
   /* Access to derived classes. */
   // virtual GLImage* AsGLImage() { return nullptr; }
-#ifdef MOZ_WIDGET_ANDROID
-  virtual SurfaceTextureImage* AsSurfaceTextureImage() { return nullptr; }
-#endif
-#ifdef XP_MACOSX
-  virtual MacIOSurfaceImage* AsMacIOSurfaceImage() { return nullptr; }
-#endif
+// #ifdef MOZ_WIDGET_ANDROID
+//   virtual SurfaceTextureImage* AsSurfaceTextureImage() { return nullptr; }
+// #endif
+// #ifdef XP_MACOSX
+//   virtual MacIOSurfaceImage* AsMacIOSurfaceImage() { return nullptr; }
+// #endif
   virtual PlanarYCbCrImage* AsPlanarYCbCrImage() { return nullptr; }
 
-  virtual NVImage* AsNVImage() { return nullptr; }
+  // virtual NVImage* AsNVImage() { return nullptr; }
 
 protected:
   Image(void* aImplData, ImageFormat aFormat) :

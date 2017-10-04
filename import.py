@@ -519,6 +519,7 @@ src_files = [
     "xpcom/threads/nsThreadUtils.cpp",
     "xpcom/threads/nsTimerImpl.cpp",
     "xpcom/threads/PrioritizedEventQueue.cpp",
+    "xpcom/threads/RecursiveMutex.cpp",
     "xpcom/threads/SharedThreadPool.cpp",
     "xpcom/threads/SynchronizedEventQueue.cpp",
     "xpcom/threads/SystemGroup.cpp",

@@ -21,6 +21,8 @@
 #include "nsTArray.h"
 #include "nsThreadManager.h"
 #include "nsThreadUtils.h"
+#include "MediaData.h"
+#include "ImageContainer.h"
 
 #define SIMPLE_STRING "I'm a simple ASCII string"
 #define UTF8_STRING                                                            \
@@ -361,6 +363,73 @@ TestTimeStamp()
   assert(delta == TimeDuration::FromSeconds(10));
 }
 
+// Copy of BlankVideoDataCreator::Create(), use BlankVideoDataCreator
+// directly once it's in our source.
+already_AddRefed<MediaData>
+CreateBlankVideoData(uint32_t aFrameWidth,
+                     uint32_t aFrameHeight)
+{
+  // Create a fake YUV buffer in a 420 format. That is, an 8bpp Y plane,
+  // with a U and V plane that are half the size of the Y plane, i.e 8 bit,
+  // 2x2 subsampled. Have the data pointer of each frame point to the
+  // first plane, they'll always be zero'd memory anyway.
+  const CheckedUint32 size = CheckedUint32(aFrameWidth) * aFrameHeight;
+  if (!size.isValid()) {
+    // Overflow happened.
+    return nullptr;
+  }
+  auto frame = MakeUniqueFallible<uint8_t[]>(size.value());
+  if (!frame) {
+    return nullptr;
+  }
+  memset(frame.get(), 0, aFrameWidth * aFrameHeight);
+  VideoData::YCbCrBuffer buffer;
+
+  // Y plane.
+  buffer.mPlanes[0].mData = frame.get();
+  buffer.mPlanes[0].mStride = aFrameWidth;
+  buffer.mPlanes[0].mHeight = aFrameHeight;
+  buffer.mPlanes[0].mWidth = aFrameWidth;
+  buffer.mPlanes[0].mOffset = 0;
+  buffer.mPlanes[0].mSkip = 0;
+
+  // Cb plane.
+  buffer.mPlanes[1].mData = frame.get();
+  buffer.mPlanes[1].mStride = (aFrameWidth + 1) / 2;
+  buffer.mPlanes[1].mHeight = (aFrameHeight + 1) / 2;
+  buffer.mPlanes[1].mWidth = (aFrameWidth + 1) / 2;
+  buffer.mPlanes[1].mOffset = 0;
+  buffer.mPlanes[1].mSkip = 0;
+
+  // Cr plane.
+  buffer.mPlanes[2].mData = frame.get();
+  buffer.mPlanes[2].mStride = (aFrameWidth + 1) / 2;
+  buffer.mPlanes[2].mHeight = (aFrameHeight + 1) / 2;
+  buffer.mPlanes[2].mWidth = (aFrameWidth + 1) / 2;
+  buffer.mPlanes[2].mOffset = 0;
+  buffer.mPlanes[2].mSkip = 0;
+
+  VideoInfo info;
+  info.mDisplay = gfx::IntSize(aFrameWidth, aFrameHeight);
+  gfx::IntRect picture(0, 0, aFrameWidth, aFrameHeight);
+  RefPtr<layers::ImageContainer> imageContainer = new layers::ImageContainer();
+  return VideoData::CreateAndCopyData(info,
+                                      imageContainer,
+                                      0,
+                                      media::TimeUnit::Zero(),
+                                      media::TimeUnit::FromSeconds(1000.0 / 30.0),
+                                      buffer,
+                                      false,
+                                      media::TimeUnit::Zero(),
+                                      picture);
+}
+
+void TestVideoData()
+{
+  RefPtr<MediaData> frame = CreateBlankVideoData(320, 240);
+  assert(frame != nullptr);
+}
+
 } // namespace mozilla
 
 extern "C" void
@@ -381,6 +450,7 @@ TestGecko()
   mozilla::TestTimeStamp();
   mozilla::TestThreads();
   mozilla::TestMozPromise();
+  mozilla::TestVideoData();
 
   NS_ShutdownXPCOM(nullptr);
 }
