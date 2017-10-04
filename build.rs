@@ -27,11 +27,6 @@ fn make_builder(cpp: bool) -> cc::Build {
     b.include("gecko/glue/include");
     b.include("gecko/include/mozilla/");
     b.include("gecko/include/mozilla/double-conversion");
-    b.include("gecko/include/mozilla/media/libogg/include");
-    b.include("gecko/include/mozilla/media/libsoundtouch/src");
-    b.include("gecko/include/mozilla/media/libspeex_resampler/src");
-    b.include("gecko/include/mozilla/media/libcubeb/src");
-    b.include("gecko/include/mozilla/media/libvorbis/lib");
 
     #[cfg(target_os = "macos")] {
         // (lack of) space matters. This is not a bug, it'safeature.
@@ -79,7 +74,9 @@ fn compile_tests() {
     b.compile("geckotest");
 }
 
-fn configure_libsoundtouch(_c_builder: &mut cc::Build, cpp_builder: &mut cc::Build) {
+fn build_libsoundtouch() {
+    let mut cpp_builder = make_builder(true);
+
     let src_files = [
         "media/libsoundtouch/src/cpu_detect_x86.cpp",
         "media/libsoundtouch/src/RateTransposer.cpp",
@@ -128,9 +125,14 @@ fn configure_libsoundtouch(_c_builder: &mut cc::Build, cpp_builder: &mut cc::Bui
     }
 
     cpp_builder.define("ST_NO_EXCEPTION_HANDLING", "1");
+    cpp_builder.include("gecko/include/mozilla/media/libsoundtouch/src");
+    cpp_builder.include("gecko/glue/include/soundtouch");
+    cpp_builder.compile("gkmedia_soundtouch");
 }
 
-fn configure_libspeex_resampler(c_builder: &mut cc::Build, cpp_builder: &mut cc::Build) {
+fn build_libspeex_resampler(cpp_builder: &mut cc::Build) {
+    let mut c_builder = make_builder(false);
+
     c_builder.file("gecko/src/media/libspeex_resampler/src/resample.c");
     cpp_builder.file("gecko/src/media/libspeex_resampler/src/simd_detect.cpp");
 
@@ -166,9 +168,16 @@ fn configure_libspeex_resampler(c_builder: &mut cc::Build, cpp_builder: &mut cc:
         c_builder.define(name, value);
         cpp_builder.define(name, value);
     }
+
+    c_builder.include("gecko/include/mozilla/media/libspeex_resampler/src");
+    cpp_builder.include("gecko/include/mozilla/media/libspeex_resampler/src");
+
+    c_builder.compile("gkmedia_speex_resampler_c");
 }
 
-fn configure_libcubeb(c_builder: &mut cc::Build, cpp_builder: &mut cc::Build) {
+fn build_libcubeb(cpp_builder: &mut cc::Build) {
+    let mut c_builder = make_builder(false);
+
     let src_c_files = [
         "media/libcubeb/src/cubeb.c",
         "media/libcubeb/src/cubeb_strings.c",
@@ -266,15 +275,323 @@ fn configure_libcubeb(c_builder: &mut cc::Build, cpp_builder: &mut cc::Build) {
         c_builder.define(name, value);
         cpp_builder.define(name, value);
     }
+
+    c_builder.include("gecko/include/mozilla/media/libcubeb/src");
+    cpp_builder.include("gecko/include/mozilla/media/libcubeb/src");
+    c_builder.compile("gkmedia_cubeb_c");
+}
+
+fn build_libopus() {
+    let mut c_builder = make_builder(false);
+    c_builder.define("OPUS_BUILD", "");
+    c_builder.define("OPUS_VERSION", "\"v1.2.1-mozilla\"");
+    c_builder.define("USE_ALLOCA", "");
+    c_builder.define("OPUS_EXPORT", "");
+
+    #[cfg(target_os = "macos")]
+    c_builder.define("HAVE_LRINTF", "");
+
+    let mut src_files = vec![
+        "media/libopus/celt/bands.c",
+        "media/libopus/celt/celt.c",
+        "media/libopus/celt/celt_decoder.c",
+        "media/libopus/celt/celt_encoder.c",
+        "media/libopus/celt/celt_lpc.c",
+        "media/libopus/celt/cwrs.c",
+        "media/libopus/celt/entcode.c",
+        "media/libopus/celt/entdec.c",
+        "media/libopus/celt/entenc.c",
+        "media/libopus/celt/kiss_fft.c",
+        "media/libopus/celt/laplace.c",
+        "media/libopus/celt/mathops.c",
+        "media/libopus/celt/mdct.c",
+        "media/libopus/celt/modes.c",
+        "media/libopus/celt/pitch.c",
+        "media/libopus/celt/quant_bands.c",
+        "media/libopus/celt/rate.c",
+        "media/libopus/celt/vq.c",
+        "media/libopus/silk/A2NLSF.c",
+        "media/libopus/silk/ana_filt_bank_1.c",
+        "media/libopus/silk/biquad_alt.c",
+        "media/libopus/silk/bwexpander.c",
+        "media/libopus/silk/bwexpander_32.c",
+        "media/libopus/silk/check_control_input.c",
+        "media/libopus/silk/CNG.c",
+        "media/libopus/silk/code_signs.c",
+        "media/libopus/silk/control_audio_bandwidth.c",
+        "media/libopus/silk/control_codec.c",
+        "media/libopus/silk/control_SNR.c",
+        "media/libopus/silk/debug.c",
+        "media/libopus/silk/dec_API.c",
+        "media/libopus/silk/decode_core.c",
+        "media/libopus/silk/decode_frame.c",
+        "media/libopus/silk/decode_indices.c",
+        "media/libopus/silk/decode_parameters.c",
+        "media/libopus/silk/decode_pitch.c",
+        "media/libopus/silk/decode_pulses.c",
+        "media/libopus/silk/decoder_set_fs.c",
+        "media/libopus/silk/enc_API.c",
+        "media/libopus/silk/encode_indices.c",
+        "media/libopus/silk/encode_pulses.c",
+        "media/libopus/silk/gain_quant.c",
+        "media/libopus/silk/HP_variable_cutoff.c",
+        "media/libopus/silk/init_decoder.c",
+        "media/libopus/silk/init_encoder.c",
+        "media/libopus/silk/inner_prod_aligned.c",
+        "media/libopus/silk/interpolate.c",
+        "media/libopus/silk/lin2log.c",
+        "media/libopus/silk/log2lin.c",
+        "media/libopus/silk/LP_variable_cutoff.c",
+        "media/libopus/silk/LPC_analysis_filter.c",
+        "media/libopus/silk/LPC_fit.c",
+        "media/libopus/silk/LPC_inv_pred_gain.c",
+        "media/libopus/silk/NLSF2A.c",
+        "media/libopus/silk/NLSF_decode.c",
+        "media/libopus/silk/NLSF_del_dec_quant.c",
+        "media/libopus/silk/NLSF_encode.c",
+        "media/libopus/silk/NLSF_stabilize.c",
+        "media/libopus/silk/NLSF_unpack.c",
+        "media/libopus/silk/NLSF_VQ.c",
+        "media/libopus/silk/NLSF_VQ_weights_laroia.c",
+        "media/libopus/silk/NSQ.c",
+        "media/libopus/silk/NSQ_del_dec.c",
+        "media/libopus/silk/pitch_est_tables.c",
+        "media/libopus/silk/PLC.c",
+        "media/libopus/silk/process_NLSFs.c",
+        "media/libopus/silk/quant_LTP_gains.c",
+        "media/libopus/silk/resampler.c",
+        "media/libopus/silk/resampler_down2.c",
+        "media/libopus/silk/resampler_down2_3.c",
+        "media/libopus/silk/resampler_private_AR2.c",
+        "media/libopus/silk/resampler_private_down_FIR.c",
+        "media/libopus/silk/resampler_private_IIR_FIR.c",
+        "media/libopus/silk/resampler_private_up2_HQ.c",
+        "media/libopus/silk/resampler_rom.c",
+        "media/libopus/silk/shell_coder.c",
+        "media/libopus/silk/sigm_Q15.c",
+        "media/libopus/silk/sort.c",
+        "media/libopus/silk/stereo_decode_pred.c",
+        "media/libopus/silk/stereo_encode_pred.c",
+        "media/libopus/silk/stereo_find_predictor.c",
+        "media/libopus/silk/stereo_LR_to_MS.c",
+        "media/libopus/silk/stereo_MS_to_LR.c",
+        "media/libopus/silk/stereo_quant_pred.c",
+        "media/libopus/silk/sum_sqr_shift.c",
+        "media/libopus/silk/table_LSF_cos.c",
+        "media/libopus/silk/tables_gain.c",
+        "media/libopus/silk/tables_LTP.c",
+        "media/libopus/silk/tables_NLSF_CB_NB_MB.c",
+        "media/libopus/silk/tables_NLSF_CB_WB.c",
+        "media/libopus/silk/tables_other.c",
+        "media/libopus/silk/tables_pitch_lag.c",
+        "media/libopus/silk/tables_pulses_per_block.c",
+        "media/libopus/silk/VAD.c",
+        "media/libopus/silk/VQ_WMat_EC.c",
+        "media/libopus/src/opus.c",
+        "media/libopus/src/opus_decoder.c",
+        "media/libopus/src/opus_encoder.c",
+        "media/libopus/src/opus_multistream.c",
+        "media/libopus/src/opus_multistream_decoder.c",
+        "media/libopus/src/opus_multistream_encoder.c",
+        "media/libopus/src/repacketizer.c",
+    ];
+
+    if cfg!(feature = "audio-sample-type-f32") {
+        src_files.extend([
+            "media/libopus/silk/float/apply_sine_window_FLP.c",
+            "media/libopus/silk/float/autocorrelation_FLP.c",
+            "media/libopus/silk/float/burg_modified_FLP.c",
+            "media/libopus/silk/float/bwexpander_FLP.c",
+            "media/libopus/silk/float/corrMatrix_FLP.c",
+            "media/libopus/silk/float/encode_frame_FLP.c",
+            "media/libopus/silk/float/energy_FLP.c",
+            "media/libopus/silk/float/find_LPC_FLP.c",
+            "media/libopus/silk/float/find_LTP_FLP.c",
+            "media/libopus/silk/float/find_pitch_lags_FLP.c",
+            "media/libopus/silk/float/find_pred_coefs_FLP.c",
+            "media/libopus/silk/float/inner_product_FLP.c",
+            "media/libopus/silk/float/k2a_FLP.c",
+            "media/libopus/silk/float/LPC_analysis_filter_FLP.c",
+            "media/libopus/silk/float/LPC_inv_pred_gain_FLP.c",
+            "media/libopus/silk/float/LTP_analysis_filter_FLP.c",
+            "media/libopus/silk/float/LTP_scale_ctrl_FLP.c",
+            "media/libopus/silk/float/noise_shape_analysis_FLP.c",
+            "media/libopus/silk/float/pitch_analysis_core_FLP.c",
+            "media/libopus/silk/float/process_gains_FLP.c",
+            "media/libopus/silk/float/regularize_correlations_FLP.c",
+            "media/libopus/silk/float/residual_energy_FLP.c",
+            "media/libopus/silk/float/scale_copy_vector_FLP.c",
+            "media/libopus/silk/float/scale_vector_FLP.c",
+            "media/libopus/silk/float/schur_FLP.c",
+            "media/libopus/silk/float/sort_FLP.c",
+            "media/libopus/silk/float/warped_autocorrelation_FLP.c",
+            "media/libopus/silk/float/wrappers_FLP.c",
+            "media/libopus/src/analysis.c",
+            "media/libopus/src/mlp.c",
+            "media/libopus/src/mlp_data.c",
+        ].iter());
+        c_builder.include("gecko/include/mozilla/media/libopus/silk/float");
+
+    } else {
+        src_files.extend([
+            "media/libopus/silk/fixed/apply_sine_window_FIX.c",
+            "media/libopus/silk/fixed/autocorr_FIX.c",
+            "media/libopus/silk/fixed/burg_modified_FIX.c",
+            "media/libopus/silk/fixed/corrMatrix_FIX.c",
+            "media/libopus/silk/fixed/encode_frame_FIX.c",
+            "media/libopus/silk/fixed/find_LPC_FIX.c",
+            "media/libopus/silk/fixed/find_LTP_FIX.c",
+            "media/libopus/silk/fixed/find_pitch_lags_FIX.c",
+            "media/libopus/silk/fixed/find_pred_coefs_FIX.c",
+            "media/libopus/silk/fixed/k2a_FIX.c",
+            "media/libopus/silk/fixed/k2a_Q16_FIX.c",
+            "media/libopus/silk/fixed/LTP_analysis_filter_FIX.c",
+            "media/libopus/silk/fixed/LTP_scale_ctrl_FIX.c",
+            "media/libopus/silk/fixed/noise_shape_analysis_FIX.c",
+            "media/libopus/silk/fixed/pitch_analysis_core_FIX.c",
+            "media/libopus/silk/fixed/process_gains_FIX.c",
+            "media/libopus/silk/fixed/regularize_correlations_FIX.c",
+            "media/libopus/silk/fixed/residual_energy16_FIX.c",
+            "media/libopus/silk/fixed/residual_energy_FIX.c",
+            "media/libopus/silk/fixed/schur64_FIX.c",
+            "media/libopus/silk/fixed/schur_FIX.c",
+            "media/libopus/silk/fixed/vector_ops_FIX.c",
+            "media/libopus/silk/fixed/warped_autocorrelation_FIX.c",
+        ].iter());
+        c_builder.define("FIXED_POINT", "1");
+        c_builder.define("DISABLE_FLOAT_API", "");
+        c_builder.include("gecko/include/mozilla/media/libopus/silk/fixed");
+    }
+
+    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+    {
+        src_files.extend([
+            "media/libopus/celt/x86/pitch_sse.c",
+            "media/libopus/celt/x86/x86_celt_map.c",
+            "media/libopus/celt/x86/x86cpu.c",
+            "media/libopus/celt/x86/pitch_sse2.c",
+            "media/libopus/celt/x86/vq_sse2.c",
+            "media/libopus/celt/x86/celt_lpc_sse.c",
+            "media/libopus/celt/x86/pitch_sse4_1.c",
+            "media/libopus/silk/x86/NSQ_del_dec_sse.c",
+            "media/libopus/silk/x86/NSQ_sse.c",
+            "media/libopus/silk/x86/VAD_sse.c",
+            "media/libopus/silk/x86/VQ_WMat_EC_sse.c",
+            "media/libopus/silk/x86/x86_silk_map.c",
+        ].iter());
+
+        c_builder.define("OPUS_HAVE_RTCD", "");
+        c_builder.define("OPUS_X86_MAY_HAVE_SSE", "");
+        c_builder.define("OPUS_X86_MAY_HAVE_SSE2", "");
+        c_builder.define("OPUS_X86_MAY_HAVE_SSE4_1", "");
+        c_builder.define("OPUS_X86_MAY_HAVE_AVX", "");
+        c_builder.include("gecko/include/mozilla/media/libopus/celt/x86");
+        c_builder.flag("-msse4.1");
+
+        #[cfg(not(feature = "audio-sample-type-f32"))]
+        {
+            c_builder.file("gecko/src/media/libopus/silk/fixed/x86/burg_modified_FIX_sse.c");
+            c_builder.file("gecko/src/media/libopus/silk/fixed/x86/vector_ops_FIX_sse.c");
+        }
+    }
+
+    #[cfg(target_arch = "arm")]
+    {
+        src_files.extend([
+            "media/libopus/silk/arm/arm_silk_map.c",
+            "media/libopus/silk/arm/biquad_alt_neon_intr.c",
+            "media/libopus/silk/arm/LPC_inv_pred_gain_neon_intr.c",
+            "media/libopus/silk/arm/NSQ_del_dec_neon_intr.c",
+            "media/libopus/silk/arm/NSQ_neon.c",
+            "media/libopus/silk/fixed/arm/warped_autocorrelation_FIX_neon_intr.c",
+            "media/libopus/celt/arm/arm_celt_map.c",
+            "media/libopus/celt/arm/armcpu.c",
+            "media/libopus/celt/arm/celt_ne10_fft.c",
+            "media/libopus/celt/arm/celt_ne10_mdct.c",
+            "media/libopus/celt/arm/celt_neon_intr.c",
+            "media/libopus/celt/arm/pitch_neon_intr.c",
+        ].iter());
+    }
+
+    for file_path in src_files
+        .iter()
+        .map(|&p| "gecko/src/".to_owned() + p.clone())
+    {
+        c_builder.file(file_path);
+    }
+
+    c_builder.include("gecko/include/mozilla/media/libopus/");
+    c_builder.include("gecko/include/mozilla/media/libopus/celt");
+    c_builder.include("gecko/include/mozilla/media/libopus/include");
+    c_builder.include("gecko/include/mozilla/media/libopus/silk");
+    c_builder.include("gecko/include/mozilla/media/libopus/src");
+    c_builder.compile("gkmedia_libopus");
+}
+
+fn build_libogg() {
+    let mut c_builder = make_builder(false);
+    let src_files = [
+        "media/libogg/src/ogg_alloc.c",
+        "media/libogg/src/ogg_bitwise.c",
+        "media/libogg/src/ogg_framing.c",
+    ];
+
+    for file_path in src_files
+        .iter()
+        .map(|&p| "gecko/src/".to_owned() + p.clone())
+    {
+        c_builder.file(file_path);
+    }
+    c_builder.include("gecko/include/mozilla/media/libogg/include");
+    c_builder.compile("gkmedia_libogg");
+}
+
+fn build_libvorbis() {
+    let mut c_builder = make_builder(false);
+    let src_files = [
+        "media/libvorbis/lib/vorbis_analysis.c",
+        "media/libvorbis/lib/vorbis_bitrate.c",
+        "media/libvorbis/lib/vorbis_block.c",
+        "media/libvorbis/lib/vorbis_codebook.c",
+        "media/libvorbis/lib/vorbis_envelope.c",
+        "media/libvorbis/lib/vorbis_floor0.c",
+        "media/libvorbis/lib/vorbis_floor1.c",
+        "media/libvorbis/lib/vorbis_info.c",
+        "media/libvorbis/lib/vorbis_lookup.c",
+        "media/libvorbis/lib/vorbis_lpc.c",
+        "media/libvorbis/lib/vorbis_lsp.c",
+        "media/libvorbis/lib/vorbis_mapping0.c",
+        "media/libvorbis/lib/vorbis_mdct.c",
+        "media/libvorbis/lib/vorbis_psy.c",
+        "media/libvorbis/lib/vorbis_registry.c",
+        "media/libvorbis/lib/vorbis_res0.c",
+        "media/libvorbis/lib/vorbis_sharedbook.c",
+        "media/libvorbis/lib/vorbis_smallft.c",
+        "media/libvorbis/lib/vorbis_synthesis.c",
+        "media/libvorbis/lib/vorbis_window.c",
+        "media/libvorbis/lib/vorbisenc.c",
+    ];
+    for file_path in src_files
+        .iter()
+        .map(|&p| "gecko/src/".to_owned() + p.clone())
+    {
+        c_builder.file(file_path);
+    }
+
+    c_builder.include("gecko/include/mozilla/media/libvorbis/lib");
+    c_builder.compile("gkmedia_libvorbis");
 }
 
 fn compile_gecko_media() {
     let mut c_builder = make_builder(false);
     let mut cpp_builder = make_builder(true);
 
-    configure_libspeex_resampler(&mut c_builder, &mut cpp_builder);
-    configure_libcubeb(&mut c_builder, &mut cpp_builder);
-    configure_libsoundtouch(&mut c_builder, &mut cpp_builder);
+    build_libspeex_resampler(&mut cpp_builder);
+    build_libcubeb(&mut cpp_builder);
+    build_libsoundtouch();
+    build_libogg();
+    build_libvorbis();
+    build_libopus();
 
     let src_cpp_files = [
         "dom/media/AudioStream.cpp",
@@ -346,30 +663,6 @@ fn compile_gecko_media() {
     }
 
     let src_c_files = [
-        "media/libogg/src/ogg_alloc.c",
-        "media/libogg/src/ogg_bitwise.c",
-        "media/libogg/src/ogg_framing.c",
-        "media/libvorbis/lib/vorbis_analysis.c",
-        "media/libvorbis/lib/vorbis_bitrate.c",
-        "media/libvorbis/lib/vorbis_block.c",
-        "media/libvorbis/lib/vorbis_codebook.c",
-        "media/libvorbis/lib/vorbis_envelope.c",
-        "media/libvorbis/lib/vorbis_floor0.c",
-        "media/libvorbis/lib/vorbis_floor1.c",
-        "media/libvorbis/lib/vorbis_info.c",
-        "media/libvorbis/lib/vorbis_lookup.c",
-        "media/libvorbis/lib/vorbis_lpc.c",
-        "media/libvorbis/lib/vorbis_lsp.c",
-        "media/libvorbis/lib/vorbis_mapping0.c",
-        "media/libvorbis/lib/vorbis_mdct.c",
-        "media/libvorbis/lib/vorbis_psy.c",
-        "media/libvorbis/lib/vorbis_registry.c",
-        "media/libvorbis/lib/vorbis_res0.c",
-        "media/libvorbis/lib/vorbis_sharedbook.c",
-        "media/libvorbis/lib/vorbis_smallft.c",
-        "media/libvorbis/lib/vorbis_synthesis.c",
-        "media/libvorbis/lib/vorbis_window.c",
-        "media/libvorbis/lib/vorbisenc.c",
         "nsprpub/pr/src/io/priometh.c",
         "nsprpub/pr/src/io/prfdcach.c",
         "nsprpub/pr/src/io/prlayer.c",
