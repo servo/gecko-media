@@ -430,6 +430,58 @@ void TestVideoData()
   assert(frame != nullptr);
 }
 
+// Copy of BlankAudioDataCreator::Create(), use BlankAudioDataCreator
+// directly once it's in our source.
+already_AddRefed<MediaData>
+CreateBlankAudioData()
+{
+  const int64_t offset = 0;
+  const media::TimeUnit timestamp = media::TimeUnit::Zero();
+  const media::TimeUnit duration = media::TimeUnit::FromSeconds(1000.0 / 30.0);
+  const uint32_t channelCount = 2;
+  const uint32_t sampleRate = 44100;
+  int64_t frameSum = 0;
+
+  // Convert duration to frames. We add 1 to duration to account for
+  // rounding errors, so we get a consistent tone.
+  CheckedInt64 frames = UsecsToFrames(
+    duration.ToMicroseconds()+1, sampleRate);
+  if (!frames.isValid() ||
+      !channelCount ||
+      !sampleRate ||
+      frames.value() > (UINT32_MAX / channelCount)) {
+    return nullptr;
+  }
+  AlignedAudioBuffer samples(frames.value() * channelCount);
+  if (!samples) {
+    return nullptr;
+  }
+  // Fill the sound buffer with an A4 tone.
+  static const float pi = 3.14159265f;
+  static const float noteHz = 440.0f;
+  for (int i = 0; i < frames.value(); i++) {
+    float f = sin(2 * pi * noteHz * frameSum / sampleRate);
+    for (unsigned c = 0; c < channelCount; c++) {
+      samples[i * channelCount + c] = AudioDataValue(f);
+    }
+    frameSum++;
+  }
+  RefPtr<AudioData> data(new AudioData(offset,
+                                       timestamp,
+                                       duration,
+                                       uint32_t(frames.value()),
+                                       Move(samples),
+                                       channelCount,
+                                       sampleRate));
+  return data.forget();
+}
+
+void TestAudioData()
+{
+  RefPtr<MediaData> frame = CreateBlankAudioData();
+  assert(frame != nullptr);
+}
+
 } // namespace mozilla
 
 extern "C" void
@@ -451,6 +503,7 @@ TestGecko()
   mozilla::TestThreads();
   mozilla::TestMozPromise();
   mozilla::TestVideoData();
+  mozilla::TestAudioData();
 
   NS_ShutdownXPCOM(nullptr);
 }
