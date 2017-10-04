@@ -325,6 +325,7 @@ fn compile_gecko_media() {
         "xpcom/threads/nsTimerImpl.cpp",
         "xpcom/threads/PrioritizedEventQueue.cpp",
         "xpcom/threads/SharedThreadPool.cpp",
+        "xpcom/threads/RecursiveMutex.cpp",
         "xpcom/threads/SynchronizedEventQueue.cpp",
         "xpcom/threads/SystemGroup.cpp",
         "xpcom/threads/TaskQueue.cpp",
