@@ -23,6 +23,7 @@
 #include "nsThreadUtils.h"
 #include "MediaData.h"
 #include "ImageContainer.h"
+#include "PlatformDecoderModule.h"
 
 #define SIMPLE_STRING "I'm a simple ASCII string"
 #define UTF8_STRING                                                            \
