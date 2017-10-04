@@ -30,6 +30,7 @@
 #include "mozilla/WeakPtr.h"
 #include "nsThreadUtils.h"
 // #include "mozilla/gfx/2D.h"
+// Probably don't need to SourceSurface???
 #include "nsDataHashtable.h"
 #include "mozilla/EnumeratedArray.h"
 #include "mozilla/UniquePtr.h"
@@ -90,7 +91,7 @@ class nsMainThreadSourceSurfaceRef;
 //   }
 // };
 
-class nsOwningThreadSourceSurfaceRef;
+// class nsOwningThreadSourceSurfaceRef;
 
 // template <>
 // class nsAutoRefTraits<nsOwningThreadSourceSurfaceRef> {
@@ -152,7 +153,7 @@ namespace mozilla {
 
 namespace layers {
 
-class ImageClient;
+// class ImageClient;
 class ImageCompositeNotification;
 class ImageContainer;
 class ImageContainerChild;
@@ -335,23 +336,23 @@ protected:
 };
 
 // Used to notify ImageContainer::NotifyComposite()
-class ImageContainerListener final {
-  NS_INLINE_DECL_THREADSAFE_REFCOUNTING(ImageContainerListener)
+// class ImageContainerListener final {
+//   NS_INLINE_DECL_THREADSAFE_REFCOUNTING(ImageContainerListener)
 
-public:
-  explicit ImageContainerListener(ImageContainer* aImageContainer);
+// public:
+//   explicit ImageContainerListener(ImageContainer* aImageContainer);
 
-  void NotifyComposite(const ImageCompositeNotification& aNotification);
-  void ClearImageContainer();
-  void DropImageClient();
-private:
-  typedef mozilla::Mutex Mutex;
+//   void NotifyComposite(const ImageCompositeNotification& aNotification);
+//   void ClearImageContainer();
+//   void DropImageClient();
+// private:
+//   typedef mozilla::Mutex Mutex;
 
-  ~ImageContainerListener();
+//   ~ImageContainerListener();
 
-  Mutex mLock;
-  ImageContainer* mImageContainer;
-};
+//   Mutex mLock;
+//   ImageContainer* mImageContainer;
+// };
 
 /**
  * A class that manages Images for an ImageLayer. The only reason
@@ -403,7 +404,7 @@ public:
   RefPtr<PlanarYCbCrImage> CreatePlanarYCbCrImage();
 
   // Factory methods for shared image types.
-  RefPtr<SharedRGBImage> CreateSharedRGBImage();
+  // RefPtr<SharedRGBImage> CreateSharedRGBImage();
 
   struct NonOwningImage {
     explicit NonOwningImage(Image* aImage = nullptr,
@@ -462,7 +463,7 @@ public:
    * that belongs to ImageBridgeChild. Created to prevent dead lock.
    * See Bug 901224.
    */
-  void ClearImagesFromImageBridge();
+  // void ClearImagesFromImageBridge();
 
   /**
    * Set an Image as the current image to display. The Image must have
@@ -599,26 +600,26 @@ public:
     return mDroppedImageCount;
   }
 
-  void NotifyComposite(const ImageCompositeNotification& aNotification);
+  // void NotifyComposite(const ImageCompositeNotification& aNotification);
 
-  ImageContainerListener* GetImageContainerListener()
-  {
-    return mNotifyCompositeListener;
-  }
+  // ImageContainerListener* GetImageContainerListener()
+  // {
+  //   return mNotifyCompositeListener;
+  // }
 
   /**
    * Get the ImageClient associated with this container. Returns only after
    * validating, and it will recreate the image client if that fails.
    * Returns nullptr if not applicable.
    */
-  already_AddRefed<ImageClient> GetImageClient();
+  // already_AddRefed<ImageClient> GetImageClient();
 
   /**
    * Main thread only.
    */
   static ProducerID AllocateProducerID();
 
-  void DropImageClient();
+  // void DropImageClient();
 
 private:
   typedef mozilla::RecursiveMutex RecursiveMutex;
@@ -634,7 +635,7 @@ private:
   // calling this function!
   void EnsureActiveImage();
 
-  void EnsureImageClient();
+  // void EnsureImageClient();
 
   // RecursiveMutex to protect thread safe access to the "current
   // image", and any other state which is shared between threads.
@@ -676,7 +677,7 @@ private:
   // In this case the ImageContainer is perfectly usable, but it will forward
   // frames to the compositor through transactions in the main thread rather than
   // asynchronusly using the ImageBridge IPDL protocol.
-  RefPtr<ImageClient> mImageClient;
+  // RefPtr<ImageClient> mImageClient;
 
   bool mIsAsync;
   // CompositableHandle mAsyncContainerHandle;
@@ -686,7 +687,7 @@ private:
   // mFrameIDsNotYetComposited
   ProducerID mCurrentProducerID;
 
-  RefPtr<ImageContainerListener> mNotifyCompositeListener;
+  // RefPtr<ImageContainerListener> mNotifyCompositeListener;
 
   static mozilla::Atomic<uint32_t> sGenerationCounter;
 };
@@ -903,38 +904,38 @@ protected:
  * PlanarYCbCrData is able to express all the YUV family and so we keep use it
  * in NVImage.
  */
-class NVImage: public Image {
-  typedef PlanarYCbCrData Data;
+// class NVImage: public Image {
+//   typedef PlanarYCbCrData Data;
 
-public:
-  explicit NVImage();
-  virtual ~NVImage() override;
+// public:
+//   explicit NVImage();
+//   virtual ~NVImage() override;
 
-  // Methods inherited from layers::Image.
-  virtual gfx::IntSize GetSize() override;
-  virtual gfx::IntRect GetPictureRect() override;
-  // virtual already_AddRefed<gfx::SourceSurface> GetAsSourceSurface() override;
-  virtual bool IsValid() override;
-  virtual NVImage* AsNVImage() override;
+//   // Methods inherited from layers::Image.
+//   virtual gfx::IntSize GetSize() override;
+//   virtual gfx::IntRect GetPictureRect() override;
+//   // virtual already_AddRefed<gfx::SourceSurface> GetAsSourceSurface() override;
+//   virtual bool IsValid() override;
+//   virtual NVImage* AsNVImage() override;
 
-  // Methods mimic layers::PlanarYCbCrImage.
-  virtual bool SetData(const Data& aData);
-  virtual const Data* GetData() const;
-  virtual uint32_t GetBufferSize() const;
+//   // Methods mimic layers::PlanarYCbCrImage.
+//   virtual bool SetData(const Data& aData);
+//   virtual const Data* GetData() const;
+//   virtual uint32_t GetBufferSize() const;
 
-protected:
+// protected:
 
-  /**
-   * Return a buffer to store image data in.
-   */
-  mozilla::UniquePtr<uint8_t> AllocateBuffer(uint32_t aSize);
+//   /**
+//    * Return a buffer to store image data in.
+//    */
+//   mozilla::UniquePtr<uint8_t> AllocateBuffer(uint32_t aSize);
 
-  mozilla::UniquePtr<uint8_t> mBuffer;
-  uint32_t mBufferSize;
-  gfx::IntSize mSize;
-  Data mData;
-  // nsCountedRef<nsMainThreadSourceSurfaceRef> mSourceSurface;
-};
+//   mozilla::UniquePtr<uint8_t> mBuffer;
+//   uint32_t mBufferSize;
+//   gfx::IntSize mSize;
+//   Data mData;
+//   // nsCountedRef<nsMainThreadSourceSurfaceRef> mSourceSurface;
+// };
 
 /**
  * Currently, the data in a SourceSurfaceImage surface is treated as being in the

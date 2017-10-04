@@ -390,6 +390,7 @@ fn compile_gecko_media() {
         "AbstractThread.cpp",
         "BlockingResourceBase.cpp",
         "CooperativeThreadPool.cpp",
+        "ImageContainer.cpp",
         "InputEventStatistics.cpp",
         "nsDebugImpl.cpp",
         "LabeledEventQueue.cpp",

@@ -351,44 +351,44 @@ VideoData::CreateAndCopyData(const VideoInfo& aInfo,
   return v.forget();
 }
 
+// Creating image with alpha plane not supported.
+// /* static */
+// already_AddRefed<VideoData>
+// VideoData::CreateAndCopyData(const VideoInfo& aInfo,
+//                              ImageContainer* aContainer,
+//                              int64_t aOffset,
+//                              const TimeUnit& aTime,
+//                              const TimeUnit& aDuration,
+//                              const YCbCrBuffer& aBuffer,
+//                              const YCbCrBuffer::Plane &aAlphaPlane,
+//                              bool aKeyframe,
+//                              const TimeUnit& aTimecode,
+//                              const IntRect& aPicture)
+// {
+//   if (!aContainer) {
+//     // Create a dummy VideoData with no image. This gives us something to
+//     // send to media streams if necessary.
+//     RefPtr<VideoData> v(new VideoData(aOffset,
+//                                       aTime,
+//                                       aDuration,
+//                                       aKeyframe,
+//                                       aTimecode,
+//                                       aInfo.mDisplay,
+//                                       0));
+//     return v.forget();
+//   }
 
-/* static */
-already_AddRefed<VideoData>
-VideoData::CreateAndCopyData(const VideoInfo& aInfo,
-                             ImageContainer* aContainer,
-                             int64_t aOffset,
-                             const TimeUnit& aTime,
-                             const TimeUnit& aDuration,
-                             const YCbCrBuffer& aBuffer,
-                             const YCbCrBuffer::Plane &aAlphaPlane,
-                             bool aKeyframe,
-                             const TimeUnit& aTimecode,
-                             const IntRect& aPicture)
-{
-  if (!aContainer) {
-    // Create a dummy VideoData with no image. This gives us something to
-    // send to media streams if necessary.
-    RefPtr<VideoData> v(new VideoData(aOffset,
-                                      aTime,
-                                      aDuration,
-                                      aKeyframe,
-                                      aTimecode,
-                                      aInfo.mDisplay,
-                                      0));
-    return v.forget();
-  }
+//   if (!ValidateBufferAndPicture(aBuffer, aPicture)) {
+//     return nullptr;
+//   }
 
-  if (!ValidateBufferAndPicture(aBuffer, aPicture)) {
-    return nullptr;
-  }
-
-  RefPtr<VideoData> v(new VideoData(aOffset,
-                                    aTime,
-                                    aDuration,
-                                    aKeyframe,
-                                    aTimecode,
-                                    aInfo.mDisplay,
-                                    0));
+//   RefPtr<VideoData> v(new VideoData(aOffset,
+//                                     aTime,
+//                                     aDuration,
+//                                     aKeyframe,
+//                                     aTimecode,
+//                                     aInfo.mDisplay,
+//                                     0));
 
   // Convert from YUVA to BGRA format on the software side.
   // RefPtr<layers::SharedRGBImage> videoImage =
@@ -416,8 +416,8 @@ VideoData::CreateAndCopyData(const VideoInfo& aInfo,
   //                     argb_buffer, size.width * 4,
   //                     size.width, size.height);
 
-  return v.forget();
-}
+//   return v.forget();
+// }
 
 /* static */
 already_AddRefed<VideoData>
