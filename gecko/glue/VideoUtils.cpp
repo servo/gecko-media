@@ -35,5 +35,16 @@ already_AddRefed<SharedThreadPool> GetMediaThreadPool(MediaThreadType aType)
     Get(nsDependentCString(name), 4 /* MediaPrefs::MediaThreadPoolDefaultCount() */);
 }
 
+CheckedInt64 SaferMultDiv(int64_t aValue, uint32_t aMul, uint32_t aDiv) {
+  int64_t major = aValue / aDiv;
+  int64_t remainder = aValue % aDiv;
+  return CheckedInt64(remainder) * aMul / aDiv + CheckedInt64(major) * aMul;
+}
+
+// Converts from microseconds to number of audio frames, given the specified
+// audio rate.
+CheckedInt64 UsecsToFrames(int64_t aUsecs, uint32_t aRate) {
+  return SaferMultDiv(aUsecs, aRate, USECS_PER_S);
+}
 
 } // end namespace mozilla
