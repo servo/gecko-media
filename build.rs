@@ -579,6 +579,7 @@ fn build_libvorbis() {
     }
 
     c_builder.include("gecko/include/mozilla/media/libvorbis/lib");
+    c_builder.include("gecko/include/mozilla/media/libogg/include/");
     c_builder.compile("gkmedia_libvorbis");
 }
 
