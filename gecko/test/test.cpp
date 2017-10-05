@@ -468,5 +468,6 @@ TestGecko()
   mozilla::TestVideoData();
   mozilla::TestAudioData();
 
+  mozilla::Preferences::Shutdown();
   NS_ShutdownXPCOM(nullptr);
 }
