@@ -11,6 +11,7 @@
 #endif
 
 #include "nsIPrefService.h"
+#include "mozilla/Atomics.h"
 
 #ifndef have_PrefChangedFunc_typedef
 typedef void (*PrefChangedFunc)(const char*, void*);
@@ -36,6 +37,23 @@ public:
    * NOTE: not addreffed.
    */
   static nsIPrefService* GetService();
+
+  static nsresult AddBoolVarCache(bool* aVariable,
+                                  const char* aPref,
+                                  bool aDefault = false);
+  static nsresult AddIntVarCache(int32_t* aVariable,
+                                 const char* aPref,
+                                 int32_t aDefault = 0);
+  static nsresult AddUintVarCache(uint32_t* aVariable,
+                                  const char* aPref,
+                                  uint32_t aDefault = 0);
+  template <MemoryOrdering Order>
+  static nsresult AddAtomicUintVarCache(Atomic<uint32_t, Order>* aVariable,
+                                        const char* aPref,
+                                        uint32_t aDefault = 0);
+  static nsresult AddFloatVarCache(float* aVariable,
+                                   const char* aPref,
+                                   float aDefault = 0.0f);
 
   /**
    * Gets int or bool type pref value with default value if failed to get
