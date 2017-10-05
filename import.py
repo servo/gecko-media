@@ -372,6 +372,8 @@ header_files = [
     ('media/libspeex_resampler/src/simd_detect.h', 'mozilla/media/libspeex_resampler/src/simd_detect.h'),
     ('media/libspeex_resampler/src/speex_resampler.h', 'mozilla/media/libspeex_resampler/src/speex_resampler.h'),
     ('media/libspeex_resampler/src/stack_alloc.h', 'mozilla/media/libspeex_resampler/src/stack_alloc.h'),
+    ('media/libvorbis/include/vorbis/codec.h', 'mozilla/media/libvorbis/include/vorbis/codec.h'),
+    ('media/libvorbis/include/vorbis/vorbisenc.h', 'mozilla/media/libvorbis/include/vorbis/vorbisenc.h'),
     ("nsprpub/pr/include/prlink.h", "prlink.h"),
     ("nsprpub/pr/include/prlock.h", "prlock.h"),
     ("nsprpub/pr/include/prlog.h", "prlog.h"),
