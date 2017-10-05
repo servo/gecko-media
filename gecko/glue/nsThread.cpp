@@ -832,12 +832,13 @@ nsThread::Shutdown()
   NS_ENSURE_TRUE(maybeContext, NS_ERROR_UNEXPECTED);
   NotNull<nsThreadShutdownContext*> context = WrapNotNull(maybeContext);
 
+#ifndef GECKO_MEDIA_CRATE
   // Process events on the current thread until we receive a shutdown ACK.
   // Allows waiting; ensure no locks are held that would deadlock us!
   SpinEventLoopUntil([&, context]() {
       return !context->mAwaitingShutdownAck;
     }, context->mJoiningThread);
-
+#endif
   ShutdownComplete(context);
 
   return NS_OK;
