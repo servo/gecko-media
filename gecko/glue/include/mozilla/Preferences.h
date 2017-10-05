@@ -12,6 +12,7 @@
 
 #include "nsIPrefService.h"
 #include "mozilla/Atomics.h"
+#include "nsDataHashtable.h"
 
 #ifndef have_PrefChangedFunc_typedef
 typedef void (*PrefChangedFunc)(const char*, void*);
@@ -204,6 +205,14 @@ protected:
 private:
   static bool sShutdown;
   static bool InitStaticMembers();
+
+  void pref(const char* aName, bool aValue);
+  void pref(const char* aName, const char* aValue);
+  void pref(const char* aName, int32_t aValue);
+
+  nsDataHashtable<nsCharPtrHashKey,bool> mBoolPrefs;
+  nsDataHashtable<nsCharPtrHashKey,int32_t> mIntPrefs;
+  nsDataHashtable<nsCharPtrHashKey,nsCString> mStrPrefs;
 };
 
 } // namespace mozilla

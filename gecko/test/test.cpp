@@ -3,6 +3,7 @@
 #include <string.h>
 #include <string>
 #include <unistd.h>
+#include <map>
 
 #include "AudioStream.h"
 #include "VideoUtils.h"
@@ -80,96 +81,57 @@ PrefChanged(const char* aPref, void* aClosure)
   data->mCount += 1;
 }
 
+std::map<const char*, bool> sBoolPrefs;
+std::map<const char*, int32_t> sIntPrefs;
+std::map<const char*, const char*> sStrPrefs;
+
+void pref(const char* aName, bool aValue) {
+  sBoolPrefs[aName] = aValue;
+}
+
+void pref(const char* aName, const char* aValue) {
+  sStrPrefs[aName] = aValue;
+}
+
+void pref(const char* aName, int32_t aValue) {
+  sIntPrefs[aName] = aValue;
+}
+
+void InitPrefs() {
 #include "../glue/prefs_common.cpp"
 #if defined(MOZ_WIDGET_ANDROID)
 #include "../glue/prefs_android.cpp"
-#define PLATFORM_STRING_PREFS sAndroidStringPrefs
-#define PLATFORM_BOOL_PREFS sAndroidBoolPrefs
-#define PLATFORM_INT_PREFS sAndroidIntPrefs
 #else
 #include "../glue/prefs_desktop.cpp"
-#define PLATFORM_STRING_PREFS sDesktopStringPrefs
-#define PLATFORM_BOOL_PREFS sDesktopBoolPrefs
-#define PLATFORM_INT_PREFS sDesktopIntPrefs
 #endif
-
-template<class PrefType>
-static nsTArray<PrefType>
-MergePrefList(const PrefType* aCommonPrefs,
-              size_t aCommonPrefsLen,
-              const PrefType* aPlatformPrefs,
-              size_t aPlatformPrefsLen)
-{
-  nsTArray<PrefType> rv;
-  const PrefType* commonEnd = aCommonPrefs + aCommonPrefsLen;
-  const PrefType* platformEnd = aPlatformPrefs + aPlatformPrefsLen;
-  while (aCommonPrefs < commonEnd && aPlatformPrefs < platformEnd) {
-    int cmp = strcmp(aCommonPrefs->mName, aPlatformPrefs->mName);
-    if (cmp < 0) {
-      rv.AppendElement(*aCommonPrefs);
-      aCommonPrefs++;
-    } else if (cmp > 0) {
-      rv.AppendElement(*aPlatformPrefs);
-      aPlatformPrefs++;
-    } else {
-      // Platform overrides.
-      rv.AppendElement(*aPlatformPrefs);
-      aPlatformPrefs++;
-      aCommonPrefs++;
-    }
-  }
-  while (aCommonPrefs < commonEnd) {
-    rv.AppendElement(*aCommonPrefs);
-    aCommonPrefs++;
-  }
-  while (aPlatformPrefs < platformEnd) {
-    rv.AppendElement(*aPlatformPrefs);
-    aPlatformPrefs++;
-  }
-  return rv;
 }
 
 void
 TestPreferences()
 {
   // Check all string prefs work.
-  nsTArray<StringPref> stringPrefs =
-    MergePrefList(sCommonStringPrefs,
-                  sizeof(sCommonStringPrefs) / sizeof(StringPref),
-                  PLATFORM_STRING_PREFS,
-                  sizeof(PLATFORM_STRING_PREFS) / sizeof(StringPref));
-  for (const StringPref& pref : stringPrefs) {
+  for (auto itr : sStrPrefs) {
     nsAutoCString utf8;
-    nsresult rv = Preferences::GetCString(pref.mName, utf8);
+    nsresult rv = Preferences::GetCString(itr.first, utf8);
     assert(NS_SUCCEEDED(rv));
-    assert(utf8.EqualsASCII(pref.mValue));
+    assert(utf8.EqualsASCII(itr.second));
 
     nsAutoString utf16;
-    rv = Preferences::GetString(pref.mName, utf16);
+    rv = Preferences::GetString(itr.first, utf16);
     assert(NS_SUCCEEDED(rv));
-    assert(utf8.EqualsASCII(pref.mValue));
+    assert(utf8.EqualsASCII(itr.second));
 
     assert(NS_ConvertUTF8toUTF16(utf8) == utf16);
   }
 
   // Check all bool prefs work.
-  nsTArray<BoolPref> boolPrefs =
-    MergePrefList(sCommonBoolPrefs,
-                  sizeof(sCommonBoolPrefs) / sizeof(BoolPref),
-                  PLATFORM_BOOL_PREFS,
-                  sizeof(PLATFORM_BOOL_PREFS) / sizeof(IntPref));
-  for (const BoolPref& pref : boolPrefs) {
-    assert(Preferences::GetBool(pref.mName) == pref.mValue);
+  for (auto itr : sBoolPrefs) {
+    assert(Preferences::GetBool(itr.first) == itr.second);
   }
 
   // Check all int prefs work.
-  nsTArray<IntPref> intPrefs =
-    MergePrefList(sCommonIntPrefs,
-                  sizeof(sCommonIntPrefs) / sizeof(IntPref),
-                  PLATFORM_INT_PREFS,
-                  sizeof(PLATFORM_INT_PREFS) / sizeof(IntPref));
-  for (const IntPref& pref : intPrefs) {
-    assert(Preferences::GetInt(pref.mName) == pref.mValue);
+  for (auto itr : sIntPrefs) {
+    assert(Preferences::GetInt(itr.first) == itr.second);
   }
 
   // Check unknown pref provides the default.
