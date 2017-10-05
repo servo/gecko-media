@@ -283,4 +283,60 @@ Preferences::UnregisterCallback(PrefChangedFunc aCallback,
   return NS_OK;
 }
 
+// static
+nsresult
+Preferences::AddBoolVarCache(bool* aVariable,
+                             const char* aPref,
+                             bool aDefault)
+{
+  NS_ASSERTION(aVariable, "aVariable must not be NULL");
+  *aVariable = GetBool(aPref, aDefault);
+  return NS_OK;
+}
+
+// static
+nsresult
+Preferences::AddIntVarCache(int32_t* aVariable,
+                            const char* aPref,
+                            int32_t aDefault)
+{
+  NS_ASSERTION(aVariable, "aVariable must not be NULL");
+  *aVariable = GetInt(aPref, aDefault);
+  return NS_OK;
+}
+
+// static
+nsresult
+Preferences::AddUintVarCache(uint32_t* aVariable,
+                             const char* aPref,
+                             uint32_t aDefault)
+{
+  NS_ASSERTION(aVariable, "aVariable must not be NULL");
+  *aVariable = GetUint(aPref, aDefault);
+  return NS_OK;
+}
+
+// static
+nsresult
+Preferences::AddFloatVarCache(float* aVariable,
+                              const char* aPref,
+                              float aDefault)
+{
+  NS_ASSERTION(aVariable, "aVariable must not be NULL");
+  *aVariable = GetFloat(aPref, aDefault);
+  return NS_OK;
+}
+
+template <MemoryOrdering Order>
+// static
+nsresult
+Preferences::AddAtomicUintVarCache(Atomic<uint32_t, Order>* aCache,
+                                   const char* aPref,
+                                   uint32_t aDefault)
+{
+  NS_ASSERTION(aCache, "aCache must not be NULL");
+  *aCache = Preferences::GetUint(aPref, aDefault);
+  return NS_OK;
+}
+
 } // namespace mozilla
