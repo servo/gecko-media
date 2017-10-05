@@ -19,6 +19,8 @@ addons:
       - gcc-5
       - g++-5
       - libpulse-dev
+      - pulseaudio
+      - dbus-x11
 
 before_install:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update; fi
@@ -27,6 +29,11 @@ before_install:
   - source ../venv/bin/activate
   - python --version
   - pip install servo-tidy
+  - if [ "${TRAVIS_OS_NAME}" != "osx" ]; then
+      export DISPLAY=:99.0;
+      /sbin/start-stop-daemon --start --quiet --pidfile /tmp/custom_xvfb_99.pid --make-pidfile --background --exec /usr/bin/Xvfb -- :99 -screen 0 1400x900x24 -ac +extension GLX +render -noreset;
+      dbus-launch pulseaudio --start;
+    fi;
 script:
   - servo-tidy
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
