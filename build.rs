@@ -588,6 +588,107 @@ fn build_libvorbis() {
     c_builder.compile("gkmedia_libvorbis");
 }
 
+fn build_libstagefright(cpp_builder: &mut cc::Build) {
+    let mut c_builder = make_builder(false);
+
+    let mut src_c_files: Vec<&str> = vec![];
+
+    let src_cpp_files = [
+        "media/libstagefright/binding/Adts.cpp",
+        "media/libstagefright/binding/AnnexB.cpp",
+        "media/libstagefright/binding/BitReader.cpp",
+        "media/libstagefright/binding/Box.cpp",
+        "media/libstagefright/binding/BufferStream.cpp",
+        "media/libstagefright/binding/DecoderData.cpp",
+        "media/libstagefright/binding/H264.cpp",
+        "media/libstagefright/binding/Index.cpp",
+        "media/libstagefright/binding/MP4Metadata.cpp",
+        "media/libstagefright/binding/MoofParser.cpp",
+        "media/libstagefright/binding/ResourceStream.cpp",
+        "media/libstagefright/binding/SinfParser.cpp",
+        "media/libstagefright/frameworks/av/media/libstagefright/DataSource.cpp",
+        "media/libstagefright/frameworks/av/media/libstagefright/ESDS.cpp",
+        "media/libstagefright/frameworks/av/media/libstagefright/MPEG4Extractor.cpp",
+        "media/libstagefright/frameworks/av/media/libstagefright/MediaBuffer.cpp",
+        "media/libstagefright/frameworks/av/media/libstagefright/MediaDefs.cpp",
+        "media/libstagefright/frameworks/av/media/libstagefright/MediaSource.cpp",
+        "media/libstagefright/frameworks/av/media/libstagefright/MetaData.cpp",
+        "media/libstagefright/frameworks/av/media/libstagefright/SampleIterator.cpp",
+        "media/libstagefright/frameworks/av/media/libstagefright/SampleTable.cpp",
+        "media/libstagefright/frameworks/av/media/libstagefright/Utils.cpp",
+        "media/libstagefright/frameworks/av/media/libstagefright/foundation/AAtomizer.cpp",
+        "media/libstagefright/frameworks/av/media/libstagefright/foundation/ABitReader.cpp",
+        "media/libstagefright/frameworks/av/media/libstagefright/foundation/ABuffer.cpp",
+        "media/libstagefright/frameworks/av/media/libstagefright/foundation/AString.cpp",
+        "media/libstagefright/frameworks/av/media/libstagefright/foundation/hexdump.cpp",
+        //"media/libstagefright/gtest/TestInterval.cpp",
+        //"media/libstagefright/gtest/TestMP4Rust.cpp",
+        //"media/libstagefright/gtest/TestParser.cpp",
+        "media/libstagefright/system/core/libutils/RefBase.cpp",
+        "media/libstagefright/system/core/libutils/SharedBuffer.cpp",
+        "media/libstagefright/system/core/libutils/Static.cpp",
+        "media/libstagefright/system/core/libutils/String16.cpp",
+        "media/libstagefright/system/core/libutils/String8.cpp",
+        "media/libstagefright/system/core/libutils/Unicode.cpp",
+        "media/libstagefright/system/core/libutils/VectorImpl.cpp",
+
+    ];
+    for file_path in src_cpp_files
+        .iter()
+        .map(|&p| "gecko/src/".to_owned() + p.clone())
+    {
+        cpp_builder.file(file_path);
+    }
+
+    let mut defines = Vec::<(&str, &str)>::new();
+    let mut include_dirs = vec![
+        "binding/include",
+        "frameworks/av/include",
+        "frameworks/av/include/media/stagefright/foundation",
+        "frameworks/av/media/libstagefright/",
+        "stubs/empty",
+        "stubs/include",
+        "stubs/include/media/stagefright/foundation",
+        "system/core/include",
+    ];
+
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    defines.push(("HAVE_SYS_UIO_H", ""));
+
+    #[cfg(target_os = "macos")] {
+        defines.push(("off64_t", "off_t"));
+        include_dirs.push("ports/darwin/include");
+    }
+
+    #[cfg(not(target_os = "android"))] {
+        defines.push(("FAKE_LOG_DEVICE", "1"));
+        src_c_files.extend([
+            "media/libstagefright/system/core/libcutils/strdup16to8.c",
+            "media/libstagefright/system/core/liblog/fake_log_device.c",
+            "media/libstagefright/system/core/liblog/logd_write.c",
+            "media/libstagefright/system/core/liblog/logprint.c",
+        ].iter());
+        for file_path in src_c_files.iter()
+        {
+            c_builder.file(format!("gecko/src/{}", file_path));
+        }
+    }
+
+    for &(name, value) in defines.iter() {
+        c_builder.define(name, value);
+        cpp_builder.define(name, value);
+    }
+
+
+    for include_dir in include_dirs.iter()
+        .map(|&p| "gecko/include/mozilla/media/libstagefright/".to_owned() + p.clone()) {
+        c_builder.include(include_dir.clone());
+        cpp_builder.include(include_dir);
+    }
+
+    c_builder.compile("gkmedia_stagefright");
+}
+
 fn compile_gecko_media() {
     let mut c_builder = make_builder(false);
     let mut cpp_builder = make_builder(true);
@@ -598,6 +699,7 @@ fn compile_gecko_media() {
     build_libogg();
     build_libvorbis();
     build_libopus();
+    build_libstagefright(&mut cpp_builder);
 
     let src_cpp_files = [
         "dom/media/AudioStream.cpp",
