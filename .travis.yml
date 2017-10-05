@@ -1,7 +1,6 @@
 dist: trusty
 language: rust
 rust:
-  - 1.19.0
   - nightly
 os:
   - linux
@@ -11,11 +10,16 @@ notifications:
 addons:
   apt:
     sources:
+      - ubuntu-toolchain-r-test
       - sourceline: 'deb http://apt.llvm.org/trusty/ llvm-toolchain-trusty-3.8 main'
         keyurl: 'http://apt.llvm.org/llvm-snapshot.gpg.key'
       - sourceline: 'ppa:jonathonf/python-2.7'
     packages:
       - python
+      - gcc-5
+      - g++-5
+      - libpulse-dev
+
 before_install:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install zlib; fi
@@ -25,4 +29,9 @@ before_install:
   - pip install servo-tidy
 script:
   - servo-tidy
-  - cargo test --verbose
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+      cargo test --verbose;
+    else
+      CC=gcc-5 CXX=g++-5 cargo test --verbose --features pulseaudio;
+    fi;
+
