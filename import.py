@@ -1060,69 +1060,37 @@ def write_unified_cpp_file(dir):
       for cpp_file in cpps:
         f.write("#include \"{}\"\n".format(cpp_file))
 
-def extract_pref_from_line(line):
-    m = re.match(r'pref\((".*?"),\s*(.*)\);', line)
-    if not m:
-        print("extract_pref_from_line() failed on {}".format(line))
-        sys.exit(1)
-    name = m.group(1)
-    val = m.group(2)
-    kind = ""
-    if val == "true" or val == "false":
-        kind = "bool"
-    elif val.startswith('"') and val.endswith('"'):
-        kind = "string"
-    else:
-        kind = "int"
-    return (name, val, kind)
-
 def is_preprocessor_line(line):
     return (line.startswith("#if") or
             line.startswith("#endif") or
-            line.startswith("#else"))
+            line.startswith("#else") or
+            line.startswith("#elif"))
 
-def extract_preferences(lines):
-    # Returns a triple of lists of ((pref,value),[include-guard]).
-    #   ([((bool_pref, value), [guards])],
-    #    [((int_pref, value), [guards])],
-    #    [((string_pref, value), [guards])])
+def strip_empty_ifdefs(lines):
+    starts = []
+    counts = [0]
     i = 0
-    guards = []
-    bool_prefs = []
-    int_prefs = []
-    string_prefs = []
-    prefs = dict({"bool": [], "int": [], "string": []});
     while i < len(lines):
         line = lines[i]
         if line.startswith("#if"):
-            guards.append(line)
-        elif line.startswith("pref"):
-            (pref, value, kind) = extract_pref_from_line(line)
-            prefs[kind] += [((pref, value), guards[:])]
-        elif line.startswith("#else"):
-            guards.append(line)
+            counts += [0]
+            starts += [i]
+            i += 1
         elif line.startswith("#endif"):
-            if guards[-1].startswith("#else"):
-                guards.pop()
-            guards.pop()
-        i += 1
-    # Sort the lists based on pref name, so we can binary search it in
-    # the Preferences implementation.
-    bool_prefs = list(sorted(prefs["bool"], key=lambda x: x[0][0]))
-    int_prefs = list(sorted(prefs["int"], key=lambda x: x[0][0]))
-    string_prefs = list(sorted(prefs["string"], key=lambda x: x[0][0]))
-    return (bool_prefs, int_prefs, string_prefs)
-
-def write_pref_group(dst, prefs, prefix, pref_type):
-    dst.write("static const " + pref_type + " s" + prefix + "" + pref_type + "s[] = {\n")
-    for ((name, value),guards) in prefs:
-        for guard in guards:
-            dst.write(guard)
-        dst.write("  { " + name + ", " + value + " },\n")
-        for guard in guards:
-            if not guard.startswith("#else"):
-                dst.write("#endif // " + guard)
-    dst.write("};\n\n")
+            if counts[-1] == 0:
+                # Empty block. Discard.
+                lines[starts[-1]:i+1] = []
+                i = starts[-1]
+            else:
+                i += 1
+            starts.pop()
+            counts.pop()
+        elif not line.startswith("#"):
+            counts[-1] += 1
+            i += 1
+        else:
+            i += 1
+    return lines
 
 def copy_media_prefs(src_pref_file, dst_pref_file, prefix):
     is_media_pref = re.compile(r'pref\("media.')
@@ -1131,13 +1099,11 @@ def copy_media_prefs(src_pref_file, dst_pref_file, prefix):
         lines = []
         for line in src:
             if is_media_pref.match(line) or is_preprocessor_line(line):
-                lines += [line]
-
-        (bool_prefs, int_prefs, string_prefs) = extract_preferences(lines)
+                lines += [line];
+        lines = strip_empty_ifdefs(lines)
         with open(dst_pref_file, "w") as dst:
-            write_pref_group(dst, bool_prefs, prefix, "BoolPref")
-            write_pref_group(dst, int_prefs, prefix, "IntPref")
-            write_pref_group(dst, string_prefs, prefix, "StringPref")
+            for line in lines:
+                dst.write(line)
 
 def main(args):
     if len(args) != 2:

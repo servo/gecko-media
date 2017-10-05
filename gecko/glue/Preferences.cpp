@@ -45,8 +45,32 @@ Preferences::Shutdown()
   }
 }
 
+void
+Preferences::pref(const char* aName, bool aValue)
+{
+  mBoolPrefs.Put(aName, aValue);
+}
+
+void
+Preferences::pref(const char* aName, const char* aValue)
+{
+  mStrPrefs.Put(aName, nsCString(aValue));
+}
+
+void
+Preferences::pref(const char* aName, int32_t aValue)
+{
+  mIntPrefs.Put(aName, aValue);
+}
+
 Preferences::Preferences()
 {
+  #include "prefs_common.cpp"
+  #if defined(MOZ_WIDGET_ANDROID)
+  #include "prefs_android.cpp"
+  #else
+  #include "prefs_desktop.cpp"
+  #endif
 }
 
 Preferences::~Preferences()
@@ -110,71 +134,14 @@ Preferences::GetDirty(bool* _retval)
   return NS_ERROR_NOT_IMPLEMENTED;
 }
 
-#include "prefs_common.cpp"
-#if defined(MOZ_WIDGET_ANDROID)
-#include "prefs_android.cpp"
-#else
-#include "prefs_desktop.cpp"
-#endif
-
-template<typename PrefArrayType, typename PrefValueType>
-bool
-FindPref(const PrefArrayType* aPlatformPrefs,
-         size_t aPlatformPrefsLength,
-         const PrefArrayType* aCommonPrefs,
-         size_t aCommonPrefsLength,
-         const char* aPref,
-         PrefValueType* aResult)
-{
-  size_t match = 0;
-  if (BinarySearchIf(aPlatformPrefs,
-                     0,
-                     aPlatformPrefsLength,
-                     [&](const PrefArrayType& aOther) {
-                       return strcmp(aPref, aOther.mName);
-                     },
-                     &match)) {
-    *aResult = aPlatformPrefs[match].mValue;
-    return true;
-  }
-  if (BinarySearchIf(aCommonPrefs,
-                     0,
-                     aCommonPrefsLength,
-                     [&](const PrefArrayType& aOther) {
-                       return strcmp(aPref, aOther.mName);
-                     },
-                     &match)) {
-    *aResult = aCommonPrefs[match].mValue;
-    return true;
-  }
-  return false;
-}
-
-#if defined(MOZ_WIDGET_ANDROID)
-#define PLATFORM_BOOL_PREFS sAndroidBoolPrefs
-#define PLATFORM_INT_PREFS sAndroidIntPrefs
-#define PLATFORM_STRING_PREFS sAndroidStringPrefs
-#else
-#define PLATFORM_BOOL_PREFS sDesktopBoolPrefs
-#define PLATFORM_INT_PREFS sDesktopIntPrefs
-#define PLATFORM_STRING_PREFS sDesktopStringPrefs
-#endif
-
 // static
 nsresult
 Preferences::GetBool(const char* aPref, bool* aResult)
 {
   NS_PRECONDITION(aResult, "aResult must not be NULL");
   NS_ENSURE_TRUE(InitStaticMembers(), NS_ERROR_NOT_AVAILABLE);
-  if (FindPref(PLATFORM_BOOL_PREFS,
-               sizeof(PLATFORM_BOOL_PREFS) / sizeof(BoolPref),
-               sCommonBoolPrefs,
-               sizeof(sCommonBoolPrefs) / sizeof(BoolPref),
-               aPref,
-               aResult)) {
-    return NS_OK;
-  }
-  return NS_ERROR_FAILURE;
+  return sPreferences->mBoolPrefs.Get(aPref, aResult)
+    ? NS_OK : NS_ERROR_FAILURE;
 }
 
 // static
@@ -183,15 +150,8 @@ Preferences::GetInt(const char* aPref, int32_t* aResult)
 {
   NS_PRECONDITION(aResult, "aResult must not be NULL");
   NS_ENSURE_TRUE(InitStaticMembers(), NS_ERROR_NOT_AVAILABLE);
-  if (FindPref(PLATFORM_INT_PREFS,
-               sizeof(PLATFORM_INT_PREFS) / sizeof(IntPref),
-               sCommonIntPrefs,
-               sizeof(sCommonIntPrefs) / sizeof(IntPref),
-               aPref,
-               aResult)) {
-    return NS_OK;
-  }
-  return NS_ERROR_FAILURE;
+  return sPreferences->mIntPrefs.Get(aPref, aResult)
+    ? NS_OK : NS_ERROR_FAILURE;
 }
 
 // static
@@ -213,16 +173,11 @@ nsresult
 Preferences::GetCString(const char* aPref, nsACString& aResult)
 {
   NS_ENSURE_TRUE(InitStaticMembers(), NS_ERROR_NOT_AVAILABLE);
-  const char* result = nullptr;
-  if (!FindPref(PLATFORM_STRING_PREFS,
-                sizeof(PLATFORM_STRING_PREFS) / sizeof(StringPref),
-                sCommonStringPrefs,
-                sizeof(sCommonStringPrefs) / sizeof(StringPref),
-                aPref,
-                &result)) {
+  nsCString val;
+  if (!sPreferences->mStrPrefs.Get(aPref, &val)) {
     return NS_ERROR_FAILURE;
   }
-  aResult = nsDependentCString(result);
+  aResult = val;
   return NS_OK;
 }
 
