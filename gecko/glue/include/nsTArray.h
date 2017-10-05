@@ -27,7 +27,7 @@
 // #include "nsCycleCollectionNoteChild.h"
 #include "nsAlgorithm.h"
 // #include "nscore.h"
-// #include "nsQuickSort.h"
+#include "nsQuickSort.h"
 #include "nsDebug.h"
 #include "nsISupportsImpl.h"
 // #include "nsRegionFwd.h"
