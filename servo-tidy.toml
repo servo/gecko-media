@@ -1,0 +1,9 @@
+
+[ignore]
+files = [
+  "./import.py"
+]
+directories = [
+  "./gecko",
+  "./target"
+]
