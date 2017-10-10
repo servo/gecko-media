@@ -706,6 +706,7 @@ fn compile_gecko_media() {
         "dom/media/CubebUtils.cpp",
         "dom/media/MediaInfo.cpp",
         "dom/media/MediaPrefs.cpp",
+        "dom/media/MediaResource.cpp",
         #[cfg(target_os = "macos")]
         "dom/media/systemservices/OSXRunLoopSingleton.cpp",
         "memory/fallible/fallible.cpp",
@@ -826,7 +827,6 @@ fn compile_gecko_media() {
         "Logging.cpp",
         "MainThreadIdlePeriod.cpp",
         "MediaData.cpp",
-        "MediaResource.cpp",
         "nsAppRunner.cpp",
         "nsCategoryManager.cpp",
         "nsComponentManager.cpp",
