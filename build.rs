@@ -704,7 +704,9 @@ fn compile_gecko_media() {
     let src_cpp_files = [
         "dom/media/AudioStream.cpp",
         "dom/media/CubebUtils.cpp",
+        "dom/media/MediaContainerType.cpp",
         "dom/media/MediaInfo.cpp",
+        "dom/media/MediaMIMETypes.cpp",
         "dom/media/MediaPrefs.cpp",
         "dom/media/MediaResource.cpp",
         #[cfg(target_os = "macos")]
