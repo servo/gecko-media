@@ -1,4 +1,5 @@
 pref("media.dormant-on-pause-timeout-ms", 5000);
+pref("media.omt_data_delivery.enabled", false);
 pref("media.cache_size", 512000);
 pref("media.cache_resume_threshold", 30);
 pref("media.cache_readahead_limit", 60);
