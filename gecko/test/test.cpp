@@ -445,6 +445,8 @@ void TestAudioData()
   assert(frame != nullptr);
 }
 
+extern void Test_MediaMIMETypes();
+
 } // namespace mozilla
 
 extern "C" void
@@ -467,6 +469,7 @@ TestGecko()
   mozilla::TestMozPromise();
   mozilla::TestVideoData();
   mozilla::TestAudioData();
+  mozilla::Test_MediaMIMETypes();
 
   mozilla::Preferences::Shutdown();
   NS_ShutdownXPCOM(nullptr);

@@ -67,7 +67,7 @@ fn make_builder(cpp: bool) -> cc::Build {
 fn compile_tests() {
     let mut b = make_builder(true);
 
-    let src_files = ["test.cpp"];
+    let src_files = ["test.cpp", "TestMediaMIMETypes.cpp"];
 
     for file_path in src_files
         .iter()
