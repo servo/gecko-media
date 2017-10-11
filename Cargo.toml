@@ -15,6 +15,10 @@ cubeb-pulse = { git = "https://github.com/djg/cubeb-pulse-rs", branch = "dev", o
 [build-dependencies]
 cc = "1.0"
 
+[dependencies]
+mime = "0.3.5"
+libc = "*"
+
 [features]
 default = ["audio-sample-type-f32"]
 audio-sample-type-s16 = []

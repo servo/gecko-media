@@ -6,6 +6,15 @@
 
 #[cfg(feature = "pulseaudio")]
 extern crate cubeb_pulse;
+extern crate mime;
+extern crate libc;
+
+mod mime_parser_glue;
+pub use mime_parser_glue::mime_parser_new;
+pub use mime_parser_glue::mime_parser_free;
+pub use mime_parser_glue::mime_parser_get_param;
+pub use mime_parser_glue::mime_parser_free_string;
+pub use mime_parser_glue::mime_parser_get_type;
 
 #[cfg(test)]
 mod tests {

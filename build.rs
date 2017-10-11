@@ -830,6 +830,7 @@ fn compile_gecko_media() {
         "MainThreadIdlePeriod.cpp",
         "MediaData.cpp",
         "nsAppRunner.cpp",
+        "nsContentTypeParser.cpp",
         "nsCategoryManager.cpp",
         "nsComponentManager.cpp",
         "nsComponentManagerUtils.cpp",
