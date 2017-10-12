@@ -3,11 +3,10 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #[allow(unused_extern_crates)]
-
 #[cfg(feature = "pulseaudio")]
 extern crate cubeb_pulse;
-extern crate mime;
 extern crate libc;
+extern crate mime;
 
 mod mime_parser_glue;
 pub use mime_parser_glue::mime_parser_new;
