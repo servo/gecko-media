@@ -33,7 +33,8 @@ fn make_builder(cpp: bool) -> cc::Build {
     b.include("gecko/include/mozilla/");
     b.include("gecko/include/mozilla/double-conversion");
 
-    #[cfg(target_os = "macos")] {
+    #[cfg(target_os = "macos")]
+    {
         // (lack of) space matters. This is not a bug, it'safeature.
         let flags = "-Xpreprocessor -includemozilla-config-x86_64-apple-darwin.h -Xpreprocessor -includeundefs.h";
         env::set_var("CFLAGS", flags);
@@ -402,67 +403,70 @@ fn build_libopus() {
     ];
 
     if cfg!(feature = "audio-sample-type-f32") {
-        src_files.extend([
-            "media/libopus/silk/float/apply_sine_window_FLP.c",
-            "media/libopus/silk/float/autocorrelation_FLP.c",
-            "media/libopus/silk/float/burg_modified_FLP.c",
-            "media/libopus/silk/float/bwexpander_FLP.c",
-            "media/libopus/silk/float/corrMatrix_FLP.c",
-            "media/libopus/silk/float/encode_frame_FLP.c",
-            "media/libopus/silk/float/energy_FLP.c",
-            "media/libopus/silk/float/find_LPC_FLP.c",
-            "media/libopus/silk/float/find_LTP_FLP.c",
-            "media/libopus/silk/float/find_pitch_lags_FLP.c",
-            "media/libopus/silk/float/find_pred_coefs_FLP.c",
-            "media/libopus/silk/float/inner_product_FLP.c",
-            "media/libopus/silk/float/k2a_FLP.c",
-            "media/libopus/silk/float/LPC_analysis_filter_FLP.c",
-            "media/libopus/silk/float/LPC_inv_pred_gain_FLP.c",
-            "media/libopus/silk/float/LTP_analysis_filter_FLP.c",
-            "media/libopus/silk/float/LTP_scale_ctrl_FLP.c",
-            "media/libopus/silk/float/noise_shape_analysis_FLP.c",
-            "media/libopus/silk/float/pitch_analysis_core_FLP.c",
-            "media/libopus/silk/float/process_gains_FLP.c",
-            "media/libopus/silk/float/regularize_correlations_FLP.c",
-            "media/libopus/silk/float/residual_energy_FLP.c",
-            "media/libopus/silk/float/scale_copy_vector_FLP.c",
-            "media/libopus/silk/float/scale_vector_FLP.c",
-            "media/libopus/silk/float/schur_FLP.c",
-            "media/libopus/silk/float/sort_FLP.c",
-            "media/libopus/silk/float/warped_autocorrelation_FLP.c",
-            "media/libopus/silk/float/wrappers_FLP.c",
-            "media/libopus/src/analysis.c",
-            "media/libopus/src/mlp.c",
-            "media/libopus/src/mlp_data.c",
-        ].iter());
+        src_files.extend(
+            [
+                "media/libopus/silk/float/apply_sine_window_FLP.c",
+                "media/libopus/silk/float/autocorrelation_FLP.c",
+                "media/libopus/silk/float/burg_modified_FLP.c",
+                "media/libopus/silk/float/bwexpander_FLP.c",
+                "media/libopus/silk/float/corrMatrix_FLP.c",
+                "media/libopus/silk/float/encode_frame_FLP.c",
+                "media/libopus/silk/float/energy_FLP.c",
+                "media/libopus/silk/float/find_LPC_FLP.c",
+                "media/libopus/silk/float/find_LTP_FLP.c",
+                "media/libopus/silk/float/find_pitch_lags_FLP.c",
+                "media/libopus/silk/float/find_pred_coefs_FLP.c",
+                "media/libopus/silk/float/inner_product_FLP.c",
+                "media/libopus/silk/float/k2a_FLP.c",
+                "media/libopus/silk/float/LPC_analysis_filter_FLP.c",
+                "media/libopus/silk/float/LPC_inv_pred_gain_FLP.c",
+                "media/libopus/silk/float/LTP_analysis_filter_FLP.c",
+                "media/libopus/silk/float/LTP_scale_ctrl_FLP.c",
+                "media/libopus/silk/float/noise_shape_analysis_FLP.c",
+                "media/libopus/silk/float/pitch_analysis_core_FLP.c",
+                "media/libopus/silk/float/process_gains_FLP.c",
+                "media/libopus/silk/float/regularize_correlations_FLP.c",
+                "media/libopus/silk/float/residual_energy_FLP.c",
+                "media/libopus/silk/float/scale_copy_vector_FLP.c",
+                "media/libopus/silk/float/scale_vector_FLP.c",
+                "media/libopus/silk/float/schur_FLP.c",
+                "media/libopus/silk/float/sort_FLP.c",
+                "media/libopus/silk/float/warped_autocorrelation_FLP.c",
+                "media/libopus/silk/float/wrappers_FLP.c",
+                "media/libopus/src/analysis.c",
+                "media/libopus/src/mlp.c",
+                "media/libopus/src/mlp_data.c",
+            ].iter(),
+        );
         c_builder.include("gecko/include/mozilla/media/libopus/silk/float");
-
     } else {
-        src_files.extend([
-            "media/libopus/silk/fixed/apply_sine_window_FIX.c",
-            "media/libopus/silk/fixed/autocorr_FIX.c",
-            "media/libopus/silk/fixed/burg_modified_FIX.c",
-            "media/libopus/silk/fixed/corrMatrix_FIX.c",
-            "media/libopus/silk/fixed/encode_frame_FIX.c",
-            "media/libopus/silk/fixed/find_LPC_FIX.c",
-            "media/libopus/silk/fixed/find_LTP_FIX.c",
-            "media/libopus/silk/fixed/find_pitch_lags_FIX.c",
-            "media/libopus/silk/fixed/find_pred_coefs_FIX.c",
-            "media/libopus/silk/fixed/k2a_FIX.c",
-            "media/libopus/silk/fixed/k2a_Q16_FIX.c",
-            "media/libopus/silk/fixed/LTP_analysis_filter_FIX.c",
-            "media/libopus/silk/fixed/LTP_scale_ctrl_FIX.c",
-            "media/libopus/silk/fixed/noise_shape_analysis_FIX.c",
-            "media/libopus/silk/fixed/pitch_analysis_core_FIX.c",
-            "media/libopus/silk/fixed/process_gains_FIX.c",
-            "media/libopus/silk/fixed/regularize_correlations_FIX.c",
-            "media/libopus/silk/fixed/residual_energy16_FIX.c",
-            "media/libopus/silk/fixed/residual_energy_FIX.c",
-            "media/libopus/silk/fixed/schur64_FIX.c",
-            "media/libopus/silk/fixed/schur_FIX.c",
-            "media/libopus/silk/fixed/vector_ops_FIX.c",
-            "media/libopus/silk/fixed/warped_autocorrelation_FIX.c",
-        ].iter());
+        src_files.extend(
+            [
+                "media/libopus/silk/fixed/apply_sine_window_FIX.c",
+                "media/libopus/silk/fixed/autocorr_FIX.c",
+                "media/libopus/silk/fixed/burg_modified_FIX.c",
+                "media/libopus/silk/fixed/corrMatrix_FIX.c",
+                "media/libopus/silk/fixed/encode_frame_FIX.c",
+                "media/libopus/silk/fixed/find_LPC_FIX.c",
+                "media/libopus/silk/fixed/find_LTP_FIX.c",
+                "media/libopus/silk/fixed/find_pitch_lags_FIX.c",
+                "media/libopus/silk/fixed/find_pred_coefs_FIX.c",
+                "media/libopus/silk/fixed/k2a_FIX.c",
+                "media/libopus/silk/fixed/k2a_Q16_FIX.c",
+                "media/libopus/silk/fixed/LTP_analysis_filter_FIX.c",
+                "media/libopus/silk/fixed/LTP_scale_ctrl_FIX.c",
+                "media/libopus/silk/fixed/noise_shape_analysis_FIX.c",
+                "media/libopus/silk/fixed/pitch_analysis_core_FIX.c",
+                "media/libopus/silk/fixed/process_gains_FIX.c",
+                "media/libopus/silk/fixed/regularize_correlations_FIX.c",
+                "media/libopus/silk/fixed/residual_energy16_FIX.c",
+                "media/libopus/silk/fixed/residual_energy_FIX.c",
+                "media/libopus/silk/fixed/schur64_FIX.c",
+                "media/libopus/silk/fixed/schur_FIX.c",
+                "media/libopus/silk/fixed/vector_ops_FIX.c",
+                "media/libopus/silk/fixed/warped_autocorrelation_FIX.c",
+            ].iter(),
+        );
         c_builder.define("FIXED_POINT", "1");
         c_builder.define("DISABLE_FLOAT_API", "");
         c_builder.include("gecko/include/mozilla/media/libopus/silk/fixed");
@@ -470,20 +474,22 @@ fn build_libopus() {
 
     #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
     {
-        src_files.extend([
-            "media/libopus/celt/x86/pitch_sse.c",
-            "media/libopus/celt/x86/x86_celt_map.c",
-            "media/libopus/celt/x86/x86cpu.c",
-            "media/libopus/celt/x86/pitch_sse2.c",
-            "media/libopus/celt/x86/vq_sse2.c",
-            "media/libopus/celt/x86/celt_lpc_sse.c",
-            "media/libopus/celt/x86/pitch_sse4_1.c",
-            "media/libopus/silk/x86/NSQ_del_dec_sse.c",
-            "media/libopus/silk/x86/NSQ_sse.c",
-            "media/libopus/silk/x86/VAD_sse.c",
-            "media/libopus/silk/x86/VQ_WMat_EC_sse.c",
-            "media/libopus/silk/x86/x86_silk_map.c",
-        ].iter());
+        src_files.extend(
+            [
+                "media/libopus/celt/x86/pitch_sse.c",
+                "media/libopus/celt/x86/x86_celt_map.c",
+                "media/libopus/celt/x86/x86cpu.c",
+                "media/libopus/celt/x86/pitch_sse2.c",
+                "media/libopus/celt/x86/vq_sse2.c",
+                "media/libopus/celt/x86/celt_lpc_sse.c",
+                "media/libopus/celt/x86/pitch_sse4_1.c",
+                "media/libopus/silk/x86/NSQ_del_dec_sse.c",
+                "media/libopus/silk/x86/NSQ_sse.c",
+                "media/libopus/silk/x86/VAD_sse.c",
+                "media/libopus/silk/x86/VQ_WMat_EC_sse.c",
+                "media/libopus/silk/x86/x86_silk_map.c",
+            ].iter(),
+        );
 
         c_builder.define("OPUS_HAVE_RTCD", "");
         c_builder.define("OPUS_X86_MAY_HAVE_SSE", "");
@@ -502,20 +508,22 @@ fn build_libopus() {
 
     #[cfg(target_arch = "arm")]
     {
-        src_files.extend([
-            "media/libopus/silk/arm/arm_silk_map.c",
-            "media/libopus/silk/arm/biquad_alt_neon_intr.c",
-            "media/libopus/silk/arm/LPC_inv_pred_gain_neon_intr.c",
-            "media/libopus/silk/arm/NSQ_del_dec_neon_intr.c",
-            "media/libopus/silk/arm/NSQ_neon.c",
-            "media/libopus/silk/fixed/arm/warped_autocorrelation_FIX_neon_intr.c",
-            "media/libopus/celt/arm/arm_celt_map.c",
-            "media/libopus/celt/arm/armcpu.c",
-            "media/libopus/celt/arm/celt_ne10_fft.c",
-            "media/libopus/celt/arm/celt_ne10_mdct.c",
-            "media/libopus/celt/arm/celt_neon_intr.c",
-            "media/libopus/celt/arm/pitch_neon_intr.c",
-        ].iter());
+        src_files.extend(
+            [
+                "media/libopus/silk/arm/arm_silk_map.c",
+                "media/libopus/silk/arm/biquad_alt_neon_intr.c",
+                "media/libopus/silk/arm/LPC_inv_pred_gain_neon_intr.c",
+                "media/libopus/silk/arm/NSQ_del_dec_neon_intr.c",
+                "media/libopus/silk/arm/NSQ_neon.c",
+                "media/libopus/silk/fixed/arm/warped_autocorrelation_FIX_neon_intr.c",
+                "media/libopus/celt/arm/arm_celt_map.c",
+                "media/libopus/celt/arm/armcpu.c",
+                "media/libopus/celt/arm/celt_ne10_fft.c",
+                "media/libopus/celt/arm/celt_ne10_mdct.c",
+                "media/libopus/celt/arm/celt_neon_intr.c",
+                "media/libopus/celt/arm/pitch_neon_intr.c",
+            ].iter(),
+        );
     }
 
     for file_path in src_files
@@ -632,7 +640,6 @@ fn build_libstagefright(cpp_builder: &mut cc::Build) {
         "media/libstagefright/system/core/libutils/String8.cpp",
         "media/libstagefright/system/core/libutils/Unicode.cpp",
         "media/libstagefright/system/core/libutils/VectorImpl.cpp",
-
     ];
     for file_path in src_cpp_files
         .iter()
@@ -656,21 +663,24 @@ fn build_libstagefright(cpp_builder: &mut cc::Build) {
     #[cfg(any(target_os = "macos", target_os = "linux"))]
     defines.push(("HAVE_SYS_UIO_H", ""));
 
-    #[cfg(target_os = "macos")] {
+    #[cfg(target_os = "macos")]
+    {
         defines.push(("off64_t", "off_t"));
         include_dirs.push("ports/darwin/include");
     }
 
-    #[cfg(not(target_os = "android"))] {
+    #[cfg(not(target_os = "android"))]
+    {
         defines.push(("FAKE_LOG_DEVICE", "1"));
-        src_c_files.extend([
-            "media/libstagefright/system/core/libcutils/strdup16to8.c",
-            "media/libstagefright/system/core/liblog/fake_log_device.c",
-            "media/libstagefright/system/core/liblog/logd_write.c",
-            "media/libstagefright/system/core/liblog/logprint.c",
-        ].iter());
-        for file_path in src_c_files.iter()
-        {
+        src_c_files.extend(
+            [
+                "media/libstagefright/system/core/libcutils/strdup16to8.c",
+                "media/libstagefright/system/core/liblog/fake_log_device.c",
+                "media/libstagefright/system/core/liblog/logd_write.c",
+                "media/libstagefright/system/core/liblog/logprint.c",
+            ].iter(),
+        );
+        for file_path in src_c_files.iter() {
             c_builder.file(format!("gecko/src/{}", file_path));
         }
     }
@@ -681,8 +691,9 @@ fn build_libstagefright(cpp_builder: &mut cc::Build) {
     }
 
 
-    for include_dir in include_dirs.iter()
-        .map(|&p| "gecko/include/mozilla/media/libstagefright/".to_owned() + p.clone()) {
+    for include_dir in include_dirs.iter().map(|&p| {
+        "gecko/include/mozilla/media/libstagefright/".to_owned() + p.clone()
+    }) {
         c_builder.include(include_dir.clone());
         cpp_builder.include(include_dir);
     }
@@ -856,7 +867,8 @@ fn compile_gecko_media() {
         cpp_builder.file(file_path);
     }
 
-    #[cfg(target_os = "macos")] {
+    #[cfg(target_os = "macos")]
+    {
         let frameworks = vec!["CoreFoundation", "CoreAudio", "AudioUnit"];
         for framework in &frameworks {
             println!("cargo:rustc-link-lib=framework={}", framework);
