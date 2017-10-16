@@ -1,12 +1,15 @@
 #include <assert.h>
+#include <map>
 #include <stdio.h>
 #include <string.h>
 #include <string>
 #include <unistd.h>
-#include <map>
 
 #include "AudioStream.h"
 #include "GeckoMedia.h"
+#include "ImageContainer.h"
+#include "MediaData.h"
+#include "PlatformDecoderModule.h"
 #include "VideoUtils.h"
 #include "gecko_media_prefs.h"
 #include "mozilla/ArrayUtils.h"
@@ -23,9 +26,6 @@
 #include "nsTArray.h"
 #include "nsThreadManager.h"
 #include "nsThreadUtils.h"
-#include "MediaData.h"
-#include "ImageContainer.h"
-#include "PlatformDecoderModule.h"
 
 #define SIMPLE_STRING "I'm a simple ASCII string"
 #define UTF8_STRING                                                            \
@@ -86,19 +86,27 @@ std::map<const char*, bool> sBoolPrefs;
 std::map<const char*, int32_t> sIntPrefs;
 std::map<const char*, const char*> sStrPrefs;
 
-void pref(const char* aName, bool aValue) {
+void
+pref(const char* aName, bool aValue)
+{
   sBoolPrefs[aName] = aValue;
 }
 
-void pref(const char* aName, const char* aValue) {
+void
+pref(const char* aName, const char* aValue)
+{
   sStrPrefs[aName] = aValue;
 }
 
-void pref(const char* aName, int32_t aValue) {
+void
+pref(const char* aName, int32_t aValue)
+{
   sIntPrefs[aName] = aValue;
 }
 
-void InitPrefs() {
+void
+InitPrefs()
+{
 #include "../glue/prefs_common.cpp"
 #if defined(MOZ_WIDGET_ANDROID)
 #include "../glue/prefs_android.cpp"
@@ -330,8 +338,7 @@ TestTimeStamp()
 // Copy of BlankVideoDataCreator::Create(), use BlankVideoDataCreator
 // directly once it's in our source.
 already_AddRefed<MediaData>
-CreateBlankVideoData(uint32_t aFrameWidth,
-                     uint32_t aFrameHeight)
+CreateBlankVideoData(uint32_t aFrameWidth, uint32_t aFrameHeight)
 {
   // Create a fake YUV buffer in a 420 format. That is, an 8bpp Y plane,
   // with a U and V plane that are half the size of the Y plane, i.e 8 bit,
@@ -377,18 +384,20 @@ CreateBlankVideoData(uint32_t aFrameWidth,
   info.mDisplay = gfx::IntSize(aFrameWidth, aFrameHeight);
   gfx::IntRect picture(0, 0, aFrameWidth, aFrameHeight);
   RefPtr<layers::ImageContainer> imageContainer = new layers::ImageContainer();
-  return VideoData::CreateAndCopyData(info,
-                                      imageContainer,
-                                      0,
-                                      media::TimeUnit::Zero(),
-                                      media::TimeUnit::FromSeconds(1000.0 / 30.0),
-                                      buffer,
-                                      false,
-                                      media::TimeUnit::Zero(),
-                                      picture);
+  return VideoData::CreateAndCopyData(
+    info,
+    imageContainer,
+    0,
+    media::TimeUnit::Zero(),
+    media::TimeUnit::FromSeconds(1000.0 / 30.0),
+    buffer,
+    false,
+    media::TimeUnit::Zero(),
+    picture);
 }
 
-void TestVideoData()
+void
+TestVideoData()
 {
   RefPtr<MediaData> frame = CreateBlankVideoData(320, 240);
   assert(frame != nullptr);
@@ -408,11 +417,9 @@ CreateBlankAudioData()
 
   // Convert duration to frames. We add 1 to duration to account for
   // rounding errors, so we get a consistent tone.
-  CheckedInt64 frames = UsecsToFrames(
-    duration.ToMicroseconds()+1, sampleRate);
-  if (!frames.isValid() ||
-      !channelCount ||
-      !sampleRate ||
+  CheckedInt64 frames =
+    UsecsToFrames(duration.ToMicroseconds() + 1, sampleRate);
+  if (!frames.isValid() || !channelCount || !sampleRate ||
       frames.value() > (UINT32_MAX / channelCount)) {
     return nullptr;
   }
@@ -440,13 +447,15 @@ CreateBlankAudioData()
   return data.forget();
 }
 
-void TestAudioData()
+void
+TestAudioData()
 {
   RefPtr<MediaData> frame = CreateBlankAudioData();
   assert(frame != nullptr);
 }
 
-extern void Test_MediaMIMETypes();
+extern void
+Test_MediaMIMETypes();
 
 } // namespace mozilla
 
