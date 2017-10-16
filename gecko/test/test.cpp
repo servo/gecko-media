@@ -6,6 +6,7 @@
 #include <map>
 
 #include "AudioStream.h"
+#include "GeckoMedia.h"
 #include "VideoUtils.h"
 #include "gecko_media_prefs.h"
 #include "mozilla/ArrayUtils.h"
@@ -452,13 +453,6 @@ extern void Test_MediaMIMETypes();
 extern "C" void
 TestGecko()
 {
-  // TODO: Move these Init calls to a top-level function? See also XPCOMInit.
-  mozilla::LogModule::Init();
-  NS_SetMainThread();
-  nsThreadManager::get().Init();
-  NS_InitMinimalXPCOM();
-  mozilla::SharedThreadPool::InitStatics();
-
   mozilla::TestPreferences();
   mozilla::TestString();
   mozilla::TestArray();
@@ -470,7 +464,4 @@ TestGecko()
   mozilla::TestVideoData();
   mozilla::TestAudioData();
   mozilla::Test_MediaMIMETypes();
-
-  mozilla::Preferences::Shutdown();
-  NS_ShutdownXPCOM(nullptr);
 }

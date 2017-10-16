@@ -2,9 +2,11 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+extern crate bindgen;
 extern crate cc;
 
 use std::env;
+use std::path::PathBuf;
 
 fn make_builder(cpp: bool) -> cc::Build {
     let mut b = cc::Build::new();
@@ -834,6 +836,7 @@ fn compile_gecko_media() {
         "AbstractThread.cpp",
         "BlockingResourceBase.cpp",
         "CooperativeThreadPool.cpp",
+        "GeckoMedia.cpp",
         "ImageContainer.cpp",
         "InputEventStatistics.cpp",
         "nsDebugImpl.cpp",
@@ -879,7 +882,20 @@ fn compile_gecko_media() {
     cpp_builder.compile("gecko_media_cpp");
 }
 
+fn compile_bindings() {
+    let bindings = bindgen::Builder::default()
+        .header("gecko/glue/include/wrapper.hpp")
+        .generate()
+        .expect("Unable to generate bindings");
+
+    let out_path = PathBuf::from(env::var("OUT_DIR").unwrap());
+    bindings
+        .write_to_file(out_path.join("bindings.rs"))
+        .expect("Couldn't write bindings!");
+}
+
 fn main() {
+    compile_bindings();
     compile_gecko_media();
     compile_tests();
 }
