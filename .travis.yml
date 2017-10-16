@@ -43,7 +43,9 @@ script:
   - servo-tidy
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
       cargo test --verbose;
+      cargo test --verbose --release;
     else
       CC=gcc-5 CXX=g++-5 cargo test --verbose --features pulseaudio;
+      CC=gcc-5 CXX=g++-5 cargo test --verbose --features pulseaudio --release;
     fi;
 
