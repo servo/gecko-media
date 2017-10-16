@@ -60,17 +60,17 @@ mod tests {
         fn TestGecko();
     }
 
-    fn test_can_play_type() {
+    unsafe fn test_can_play_type() {
         assert_eq!(can_play_type("bogus/bogus"), CanPlayType::No);
     }
 
     #[test]
     fn run_tests() {
-        initialize();
         unsafe {
+            initialize();
             TestGecko();
+            test_can_play_type();
+            shutdown();
         };
-        test_can_play_type();
-        shutdown();
     }
 }
