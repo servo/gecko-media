@@ -1,5 +1,5 @@
 pref("media.dormant-on-pause-timeout-ms", 5000);
-pref("media.omt_data_delivery.enabled", false);
+pref("media.omt_data_delivery.enabled", true);
 pref("media.cache_size", 512000);
 pref("media.cache_resume_threshold", 30);
 pref("media.cache_readahead_limit", 60);
@@ -99,7 +99,6 @@ pref("media.navigator.video.red_ulpfec_enabled", false);
 pref("media.peerconnection.dtmf.enabled", true);
 pref("media.webrtc.debug.trace_mask", 0);
 pref("media.webrtc.debug.multi_log", false);
-pref("media.webrtc.debug.aec_log_dir", "");
 pref("media.webrtc.debug.log_file", "");
 pref("media.webrtc.debug.aec_dump_max_size", 4194304); // 4MB
 pref("media.navigator.video.default_width",0);  // adaptive default
