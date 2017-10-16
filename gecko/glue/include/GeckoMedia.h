@@ -13,4 +13,14 @@ GeckoMedia_Initialize();
 void
 GeckoMedia_Shutdown();
 
+enum CanPlayTypeResult
+{
+  No = 0,
+  Maybe = 1,
+  Probably = 2,
+};
+
+CanPlayTypeResult
+GeckoMedia_CanPlayType(const char* aMimeType);
+
 #endif // GeckoMedia_h_
