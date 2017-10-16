@@ -20,6 +20,7 @@ pub use mime_parser_glue::mime_parser_get_param;
 pub use mime_parser_glue::mime_parser_free_string;
 pub use mime_parser_glue::mime_parser_get_type;
 
+use std::ffi::CString;
 
 /// Initialize Gecko Media. Must be called on the thread which Gecko will
 /// consider the "main" thread.
@@ -36,6 +37,30 @@ pub fn shutdown() {
     }
 }
 
+/// Return type of can_play_type.
+#[derive(PartialEq, Debug)]
+pub enum CanPlayType {
+    No,
+    Maybe,
+    Probably,
+}
+
+/// Reports whether Gecko Media can play the corresponding MIME type, as
+/// expected by the HTMLMediaElement.canPlayType API.
+pub fn can_play_type(mime_type: &str) -> CanPlayType {
+    unsafe {
+        if let Ok(mime_type) = CString::new(mime_type.as_bytes()) {
+            match GeckoMedia_CanPlayType(mime_type.as_ptr()) {
+                CanPlayTypeResult::No => CanPlayType::No,
+                CanPlayTypeResult::Maybe => CanPlayType::Maybe,
+                CanPlayTypeResult::Probably => CanPlayType::Probably,
+            }
+        }  else {
+            CanPlayType::No
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -44,12 +69,17 @@ mod tests {
         fn TestGecko();
     }
 
+    fn test_can_play_type() {
+        assert_eq!(can_play_type("bogus/bogus"), CanPlayType::No);
+    }
+
     #[test]
     fn run_tests() {
         initialize();
         unsafe {
             TestGecko();
         };
+        test_can_play_type();
         shutdown();
     }
 }

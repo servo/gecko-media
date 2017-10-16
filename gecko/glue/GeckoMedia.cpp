@@ -28,3 +28,9 @@ GeckoMedia_Shutdown()
   mozilla::Preferences::Shutdown();
   NS_ShutdownXPCOM(nullptr);
 }
+
+CanPlayTypeResult
+GeckoMedia_CanPlayType(const char* aMimeType)
+{
+  return CanPlayTypeResult::No;
+}
