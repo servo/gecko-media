@@ -460,6 +460,9 @@ TestAudioData()
 extern void
 Test_MediaMIMETypes();
 
+extern void
+Test_MP4Demuxer();
+
 void
 TestDecoderTraits()
 {
@@ -487,5 +490,6 @@ TestGecko()
   mozilla::TestVideoData();
   mozilla::TestAudioData();
   mozilla::Test_MediaMIMETypes();
+  mozilla::Test_MP4Demuxer();
   mozilla::TestDecoderTraits();
 }

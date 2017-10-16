@@ -71,7 +71,7 @@ fn make_builder(cpp: bool) -> cc::Build {
 fn compile_tests() {
     let mut b = make_builder(true);
 
-    let src_files = ["test.cpp", "TestMediaMIMETypes.cpp"];
+    let src_files = ["test.cpp", "MockMediaResource.cpp", "TestMediaMIMETypes.cpp", "TestMP4Demuxer.cpp"];
 
     for file_path in src_files
         .iter()
@@ -723,6 +723,8 @@ fn compile_gecko_media() {
         "dom/media/MediaMIMETypes.cpp",
         "dom/media/MediaPrefs.cpp",
         "dom/media/MediaResource.cpp",
+        "dom/media/fmp4/MP4Demuxer.cpp",
+        "dom/media/platforms/agnostic/OpusDecoder.cpp",
         #[cfg(target_os = "macos")]
         "dom/media/systemservices/OSXRunLoopSingleton.cpp",
         "memory/fallible/fallible.cpp",
@@ -747,6 +749,7 @@ fn compile_gecko_media() {
         "toolkit/library/StaticXULComponentsStart.cpp",
         "toolkit/library/StaticXULComponentsEnd/StaticXULComponentsEnd.cpp",
         "xpcom/base/ClearOnShutdown.cpp",
+        "xpcom/base/ErrorNames.cpp",
         "xpcom/base/nsCOMPtr.cpp",
         "xpcom/base/nsClassInfoImpl.cpp",
         "xpcom/base/nsID.cpp",
@@ -845,6 +848,7 @@ fn compile_gecko_media() {
         "Logging.cpp",
         "MainThreadIdlePeriod.cpp",
         "MediaData.cpp",
+        "MediaFormatReader.cpp",
         "nsAppRunner.cpp",
         "nsContentTypeParser.cpp",
         "nsCategoryManager.cpp",

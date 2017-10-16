@@ -6,6 +6,7 @@
 
 #include "GeckoMedia.h"
 
+#include "MediaPrefs.h"
 #include "mozilla/Logging.h"
 #include "mozilla/Preferences.h"
 #include "mozilla/SharedThreadPool.h"
@@ -20,6 +21,7 @@ GeckoMedia_Initialize()
   nsThreadManager::get().Init();
   NS_InitMinimalXPCOM();
   mozilla::SharedThreadPool::InitStatics();
+  mozilla::MediaPrefs::GetSingleton();
 }
 
 void

@@ -14,6 +14,7 @@
 #include "nsTimerImpl.h"
 #include "nsXPCOMCIDInternal.h"
 
+#include "mozilla/ClearOnShutdown.h"
 #include "mozilla/Module.h"
 #include "mozilla/ModuleUtils.h"
 
@@ -128,6 +129,7 @@ NS_ShutdownXPCOM(nsIServiceManager* aServMgr)
                    (nsObserverService**)getter_AddRefs(observerService));
 
     if (observerService) {
+      mozilla::KillClearOnShutdown(ShutdownPhase::WillShutdown);
       observerService->NotifyObservers(nullptr,
                                        NS_XPCOM_WILL_SHUTDOWN_OBSERVER_ID,
                                        nullptr);
@@ -135,6 +137,7 @@ NS_ShutdownXPCOM(nsIServiceManager* aServMgr)
       nsCOMPtr<nsIServiceManager> mgr;
       rv = NS_GetServiceManager(getter_AddRefs(mgr));
       if (NS_SUCCEEDED(rv)) {
+        mozilla::KillClearOnShutdown(ShutdownPhase::Shutdown);
         observerService->NotifyObservers(mgr, NS_XPCOM_SHUTDOWN_OBSERVER_ID,
                                          nullptr);
       }
@@ -157,12 +160,23 @@ NS_ShutdownXPCOM(nsIServiceManager* aServMgr)
 
   }
 
+  // Free ClearOnShutdown()'ed smart pointers.  This needs to happen *after*
+  // we've finished notifying observers of XPCOM shutdown, because shutdown
+  // observers themselves might call ClearOnShutdown().
+  mozilla::KillClearOnShutdown(ShutdownPhase::ShutdownFinal);
+
+  // XPCOM is officially in shutdown mode NOW
+  // Set this only after the observers have been notified as this
+  // will cause servicemanager to become inaccessible.
+  //mozilla::services::Shutdown();
+
   // We may have AddRef'd for the caller of NS_InitXPCOM, so release it
   // here again:
   NS_IF_RELEASE(aServMgr);
 
   // Shutdown global servicemanager
   if (nsComponentManagerImpl::gComponentManager) {
+    mozilla::KillClearOnShutdown(ShutdownPhase::ShutdownThreads);
     nsComponentManagerImpl::gComponentManager->FreeServices();
   }
 
