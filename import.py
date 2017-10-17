@@ -1187,6 +1187,18 @@ objdir_files = [
     "speex/speex_resampler.h",
 ]
 
+local_files = {
+    "DecoderData.cpp": "media/libstagefright/binding/",
+}
+
+def copy_local_files():
+    for filename, dirname in local_files.items():
+        dst_dir = os.path.join("gecko", "src", dirname)
+        src = os.path.join("local", filename)
+        dst = os.path.join(dst_dir, filename)
+        ensure_dir_exists(dst)
+        copyfile(src, dst)
+
 def get_obj_dir_path(src_dir):
     if sys.platform == 'darwin':
         obj_dir = "obj-x86_64-apple-darwin16.7.0"
@@ -1319,6 +1331,7 @@ def main(args):
 
     remove_previous_copy(src_dir, dst_dir)
     copy_files(src_dir, dst_dir)
+    copy_local_files()
     # Gecko's string classes only build in unified mode...
     write_unified_cpp_file(dst_dir + "src/xpcom/string")
     write_gecko_revision_file(src_dir)
