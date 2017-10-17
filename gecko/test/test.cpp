@@ -6,6 +6,7 @@
 #include <unistd.h>
 
 #include "AudioStream.h"
+#include "DecoderTraits.h"
 #include "GeckoMedia.h"
 #include "ImageContainer.h"
 #include "MediaData.h"
@@ -26,6 +27,8 @@
 #include "nsTArray.h"
 #include "nsThreadManager.h"
 #include "nsThreadUtils.h"
+#include "MediaStreamGraph.h"
+#include "MediaDecoder.h"
 
 #define SIMPLE_STRING "I'm a simple ASCII string"
 #define UTF8_STRING                                                            \
@@ -457,6 +460,17 @@ TestAudioData()
 extern void
 Test_MediaMIMETypes();
 
+void
+TestDecoderTraits()
+{
+  assert(DecoderTraits::CanHandleContainerType(
+    MediaContainerType(MEDIAMIMETYPE("audio/mp4")), nullptr) == CANPLAY_NO);
+  assert(DecoderTraits::CanHandleContainerType(
+    MediaContainerType(MEDIAMIMETYPE("video/mp4")), nullptr) == CANPLAY_NO);
+  assert(DecoderTraits::CanHandleContainerType(
+    MediaContainerType(MEDIAMIMETYPE("audio/wav")), nullptr) == CANPLAY_NO);
+}
+
 } // namespace mozilla
 
 extern "C" void
@@ -473,4 +487,5 @@ TestGecko()
   mozilla::TestVideoData();
   mozilla::TestAudioData();
   mozilla::Test_MediaMIMETypes();
+  mozilla::TestDecoderTraits();
 }

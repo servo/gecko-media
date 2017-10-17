@@ -836,6 +836,7 @@ fn compile_gecko_media() {
         "AbstractThread.cpp",
         "BlockingResourceBase.cpp",
         "CooperativeThreadPool.cpp",
+        "DecoderTraits.cpp",
         "GeckoMedia.cpp",
         "ImageContainer.cpp",
         "InputEventStatistics.cpp",
