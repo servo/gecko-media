@@ -14,7 +14,7 @@ extern crate mime;
 
 use std::ffi::CString;
 
-mod mime_parser_glue;
+pub mod mime_parser_glue;
 
 pub mod bindings {
     include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
@@ -24,12 +24,6 @@ use bindings::{GeckoMedia_CanPlayType, GeckoMedia_Initialize, GeckoMedia_Shutdow
 
 #[doc(inline)]
 pub use bindings::CanPlayTypeResult as CanPlayType;
-
-pub use mime_parser_glue::mime_parser_new;
-pub use mime_parser_glue::mime_parser_free;
-pub use mime_parser_glue::mime_parser_get_param;
-pub use mime_parser_glue::mime_parser_free_string;
-pub use mime_parser_glue::mime_parser_get_type;
 
 /// Initialize Gecko Media. Must be called on the thread which Gecko will
 /// consider the "main" thread.
