@@ -11,6 +11,7 @@
 extern crate cubeb_pulse;
 extern crate libc;
 extern crate mime;
+extern crate mp4parse_capi;
 
 use std::ffi::CString;
 

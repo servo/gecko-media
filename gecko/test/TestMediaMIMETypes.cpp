@@ -6,17 +6,12 @@
 // #include "gtest/gtest.h"
 #include "MediaMIMETypes.h"
 #include "mozilla/Unused.h"
+#include "gtest-glue.h"
 
 #include <assert.h>
 #include <iostream>
 
 namespace mozilla {
-
-#define TEST(A, B) void Test_##A##B ()
-#define EXPECT_TRUE(condition) assert((condition));
-#define EXPECT_FALSE(condition) assert(!condition);
-#define EXPECT_EQ(A, B) assert((A) == (B));
-#define EXPECT_NE(A, B) assert((A) != (B));
 
 TEST(MediaMIMETypes, DependentMIMEType)
 {

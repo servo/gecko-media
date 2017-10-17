@@ -294,4 +294,12 @@ Preferences::AddAtomicUintVarCache(Atomic<uint32_t, Order>* aCache,
   return NS_OK;
 }
 
+// Since the definition of this template function is not in a header file, we
+// need to explicitly specify the instantiations that are required. Currently
+// only the order=Relaxed variant is needed.
+template nsresult
+Preferences::AddAtomicUintVarCache(Atomic<uint32_t, Relaxed>*,
+                                   const char*,
+                                   uint32_t);
+
 } // namespace mozilla
