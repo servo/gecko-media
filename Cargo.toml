@@ -17,6 +17,7 @@ walkdir = "1.0"
 
 [dependencies]
 mime = "0.3.5"
+lazy_static = "0.2.9"
 libc = "0.2.32"
 
 [features]
