@@ -884,6 +884,10 @@ fn compile_gecko_media() {
     }
 
     c_builder.compile("gecko_media_c");
+
+    cpp_builder.include("gecko/include/mozilla/media/libvorbis/include");
+    cpp_builder.include("gecko/include/mozilla/media/libogg/include");
+
     cpp_builder.compile("gecko_media_cpp");
 }
 
