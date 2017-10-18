@@ -54,6 +54,7 @@ pub unsafe fn can_play_type(mime_type: &str) -> CanPlayType {
 
 #[cfg(test)]
 mod tests {
+    use std::thread;
     use super::*;
 
     extern "C" {
@@ -66,11 +67,13 @@ mod tests {
 
     #[test]
     fn run_tests() {
-        unsafe {
-            initialize();
-            TestGecko();
-            test_can_play_type();
-            shutdown();
-        };
+        thread::spawn(move || {
+            unsafe {
+                initialize();
+                TestGecko();
+                test_can_play_type();
+                shutdown();
+            };
+        }).join().unwrap();
     }
 }

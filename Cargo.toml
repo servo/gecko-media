@@ -3,7 +3,6 @@ name = "gecko-media"
 version = "0.1.0"
 license = "MPL-2.0"
 authors = ["Chris Pearce <cpearce@mozilla.com>", "Philippe Normand <philn@igalia.com>"]
-build = "build.rs"
 
 [build]
 rustflags = ["-C link-arg=-fno-exceptions"]
@@ -11,10 +10,10 @@ rustflags = ["-C link-arg=-fno-exceptions"]
 [target.'cfg(unix)'.dependencies]
 cubeb-pulse = { git = "https://github.com/djg/cubeb-pulse-rs", branch = "dev", optional = true, features = ["pulse-dlopen"]}
 
-
 [build-dependencies]
 cc = "1.0"
 bindgen = "0.30.0"
+walkdir = "1.0"
 
 [dependencies]
 mime = "0.3.5"
