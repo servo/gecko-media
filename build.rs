@@ -4,9 +4,11 @@
 
 extern crate bindgen;
 extern crate cc;
+extern crate walkdir;
 
 use std::env;
 use std::path::PathBuf;
+use walkdir::WalkDir;
 
 fn make_builder(cpp: bool) -> cc::Build {
     let mut b = cc::Build::new();
@@ -899,4 +901,8 @@ fn main() {
     compile_bindings();
     compile_gecko_media();
     compile_tests();
+    for entry in WalkDir::new("gecko") {
+        let entry = entry.unwrap();
+        println!("cargo:rerun-if-changed={}", entry.path().display());
+    }
 }

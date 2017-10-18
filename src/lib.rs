@@ -9,68 +9,35 @@
 #[allow(unused_extern_crates)]
 #[cfg(feature = "pulseaudio")]
 extern crate cubeb_pulse;
+#[macro_use] extern crate lazy_static;
 extern crate libc;
 extern crate mime;
 
-use std::ffi::CString;
-
-mod mime_parser_glue;
+pub mod mime_parser_glue;
+mod top;
 
 pub mod bindings {
     include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 }
 
-use bindings::{GeckoMedia_CanPlayType, GeckoMedia_Initialize, GeckoMedia_Shutdown};
-
 #[doc(inline)]
 pub use bindings::CanPlayTypeResult as CanPlayType;
-
-pub use mime_parser_glue::mime_parser_new;
-pub use mime_parser_glue::mime_parser_free;
-pub use mime_parser_glue::mime_parser_get_param;
-pub use mime_parser_glue::mime_parser_free_string;
-pub use mime_parser_glue::mime_parser_get_type;
-
-/// Initialize Gecko Media. Must be called on the thread which Gecko will
-/// consider the "main" thread.
-pub unsafe fn initialize() {
-    GeckoMedia_Initialize();
-}
-
-/// Shutsdown Gecko Media.
-pub unsafe fn shutdown() {
-    GeckoMedia_Shutdown();
-}
-
-/// Reports whether Gecko Media can play the corresponding MIME type, as
-/// expected by the HTMLMediaElement.canPlayType API.
-pub unsafe fn can_play_type(mime_type: &str) -> CanPlayType {
-    if let Ok(mime_type) = CString::new(mime_type.as_bytes()) {
-        GeckoMedia_CanPlayType(mime_type.as_ptr())
-    }  else {
-        CanPlayType::No
-    }
-}
+pub use top::GeckoMedia;
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    extern "C" {
-        fn TestGecko();
-    }
-
-    unsafe fn test_can_play_type() {
-        assert_eq!(can_play_type("bogus/bogus"), CanPlayType::No);
+    fn test_can_play_type() {
+        let gecko_media = GeckoMedia::get().unwrap();
+        assert_eq!(gecko_media.can_play_type("bogus/bogus"), CanPlayType::No);
     }
 
     #[test]
     fn run_tests() {
-        unsafe {
-            initialize();
-            TestGecko();
-            test_can_play_type();
-            shutdown();
-        };
+        GeckoMedia::get().unwrap();
+        test_can_play_type();
+        GeckoMedia::get().unwrap().test();
+        GeckoMedia::shutdown().unwrap();
     }
 }
