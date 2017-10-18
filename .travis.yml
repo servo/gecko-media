@@ -6,6 +6,10 @@ rust:
 os:
   - linux
   - osx
+cache:
+  - cargo
+  - ccache
+  - pip
 notifications:
   webhooks: http://build.servo.org:54856/travis
 addons:
@@ -17,6 +21,7 @@ addons:
       - sourceline: 'ppa:jonathonf/python-2.7'
     packages:
       - python
+      - ccache
       - gcc-5
       - g++-5
       - libpulse-dev
@@ -24,8 +29,13 @@ addons:
       - dbus-x11
 
 before_install:
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install zlib; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+      brew update;
+      brew install zlib ccache;
+      export PATH="/usr/local/opt/ccache/libexec:$PATH";
+    else
+      export PATH="/usr/lib/ccache/:$PATH";
+    fi;
   - virtualenv ../venv
   - source ../venv/bin/activate
   - python --version
