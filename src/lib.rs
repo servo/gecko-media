@@ -12,6 +12,7 @@ extern crate cubeb_pulse;
 #[macro_use] extern crate lazy_static;
 extern crate libc;
 extern crate mime;
+extern crate mp4parse_capi;
 
 pub mod mime_parser_glue;
 mod top;

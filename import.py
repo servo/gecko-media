@@ -20,11 +20,14 @@ header_files = [
     ("dom/media/CubebUtils.h", "CubebUtils.h"),
     ("dom/media/DecoderTraits.h", "DecoderTraits.h"),
     ("dom/media/doctor/DecoderDoctorDiagnostics.h", "DecoderDoctorDiagnostics.h"),
+    ("dom/media/FrameStatistics.h", "FrameStatistics.h"),
     ("dom/media/Intervals.h", "Intervals.h"),
     ("dom/media/MediaContainerType.h", "MediaContainerType.h"),
     ("dom/media/MediaData.h", "MediaData.h"),
+    ("dom/media/MediaDataDemuxer.h", "MediaDataDemuxer.h"),
     ("dom/media/MediaDecoder.h", "MediaDecoder.h"),
     ("dom/media/MediaDecoderOwner.h", "MediaDecoderOwner.h"),
+    ("dom/media/MediaFormatReader.h", "MediaFormatReader.h"),
     ("dom/media/MediaEventSource.h", "MediaEventSource.h"),
     ("dom/media/MediaInfo.h", "MediaInfo.h"),
     ("dom/media/MediaMetadataManager.h", "MediaMetadataManager.h"),
@@ -39,8 +42,15 @@ header_files = [
     ("dom/media/SeekTarget.h", "SeekTarget.h"),
     ("dom/media/VideoSegment.h", "VideoSegment.h"),
     ("dom/media/Latency.h", "Latency.h"),
+    ("dom/media/fmp4/MP4Demuxer.h", "MP4Demuxer.h"),
+    ("dom/media/gtest/MockMediaResource.h", "MockMediaResource.h"),
+    ("dom/media/mediasource/AutoTaskQueue.h", "AutoTaskQueue.h"),
+    ("dom/media/ogg/OpusParser.h", "OpusParser.h"),
+    ("dom/media/platforms/PDMFactory.h", "PDMFactory.h"),
     ("dom/media/platforms/agnostic/OpusDecoder.h", "OpusDecoder.h"),
+    ("dom/media/platforms/agnostic/VorbisDecoder.h", "VorbisDecoder.h"),
     ("dom/media/platforms/PlatformDecoderModule.h", "PlatformDecoderModule.h"),
+    ("dom/media/SeekTarget.h", "SeekTarget.h"),
     ("dom/media/SharedBuffer.h", "SharedBuffer.h"),
     ("dom/media/StreamTracks.h", "StreamTracks.h"),
     ("dom/media/systemservices/OSXRunLoopSingleton.h", "OSXRunLoopSingleton.h"),
@@ -48,6 +58,7 @@ header_files = [
     ("dom/media/TrackID.h", "TrackID.h"),
     ("dom/media/VideoLimits.h", "VideoLimits.h"),
     ("dom/media/VideoUtils.h", "VideoUtils.h"),
+    ("dom/media/VorbisUtils.h", "VorbisUtils.h"),
     ("gfx/2d/2D.h", "mozilla/gfx/2D.h"),
     ("gfx/2d/BaseCoord.h", "mozilla/gfx/BaseCoord.h"),
     ("gfx/2d/BaseMargin.h", "mozilla/gfx/BaseMargin.h"),
@@ -220,6 +231,10 @@ header_files = [
     ("media/libopus/src/mlp.h", "mozilla/media/libopus/src/mlp.h"),
     ("media/libopus/src/opus_private.h", "mozilla/media/libopus/src/opus_private.h"),
     ("media/libopus/src/tansig_table.h", "mozilla/media/libopus/src/tansig_table.h"),
+    ("media/libopus/include/opus.h", "opus/opus.h"),
+    ("media/libopus/include/opus_defines.h", "opus/opus_defines.h"),
+    ("media/libopus/include/opus_multistream.h", "opus/opus_multistream.h"),
+    ("media/libopus/include/opus_types.h", "opus_types.h"),
     ("media/libstagefright/binding/include/demuxer/TrackDemuxer.h", "mozilla/media/libstagefright/binding/include/demuxer/TrackDemuxer.h"),
     ("media/libstagefright/binding/include/mp4_demuxer/Adts.h", "mozilla/media/libstagefright/binding/include/mp4_demuxer/Adts.h"),
     ("media/libstagefright/binding/include/mp4_demuxer/AnnexB.h", "mozilla/media/libstagefright/binding/include/mp4_demuxer/AnnexB.h"),
@@ -405,6 +420,7 @@ header_files = [
     ("mfbt/double-conversion/double-conversion/utils.h", "mozilla/double-conversion/utils.h"),
     ("mfbt/EndianUtils.h", "mozilla/EndianUtils.h"),
     ("mfbt/EnumeratedArray.h", "mozilla/EnumeratedArray.h"),
+    ("mfbt/EnumTypeTraits.h", "mozilla/EnumTypeTraits.h"),
     ("mfbt/EnumSet.h", "mozilla/EnumSet.h"),
     ("mfbt/FloatingPoint.h", "mozilla/FloatingPoint.h"),
     ("mfbt/GuardObjects.h", "mozilla/GuardObjects.h"),
@@ -677,9 +693,11 @@ header_files = [
     ("xpcom/threads/Scheduler.h", "mozilla/Scheduler.h"),
     ("xpcom/threads/SchedulerGroup.h", "mozilla/SchedulerGroup.h"),
     ("xpcom/threads/SharedThreadPool.h", "mozilla/SharedThreadPool.h"),
+    ("xpcom/threads/StateMirroring.h", "mozilla/StateMirroring.h"),
     ("xpcom/threads/StateWatching.h", "mozilla/StateWatching.h"),
     ("xpcom/threads/StateMirroring.h", "mozilla/StateMirroring.h"),
     ("xpcom/threads/SynchronizedEventQueue.h", "mozilla/SynchronizedEventQueue.h"),
+    ("xpcom/threads/SyncRunnable.h", "mozilla/SyncRunnable.h"),
     ("xpcom/threads/SystemGroup.h", "mozilla/SystemGroup.h"),
     ("xpcom/threads/TaskCategory.h", "mozilla/TaskCategory.h"),
     ("xpcom/threads/TaskDispatcher.h", "mozilla/TaskDispatcher.h"),
@@ -701,6 +719,8 @@ src_files = [
     "dom/media/MediaMIMETypes.cpp",
     "dom/media/MediaPrefs.cpp",
     "dom/media/MediaResource.cpp",
+    "dom/media/fmp4/MP4Demuxer.cpp",
+    "dom/media/platforms/agnostic/OpusDecoder.cpp",
     "dom/media/systemservices/OSXRunLoopSingleton.cpp",
     "media/libcubeb/src/cubeb.c",
     "media/libcubeb/src/cubeb_alsa.c",
@@ -1034,6 +1054,7 @@ src_files = [
     "toolkit/library/StaticXULComponentsStart.cpp",
     "toolkit/library/StaticXULComponentsEnd/StaticXULComponentsEnd.cpp",
     "xpcom/base/ClearOnShutdown.cpp",
+    "xpcom/base/ErrorNames.cpp",
     "xpcom/base/nsCOMPtr.cpp",
     "xpcom/base/nsClassInfoImpl.cpp",
     "xpcom/base/nsID.cpp",
@@ -1092,6 +1113,7 @@ objdir_files = [
     "cubeb/cubeb.h",
     "cubeb/cubeb_export.h",
     "ErrorList.h",
+    "ErrorNamesInternal.h",
     "js-config.h",
     "mozilla/TelemetryHistogramEnums.h",
     "mozilla/TelemetryScalarEnums.h",
@@ -1168,6 +1190,18 @@ objdir_files = [
     "soundtouch/STTypes.h",
     "speex/speex_resampler.h",
 ]
+
+local_files = {
+    "DecoderData.cpp": "media/libstagefright/binding/",
+}
+
+def copy_local_files():
+    for filename, dirname in local_files.items():
+        dst_dir = os.path.join("gecko", "src", dirname)
+        src = os.path.join("local", filename)
+        dst = os.path.join(dst_dir, filename)
+        ensure_dir_exists(dst)
+        copyfile(src, dst)
 
 def get_obj_dir_path(src_dir):
     if sys.platform == 'darwin':
@@ -1301,6 +1335,7 @@ def main(args):
 
     remove_previous_copy(src_dir, dst_dir)
     copy_files(src_dir, dst_dir)
+    copy_local_files()
     # Gecko's string classes only build in unified mode...
     write_unified_cpp_file(dst_dir + "src/xpcom/string")
     write_gecko_revision_file(src_dir)

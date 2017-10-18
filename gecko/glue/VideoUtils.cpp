@@ -47,4 +47,10 @@ CheckedInt64 UsecsToFrames(int64_t aUsecs, uint32_t aRate) {
   return SaferMultDiv(aUsecs, aRate, USECS_PER_S);
 }
 
+// Converts from number of audio frames to microseconds, given the specified
+// audio rate.
+CheckedInt64 FramesToUsecs(int64_t aFrames, uint32_t aRate) {
+  return SaferMultDiv(aFrames, USECS_PER_S, aRate);
+}
+
 } // end namespace mozilla
