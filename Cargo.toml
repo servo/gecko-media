@@ -11,9 +11,9 @@ rustflags = ["-C link-arg=-fno-exceptions"]
 cubeb-pulse = { git = "https://github.com/djg/cubeb-pulse-rs", branch = "dev", optional = true, features = ["pulse-dlopen"]}
 
 [build-dependencies]
-cc = "1.0"
 bindgen = "0.30.0"
 walkdir = "1.0"
+cmake = "0.1.26"
 
 [dependencies]
 mime = "0.3.5"
