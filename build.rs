@@ -27,6 +27,20 @@ fn compile_gecko_media() {
     println!("cargo:rustc-link-search=native={}", dst.display());
     println!("cargo:rustc-link-lib=static=gecko_media_cmake");
     println!("cargo:rustc-link-lib=stdc++");
+
+    #[cfg(target_os = "linux")]
+    println!("cargo:rustc-link-lib=dl");
+    #[cfg(target_os = "macos")]
+    {
+        let frameworks = vec!["CoreFoundation", "CoreAudio", "AudioUnit"];
+        for framework in &frameworks {
+            println!("cargo:rustc-link-lib=framework={}", framework);
+        }
+    }
+    #[cfg(target_os = "windows")]
+    println!("cargo:rustc-link-lib=avrt");
+    #[cfg(target_os = "android")]
+    println!("cargo:rustc-link-lib=OpenSLES");
 }
 
 fn print_rerun_if() {

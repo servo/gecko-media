@@ -73,6 +73,11 @@ add_definitions(-D_PR_PTHREADS=1)
 add_definitions(-DGECKO_MEDIA_CRATE=1)
 add_definitions(-DRUST_BINDGEN=1)
 
+include_directories(
+  gecko/include
+  gecko/glue/include
+)
+
 if(X86_64)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE")
 endif()
@@ -82,18 +87,20 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-exceptions")
 if(LINUX)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --include ${CMAKE_SOURCE_DIR}/gecko/glue/include/mozilla-config-x86_64-linux.h")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --include ${CMAKE_SOURCE_DIR}/gecko/glue/include/undefs.h")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --include ${CMAKE_SOURCE_DIR}/gecko/glue/include/undefs.h")
 endif()
 
 if(MACOS)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Xpreprocessor")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -include${CMAKE_SOURCE_DIR}/gecko/glue/include/mozilla-config-x86_64-apple-darwin.h")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Xpreprocessor")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -includeundefs.h")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Xpreprocessor -include${CMAKE_SOURCE_DIR}/gecko/glue/include/mozilla-config-x86_64-apple-darwin.h")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Xpreprocessor -include${CMAKE_SOURCE_DIR}/gecko/glue/include/undefs.h")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-inline-new-delete")
 
-  set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS} -Xpreprocessor")
-  set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS} -include${CMAKE_SOURCE_DIR}/gecko/glue/include/mozilla-config-x86_64-apple-darwin.h")
-  set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS} -Xpreprocessor")
-  set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS} -include${CMAKE_SOURCE_DIR}undefs.h")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Xpreprocessor -include${CMAKE_SOURCE_DIR}/gecko/glue/include/mozilla-config-x86_64-apple-darwin.h")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Xpreprocessor -include${CMAKE_SOURCE_DIR}/gecko/glue/include/undefs.h")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-inline-new-delete")
+
+  add_definitions(-DDARWIN=1)
+
 endif()
 
 
@@ -247,9 +254,9 @@ if(LINUX)
 endif()
 if(MACOS)
   target_sources(gecko_core PRIVATE
-    gecko/src/mozglue/misc/Mutex_posix.cp
-    gecko/src/mozglue/misc/TimeStamp_darwin.cp
-    gecko/src/dom/media/systemservices/OSXRuLoopSingleton.cpp
+    gecko/src/mozglue/misc/Mutex_posix.cpp
+    gecko/src/mozglue/misc/TimeStamp_darwin.cpp
+    gecko/src/dom/media/systemservices/OSXRunLoopSingleton.cpp
     gecko/src/nsprpub/pr/src/md/unix/darwin.c
   )
 endif()
@@ -269,8 +276,6 @@ target_include_directories(gecko_core PRIVATE
     gecko/include/system_wrappers
     gecko/include/nspr
     gecko/include/nspr/private
-    gecko/include
-    gecko/glue/include
     gecko/include/mozilla/
     gecko/include/mozilla/double-conversion
     gecko/include/mozilla/media/libvorbis/include
@@ -809,7 +814,7 @@ endif()
 if(MACOS)
   target_compile_definitions(cubeb PRIVATE USE_AUDIOUNIT=1)
   target_sources(cubeb PRIVATE
-    gecko/src/media/libcubeb/src/cubeb_audiounit.c
+    gecko/src/media/libcubeb/src/cubeb_audiounit.cpp
     gecko/src/media/libcubeb/src/cubeb_osx_run_loop.c
   )
 endif()
@@ -887,19 +892,6 @@ add_library(gecko_media_cmake STATIC
   $<TARGET_OBJECTS:cubeb>
   $<TARGET_OBJECTS:tests>
 )
-
-if(LINUX)
-  target_link_libraries(gecko_media_cmake PRIVATE dl)
-endif()
-if(MACOS)
-  target_link_libraries(gecko_media_cmake PRIVATE "-framework AudioUnit" "-framework CoreAudio" "-framework CoreServices")
-endif()
-if(WINDOWS)
-  target_link_libraries(gecko_media_cmake PRIVATE avrt)
-endif()
-if(ANDROID)
-  target_link_libraries(gecko_media_cmake PRIVATE OpenSLES)
-endif()
 
 install(TARGETS gecko_media_cmake
   DESTINATION ${CMAKE_INSTALL_PREFIX}
