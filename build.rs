@@ -3,8 +3,8 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 extern crate bindgen;
-extern crate walkdir;
 extern crate cmake;
+extern crate walkdir;
 
 use std::env;
 use std::path::PathBuf;
