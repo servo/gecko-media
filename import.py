@@ -142,6 +142,37 @@ def copy_media_prefs(src_pref_file, dst_pref_file, prefix):
             for line in lines:
                 dst.write(line)
 
+def gather_files(path, extensions):
+    all_files = []
+    for root, dirs, files in os.walk(path):
+        for f in files:
+            _, extension = os.path.splitext(f)
+            if extension in extensions:
+                all_files.append(os.path.join(root, f))
+
+    return all_files
+
+def check_for_glue_duplicates(dst_dir, sub_dir, extensions):
+    glue_headers = dict([(os.path.basename(f), f)  for f in gather_files(os.path.join(dst_dir, "glue"), extensions)])
+    gecko_headers = gather_files(os.path.join(dst_dir, sub_dir), extensions)
+    duplicates = []
+    for header in gecko_headers:
+        gecko_filename = os.path.basename(header)
+        if gecko_filename in glue_headers.keys():
+            duplicates.append(glue_headers[gecko_filename])
+
+    return duplicates
+
+def check_for_duplicates(dst_dir):
+    duplicates = check_for_glue_duplicates(dst_dir, "include", [".h",])
+    duplicates.extend(check_for_glue_duplicates(dst_dir, "src", [".c", ".cpp"]))
+    for filename in duplicates:
+        print("Duplicate file found: %s" % filename)
+
+    if duplicates:
+        print("To remove them: rm %s" % ' '.join(duplicates))
+    return len(duplicates)
+
 def main(args):
     if len(args) != 2:
         print("Usage: python3 import.py <src_dir> <dst_dir>")
@@ -164,7 +195,7 @@ def main(args):
     # Gecko's string classes only build in unified mode...
     write_unified_cpp_file(dst_dir + "src/xpcom/string")
     write_gecko_revision_file(src_dir)
-    return 0
+    return int(check_for_duplicates(dst_dir))
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv[1:]))

@@ -336,8 +336,6 @@
     "nsprpub/pr/src/threads/prrwlock.c",
     "nsprpub/pr/src/threads/prtpd.c",
     "tools/profiler/core/platform.cpp",
-    "toolkit/crashreporter/nsExceptionHandler.cpp",
-    "toolkit/crashreporter/ThreadAnnotation.cpp",
     "toolkit/library/StaticXULComponentsStart.cpp",
     "toolkit/library/StaticXULComponentsEnd/StaticXULComponentsEnd.cpp",
     "xpcom/base/ClearOnShutdown.cpp",
