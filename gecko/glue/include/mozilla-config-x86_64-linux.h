@@ -17,18 +17,17 @@
 #define A11Y_LOG 1
 #define ACCESSIBILITY 1
 #define ATK_MAJOR_VERSION 2
-#define ATK_MINOR_VERSION 22
+#define ATK_MINOR_VERSION 26
 #define ATK_REV_VERSION 0
 #define BUILD_CTYPES 1
 #define CROSS_COMPILE 
 #define D_INO d_ino
-#define E10S_TESTING_ONLY 1
 #define EARLY_BETA_OR_EARLIER 1
 #define ENABLE_INTL_API 1
 #define ENABLE_SYSTEM_EXTENSION_DIRS 1
 #define ENABLE_TESTS 1
 #define EXPOSE_INTL_API 1
-#define FIREFOX_VERSION 57.0a1
+#define FIREFOX_VERSION 58.0a1
 #define FORCE_PR_LOG 1
 #define FUNCPROTO 15
 #define GDK_VERSION_MAX_ALLOWED GDK_VERSION_3_4
@@ -96,14 +95,14 @@
 #define JS_DEFAULT_JITREPORT_GRANULARITY 3
 #define MALLOC_H <malloc.h>
 #define MALLOC_USABLE_SIZE_CONST_PTR 
-#define MOZILLA_UAVERSION "57.0"
-#define MOZILLA_VERSION "57.0a1"
-#define MOZILLA_VERSION_U 57.0a1
+#define MOZILLA_UAVERSION "58.0"
+#define MOZILLA_VERSION "58.0a1"
+#define MOZILLA_VERSION_U 58.0a1
 #define MOZ_ACCESSIBILITY_ATK 1
 #define MOZ_ADDON_SIGNING 1
 #define MOZ_ALLOW_LEGACY_EXTENSIONS 1
 #define MOZ_APP_UA_NAME ""
-#define MOZ_APP_UA_VERSION "57.0a1"
+#define MOZ_APP_UA_VERSION "58.0a1"
 #define MOZ_AV1 1
 #define MOZ_BUILD_APP browser
 #define MOZ_BUILD_WEBRENDER 1
@@ -118,7 +117,6 @@
 #define MOZ_DUMP_PAINTING 1
 #define MOZ_ENABLE_DBUS 1
 #define MOZ_ENABLE_GCONF 1
-#define MOZ_ENABLE_MASK_AS_SHORTHAND 1
 #define MOZ_ENABLE_SIGNMAR 1
 #define MOZ_ENABLE_SKIA 1
 #define MOZ_ENABLE_SKIA_PDF 1
@@ -136,22 +134,26 @@
 #define MOZ_LOGGING 1
 #define MOZ_MACBUNDLE_ID org.mozilla.nightlydebug
 #define MOZ_MEMORY 1
-#define MOZ_MEMORY_LINUX 0
+#define MOZ_PEERCONNECTION 1
 #define MOZ_PERMISSIONS 1
 #define MOZ_PHOENIX 1
 #define MOZ_PLACES 1
 #define MOZ_PROFILING 1
 #define MOZ_PULSEAUDIO 1
+#define MOZ_RAW 1
 #define MOZ_REFLOW_PERF 1
 #define MOZ_REFLOW_PERF_DSP 1
-#define MOZ_REPLACE_MALLOC 0
+#define MOZ_REPLACE_MALLOC 1
 #define MOZ_RUST_URLPARSE 1
 #define MOZ_SAMPLE_TYPE_FLOAT32 1
 #define MOZ_SANDBOX 1
+#define MOZ_SCTP 1
 #define MOZ_SECUREELEMENT 1
 #define MOZ_SERVICES_HEALTHREPORT 1
+#define MOZ_SRTP 1
 #define MOZ_STATIC_JS 1
 #define MOZ_STYLO 1
+#define MOZ_STYLO_ENABLE 1
 #define MOZ_TREE_CAIRO 1
 #define MOZ_TREE_PIXMAN 1
 #define MOZ_UPDATER 1
@@ -161,6 +163,9 @@
 #define MOZ_VPX_NO_MEM_REPORTING 1
 #define MOZ_VTUNE 1
 #define MOZ_WEBM_ENCODER 1
+#define MOZ_WEBRTC 1
+#define MOZ_WEBRTC_ASSERT_ALWAYS 1
+#define MOZ_WEBRTC_SIGNALING 1
 #define MOZ_WEBSPEECH 1
 #define MOZ_WEBSPEECH_TEST_BACKEND 1
 #define MOZ_WIDGET_GTK 3
@@ -235,5 +240,13 @@
 #if defined(CHROMIUM_SANDBOX_BUILD) && defined(XP_WIN)
 #include "base/win/sdkdecls.h"
 #endif
+
+/*
+ * Enable audioipc support for CubebUtils on Linux.
+ */
+#if defined(XP_LINUX) && !defined(MOZ_WIDGET_ANDROID)
+#define MOZ_CUBEB_REMOTING
+#endif
+
 
 #endif /* MOZILLA_CONFIG_H */

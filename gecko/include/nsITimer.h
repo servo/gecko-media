@@ -226,6 +226,72 @@ class nsITimer : public nsISupports {
   NS_IMETHOD SetTarget(nsIEventTarget *aTarget) override { return !_to ? NS_ERROR_NULL_POINTER : _to->SetTarget(aTarget); } \
   NS_IMETHOD GetAllowedEarlyFiringMicroseconds(uint32_t *aAllowedEarlyFiringMicroseconds) override { return !_to ? NS_ERROR_NULL_POINTER : _to->GetAllowedEarlyFiringMicroseconds(aAllowedEarlyFiringMicroseconds); } \
 
+#include "nsCOMPtr.h"
+already_AddRefed<nsITimer> NS_NewTimer();
+already_AddRefed<nsITimer> NS_NewTimer(nsIEventTarget* aTarget);
+nsresult
+NS_NewTimerWithObserver(nsITimer** aTimer,
+                        nsIObserver* aObserver,
+                        uint32_t aDelay,
+                        uint32_t aType,
+                        nsIEventTarget* aTarget = nullptr);
+mozilla::Result<nsCOMPtr<nsITimer>, nsresult>
+NS_NewTimerWithObserver(nsIObserver* aObserver,
+                        uint32_t aDelay,
+                        uint32_t aType,
+                        nsIEventTarget* aTarget = nullptr);
+nsresult
+NS_NewTimerWithCallback(nsITimer** aTimer,
+                        nsITimerCallback* aCallback,
+                        uint32_t aDelay,
+                        uint32_t aType,
+                        nsIEventTarget* aTarget = nullptr);
+mozilla::Result<nsCOMPtr<nsITimer>, nsresult>
+NS_NewTimerWithCallback(nsITimerCallback* aCallback,
+                        uint32_t aDelay,
+                        uint32_t aType,
+                        nsIEventTarget* aTarget = nullptr);
+nsresult
+NS_NewTimerWithCallback(nsITimer** aTimer,
+                        nsITimerCallback* aCallback,
+                        const mozilla::TimeDuration& aDelay,
+                        uint32_t aType,
+                        nsIEventTarget* aTarget = nullptr);
+mozilla::Result<nsCOMPtr<nsITimer>, nsresult>
+NS_NewTimerWithCallback(nsITimerCallback* aCallback,
+                        const mozilla::TimeDuration& aDelay,
+                        uint32_t aType,
+                        nsIEventTarget* aTarget = nullptr);
+nsresult
+NS_NewTimerWithFuncCallback(nsITimer** aTimer,
+                            nsTimerCallbackFunc aCallback,
+                            void* aClosure,
+                            uint32_t aDelay,
+                            uint32_t aType,
+                            const char* aNameString,
+                            nsIEventTarget* aTarget = nullptr);
+mozilla::Result<nsCOMPtr<nsITimer>, nsresult>
+NS_NewTimerWithFuncCallback(nsTimerCallbackFunc aCallback,
+                            void* aClosure,
+                            uint32_t aDelay,
+                            uint32_t aType,
+                            const char* aNameString,
+                            nsIEventTarget* aTarget = nullptr);
+nsresult
+NS_NewTimerWithFuncCallback(nsITimer** aTimer,
+                            nsTimerCallbackFunc aCallback,
+                            void* aClosure,
+                            uint32_t aDelay,
+                            uint32_t aType,
+                            nsTimerNameCallbackFunc aNameCallback,
+                            nsIEventTarget* aTarget = nullptr);
+mozilla::Result<nsCOMPtr<nsITimer>, nsresult>
+NS_NewTimerWithFuncCallback(nsTimerCallbackFunc aCallback,
+                            void* aClosure,
+                            uint32_t aDelay,
+                            uint32_t aType,
+                            nsTimerNameCallbackFunc aNameCallback,
+                            nsIEventTarget* aTarget = nullptr);
 #define NS_TIMER_CONTRACTID "@mozilla.org/timer;1"
 #define NS_TIMER_CALLBACK_TOPIC "timer-callback"
 
