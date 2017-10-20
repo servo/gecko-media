@@ -8,7 +8,7 @@ authors = ["Chris Pearce <cpearce@mozilla.com>", "Philippe Normand <philn@igalia
 rustflags = ["-C link-arg=-fno-exceptions"]
 
 [target.'cfg(unix)'.dependencies]
-cubeb-pulse = { git = "https://github.com/djg/cubeb-pulse-rs", branch = "dev", optional = true, features = ["pulse-dlopen"]}
+cubeb-pulse = { git = "https://github.com/djg/cubeb-pulse-rs", branch = "dev", features = ["pulse-dlopen"]}
 
 [build-dependencies]
 bindgen = "0.30.0"
@@ -26,6 +26,3 @@ mp4parse_capi = "0.8.0"
 default = ["audio-sample-type-f32"]
 audio-sample-type-s16 = []
 audio-sample-type-f32 = []
-alsa = []
-pulseaudio = ["cubeb-pulse"]
-jack = []
