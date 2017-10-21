@@ -746,7 +746,7 @@ add_library(speex_resampler OBJECT
   gecko/src/media/libspeex_resampler/src/simd_detect.cpp
 )
 
-if(NOT FEATURE_AUDIO_SAMPLE_TYPE_S16 AND X86)
+if(FEATURE_AUDIO_SAMPLE_TYPE_F32 AND X86)
   set(speex_non_s16_srcs gecko/src/media/libspeex_resampler/src/resample_sse.c)
 endif()
 
