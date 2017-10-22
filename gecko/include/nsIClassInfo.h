@@ -35,11 +35,11 @@ class NS_NO_VTABLE nsIClassInfo : public nsISupports {
   /* nsIXPCScriptable getScriptableHelper (); */
   NS_IMETHOD GetScriptableHelper(nsIXPCScriptable * *_retval) = 0;
 
-  /* readonly attribute string contractID; */
-  NS_IMETHOD GetContractID(char * *aContractID) = 0;
+  /* readonly attribute AUTF8String contractID; */
+  NS_IMETHOD GetContractID(nsACString & aContractID) = 0;
 
-  /* readonly attribute string classDescription; */
-  NS_IMETHOD GetClassDescription(char * *aClassDescription) = 0;
+  /* readonly attribute AUTF8String classDescription; */
+  NS_IMETHOD GetClassDescription(nsACString & aClassDescription) = 0;
 
   /* readonly attribute nsCIDPtr classID; */
   NS_IMETHOD GetClassID(nsCID **aClassID) = 0;
@@ -69,8 +69,8 @@ class NS_NO_VTABLE nsIClassInfo : public nsISupports {
 #define NS_DECL_NSICLASSINFO \
   NS_IMETHOD GetInterfaces(uint32_t *count, nsIID ***array) override; \
   NS_IMETHOD GetScriptableHelper(nsIXPCScriptable * *_retval) override; \
-  NS_IMETHOD GetContractID(char * *aContractID) override; \
-  NS_IMETHOD GetClassDescription(char * *aClassDescription) override; \
+  NS_IMETHOD GetContractID(nsACString & aContractID) override; \
+  NS_IMETHOD GetClassDescription(nsACString & aClassDescription) override; \
   NS_IMETHOD GetClassID(nsCID **aClassID) override; \
   NS_IMETHOD GetFlags(uint32_t *aFlags) override; \
   NS_IMETHOD GetClassIDNoAlloc(nsCID *aClassIDNoAlloc) override; 
@@ -80,8 +80,8 @@ class NS_NO_VTABLE nsIClassInfo : public nsISupports {
 #define NS_DECL_NON_VIRTUAL_NSICLASSINFO \
   nsresult GetInterfaces(uint32_t *count, nsIID ***array); \
   nsresult GetScriptableHelper(nsIXPCScriptable * *_retval); \
-  nsresult GetContractID(char * *aContractID); \
-  nsresult GetClassDescription(char * *aClassDescription); \
+  nsresult GetContractID(nsACString & aContractID); \
+  nsresult GetClassDescription(nsACString & aClassDescription); \
   nsresult GetClassID(nsCID **aClassID); \
   nsresult GetFlags(uint32_t *aFlags); \
   nsresult GetClassIDNoAlloc(nsCID *aClassIDNoAlloc); 
@@ -90,8 +90,8 @@ class NS_NO_VTABLE nsIClassInfo : public nsISupports {
 #define NS_FORWARD_NSICLASSINFO(_to) \
   NS_IMETHOD GetInterfaces(uint32_t *count, nsIID ***array) override { return _to GetInterfaces(count, array); } \
   NS_IMETHOD GetScriptableHelper(nsIXPCScriptable * *_retval) override { return _to GetScriptableHelper(_retval); } \
-  NS_IMETHOD GetContractID(char * *aContractID) override { return _to GetContractID(aContractID); } \
-  NS_IMETHOD GetClassDescription(char * *aClassDescription) override { return _to GetClassDescription(aClassDescription); } \
+  NS_IMETHOD GetContractID(nsACString & aContractID) override { return _to GetContractID(aContractID); } \
+  NS_IMETHOD GetClassDescription(nsACString & aClassDescription) override { return _to GetClassDescription(aClassDescription); } \
   NS_IMETHOD GetClassID(nsCID **aClassID) override { return _to GetClassID(aClassID); } \
   NS_IMETHOD GetFlags(uint32_t *aFlags) override { return _to GetFlags(aFlags); } \
   NS_IMETHOD GetClassIDNoAlloc(nsCID *aClassIDNoAlloc) override { return _to GetClassIDNoAlloc(aClassIDNoAlloc); } 
@@ -100,8 +100,8 @@ class NS_NO_VTABLE nsIClassInfo : public nsISupports {
 #define NS_FORWARD_SAFE_NSICLASSINFO(_to) \
   NS_IMETHOD GetInterfaces(uint32_t *count, nsIID ***array) override { return !_to ? NS_ERROR_NULL_POINTER : _to->GetInterfaces(count, array); } \
   NS_IMETHOD GetScriptableHelper(nsIXPCScriptable * *_retval) override { return !_to ? NS_ERROR_NULL_POINTER : _to->GetScriptableHelper(_retval); } \
-  NS_IMETHOD GetContractID(char * *aContractID) override { return !_to ? NS_ERROR_NULL_POINTER : _to->GetContractID(aContractID); } \
-  NS_IMETHOD GetClassDescription(char * *aClassDescription) override { return !_to ? NS_ERROR_NULL_POINTER : _to->GetClassDescription(aClassDescription); } \
+  NS_IMETHOD GetContractID(nsACString & aContractID) override { return !_to ? NS_ERROR_NULL_POINTER : _to->GetContractID(aContractID); } \
+  NS_IMETHOD GetClassDescription(nsACString & aClassDescription) override { return !_to ? NS_ERROR_NULL_POINTER : _to->GetClassDescription(aClassDescription); } \
   NS_IMETHOD GetClassID(nsCID **aClassID) override { return !_to ? NS_ERROR_NULL_POINTER : _to->GetClassID(aClassID); } \
   NS_IMETHOD GetFlags(uint32_t *aFlags) override { return !_to ? NS_ERROR_NULL_POINTER : _to->GetFlags(aFlags); } \
   NS_IMETHOD GetClassIDNoAlloc(nsCID *aClassIDNoAlloc) override { return !_to ? NS_ERROR_NULL_POINTER : _to->GetClassIDNoAlloc(aClassIDNoAlloc); } 
