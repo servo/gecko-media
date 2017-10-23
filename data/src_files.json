@@ -9,6 +9,8 @@
     "dom/media/fmp4/MP4Demuxer.cpp",
     "dom/media/platforms/agnostic/OpusDecoder.cpp",
     "dom/media/systemservices/OSXRunLoopSingleton.cpp",
+    "dom/media/wave/WaveDecoder.cpp",
+    "dom/media/wave/WaveDemuxer.cpp",
     "media/libcubeb/src/cubeb.c",
     "media/libcubeb/src/cubeb_alsa.c",
     "media/libcubeb/src/cubeb_audiotrack.c",

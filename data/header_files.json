@@ -44,6 +44,8 @@
     "VideoLimits.h": "dom/media/VideoLimits.h",
     "VideoUtils.h": "dom/media/VideoUtils.h",
     "VorbisUtils.h": "dom/media/VorbisUtils.h",
+    "WaveDecoder.h": "dom/media/wave/WaveDecoder.h",
+    "WaveDemuxer.h": "dom/media/wave/WaveDemuxer.h",
     "mozilla/gfx/2D.h": "gfx/2d/2D.h",
     "mozilla/gfx/BaseCoord.h": "gfx/2d/BaseCoord.h",
     "mozilla/gfx/BaseMargin.h": "gfx/2d/BaseMargin.h",

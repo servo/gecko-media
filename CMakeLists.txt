@@ -165,6 +165,8 @@ add_library(gecko_core OBJECT
   gecko/src/dom/media/MediaResource.cpp
   gecko/src/dom/media/fmp4/MP4Demuxer.cpp
   gecko/src/dom/media/platforms/agnostic/OpusDecoder.cpp
+  gecko/src/dom/media/wave/WaveDecoder.cpp
+  gecko/src/dom/media/wave/WaveDemuxer.cpp
   gecko/src/memory/fallible/fallible.cpp
   gecko/src/memory/mozalloc/mozalloc.cpp
   gecko/src/memory/mozalloc/mozalloc_abort.cpp
