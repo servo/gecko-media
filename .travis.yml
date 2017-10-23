@@ -39,8 +39,6 @@ before_install:
       brew update;
       brew install zlib ccache;
       export PATH="/usr/local/opt/ccache/libexec:$PATH";
-    else
-      export PATH="/usr/lib/ccache/:$PATH";
     fi
   - virtualenv ../venv;
     source ../venv/bin/activate;
