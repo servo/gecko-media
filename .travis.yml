@@ -40,17 +40,20 @@ env:
 
 before_install:
   - |
+    # Update Homebrew on macOS and install ccache.
     if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
       brew update
       brew install zlib ccache
       export PATH="/usr/local/opt/ccache/libexec:$PATH"
     fi
   - |
+    # Install servo-tidy.
     virtualenv ../venv
     source ../venv/bin/activate
     python --version
     pip install servo-tidy
   - |
+    # Start audio system services.
     if [ "${TRAVIS_OS_NAME}" != "osx" ]; then
       export DISPLAY=:99.0
       /sbin/start-stop-daemon --start --quiet --pidfile /tmp/custom_xvfb_99.pid \
@@ -62,6 +65,7 @@ before_install:
       sudo launchctl kickstart -kp system/com.apple.audio.coreaudiod || sudo killall coreaudiod;
     fi;
   - |
+    # Export Linux-specific env variables.
     if [ "${TRAVIS_OS_NAME}" != "osx" ]; then
       export CC=gcc-5 CXX=g++-5
     fi
