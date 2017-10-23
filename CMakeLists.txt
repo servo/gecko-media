@@ -141,6 +141,7 @@ add_library(gecko_core OBJECT
   gecko/glue/MainThreadIdlePeriod.cpp
   gecko/glue/MediaData.cpp
   gecko/glue/MediaDecoder.cpp
+  gecko/glue/MediaDecoderStateMachine.cpp
   gecko/glue/MediaFormatReader.cpp
   gecko/glue/PDMFactory.cpp
   gecko/glue/nsAppRunner.cpp
