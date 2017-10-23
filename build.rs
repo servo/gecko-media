@@ -26,6 +26,11 @@ fn compile_gecko_media() {
     let dst = cmake::build(".");
     println!("cargo:rustc-link-search=native={}", dst.display());
     println!("cargo:rustc-link-lib=static=gecko_media_cmake");
+
+    #[cfg(target_os = "macos")]
+    println!("cargo:rustc-link-lib=c++");
+
+    #[cfg(target_os = "linux")]
     println!("cargo:rustc-link-lib=stdc++");
 
     #[cfg(target_os = "linux")]
