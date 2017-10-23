@@ -6,12 +6,18 @@ rust:
 os:
   - linux
   - osx
+
 cache:
-  - cargo
-  - ccache
-  - pip
+  - cargo: true
+  - ccache: true
+  - directories:
+    - $HOME/.cache/pip
+before_cache:
+  - rm -f $HOME/.cache/pip/log/debug.log
+
 notifications:
   webhooks: http://build.servo.org:54856/travis
+
 addons:
   apt:
     sources:
