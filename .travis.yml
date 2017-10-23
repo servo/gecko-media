@@ -29,13 +29,9 @@ addons:
       - dbus-x11
 
 before_install:
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
-      brew update;
-      brew install zlib ccache;
-      export PATH="/usr/local/opt/ccache/libexec:$PATH";
-    else
-      export PATH="/usr/lib/ccache/:$PATH";
-    fi;
+  - if [[ "$TRAVIS_OS_NAME" != "osx" ]]; then
+  -   export PATH="/usr/lib/ccache/:$PATH";
+  - fi;
   - virtualenv ../venv
   - source ../venv/bin/activate
   - python --version
