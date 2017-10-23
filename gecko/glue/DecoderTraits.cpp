@@ -23,13 +23,13 @@
 // #include "MP4Decoder.h"
 // #include "MP4Demuxer.h"
 // #endif
-// #include "MediaFormatReader.h"
+#include "MediaFormatReader.h"
 
 // #include "MP3Decoder.h"
 // #include "MP3Demuxer.h"
 
-// #include "WaveDecoder.h"
-// #include "WaveDemuxer.h"
+#include "WaveDecoder.h"
+#include "WaveDemuxer.h"
 
 // #include "ADTSDecoder.h"
 // #include "ADTSDemuxer.h"
@@ -86,14 +86,14 @@ CanHandleCodecsType(const MediaContainerType& aType,
 //     // ogg is supported and working: the codec must be invalid.
 //     return CANPLAY_NO;
 //   }
-//   if (WaveDecoder::IsSupportedType(MediaContainerType(mimeType))) {
-//     if (WaveDecoder::IsSupportedType(aType)) {
-//       return CANPLAY_YES;
-//     }
-//     // We can only reach this position if a particular codec was requested,
-//     // ogg is supported and working: the codec must be invalid.
-//     return CANPLAY_NO;
-//   }
+  if (WaveDecoder::IsSupportedType(MediaContainerType(mimeType))) {
+    if (WaveDecoder::IsSupportedType(aType)) {
+      return CANPLAY_YES;
+    }
+    // We can only reach this position if a particular codec was requested,
+    // ogg is supported and working: the codec must be invalid.
+    return CANPLAY_NO;
+  }
 // #if !defined(MOZ_OMX_WEBM_DECODER)
 //   if (WebMDecoder::IsSupportedType(mimeType)) {
 //     if (WebMDecoder::IsSupportedType(aType)) {
@@ -152,15 +152,15 @@ CanHandleMediaType(const MediaContainerType& aType,
     }
   }
 
-//   // Container type with just the MIME type/subtype, no codecs.
-//   const MediaContainerType mimeType(aType.Type());
+  // Container type with just the MIME type/subtype, no codecs.
+  const MediaContainerType mimeType(aType.Type());
 
 //   if (OggDecoder::IsSupportedType(mimeType)) {
 //     return CANPLAY_MAYBE;
 //   }
-//   if (WaveDecoder::IsSupportedType(mimeType)) {
-//     return CANPLAY_MAYBE;
-//   }
+  if (WaveDecoder::IsSupportedType(mimeType)) {
+    return CANPLAY_MAYBE;
+  }
 // #ifdef MOZ_FMP4
 //   if (MP4Decoder::IsSupportedType(mimeType, aDiagnostics)) {
 //     return CANPLAY_MAYBE;
@@ -200,14 +200,14 @@ bool DecoderTraits::ShouldHandleMediaType(const char* aMIMEType,
     return false;
   }
 
-  // if (WaveDecoder::IsSupportedType(*containerType)) {
-  //   // We should not return true for Wave types, since there are some
-  //   // Wave codecs actually in use in the wild that we don't support, and
-  //   // we should allow those to be handled by plugins or helper apps.
-  //   // Furthermore people can play Wave files on most platforms by other
-  //   // means.
-  //   return false;
-  // }
+  if (WaveDecoder::IsSupportedType(*containerType)) {
+    // We should not return true for Wave types, since there are some
+    // Wave codecs actually in use in the wild that we don't support, and
+    // we should allow those to be handled by plugins or helper apps.
+    // Furthermore people can play Wave files on most platforms by other
+    // means.
+    return false;
+  }
 
   // If an external plugin which can handle quicktime video is available
   // (and not disabled), prefer it over native playback as there several
@@ -277,7 +277,7 @@ DecoderTraits::IsSupportedType(const MediaContainerType& aType)
 //     &MP4Decoder::IsSupportedTypeWithoutDiagnostics,
 // #endif
 //     &OggDecoder::IsSupportedType,
-//     &WaveDecoder::IsSupportedType,
+    &WaveDecoder::IsSupportedType,
 //     &WebMDecoder::IsSupportedType,
   };
   for (IsSupportedFunction func : funcs) {
