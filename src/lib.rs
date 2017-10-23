@@ -7,7 +7,6 @@
 #![allow(non_snake_case)]
 
 #[allow(unused_extern_crates)]
-#[cfg(feature = "pulseaudio")]
 extern crate cubeb_pulse;
 #[macro_use] extern crate lazy_static;
 extern crate libc;
