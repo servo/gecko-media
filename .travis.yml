@@ -39,27 +39,31 @@ env:
   - CARGO_FLAGS="--release"
 
 before_install:
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
-      brew update;
-      brew install zlib ccache;
-      export PATH="/usr/local/opt/ccache/libexec:$PATH";
+  - |
+    if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+      brew update
+      brew install zlib ccache
+      export PATH="/usr/local/opt/ccache/libexec:$PATH"
     fi
-  - virtualenv ../venv;
-    source ../venv/bin/activate;
-    python --version;
+  - |
+    virtualenv ../venv
+    source ../venv/bin/activate
+    python --version
     pip install servo-tidy
-  - if [ "${TRAVIS_OS_NAME}" != "osx" ]; then
-      export DISPLAY=:99.0;
+  - |
+    if [ "${TRAVIS_OS_NAME}" != "osx" ]; then
+      export DISPLAY=:99.0
       /sbin/start-stop-daemon --start --quiet --pidfile /tmp/custom_xvfb_99.pid \
         --make-pidfile --background --exec /usr/bin/Xvfb -- :99 \
-        -screen 0 1400x900x24 -ac +extension GLX +render -noreset;
-      dbus-launch pulseaudio --start;
+        -screen 0 1400x900x24 -ac +extension GLX +render -noreset
+      dbus-launch pulseaudio --start
     else
       sudo xcodebuild -project NullAudio/AudioDriverExamples.xcodeproj -target NullAudio DSTROOT="/" install;
       sudo launchctl kickstart -kp system/com.apple.audio.coreaudiod || sudo killall coreaudiod;
     fi;
-  - if [ "${TRAVIS_OS_NAME}" != "osx" ]; then
-      export CC=gcc-5 CXX=g++-5;
+  - |
+    if [ "${TRAVIS_OS_NAME}" != "osx" ]; then
+      export CC=gcc-5 CXX=g++-5
     fi
 
 script:
