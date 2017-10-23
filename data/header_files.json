@@ -34,6 +34,7 @@
     "OpusParser.h": "dom/media/ogg/OpusParser.h",
     "PDMFactory.h": "dom/media/platforms/PDMFactory.h",
     "OpusDecoder.h": "dom/media/platforms/agnostic/OpusDecoder.h",
+    "AgnosticDecoderModule.h": "dom/media/platforms/agnostic/AgnosticDecoderModule.h",
     "VorbisDecoder.h": "dom/media/platforms/agnostic/VorbisDecoder.h",
     "PlatformDecoderModule.h": "dom/media/platforms/PlatformDecoderModule.h",
     "SharedBuffer.h": "dom/media/SharedBuffer.h",

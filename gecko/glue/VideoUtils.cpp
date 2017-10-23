@@ -53,4 +53,28 @@ CheckedInt64 FramesToUsecs(int64_t aFrames, uint32_t aRate) {
   return SaferMultDiv(aFrames, USECS_PER_S, aRate);
 }
 
+template <int N>
+static bool
+StartsWith(const nsACString& string, const char (&prefix)[N])
+{
+  if (N - 1 > string.Length()) {
+    return false;
+  }
+  return memcmp(string.Data(), prefix, N - 1) == 0;
+}
+
+UniquePtr<TrackInfo>
+CreateTrackInfoWithMIMEType(const nsACString& aCodecMIMEType)
+{
+  UniquePtr<TrackInfo> trackInfo;
+  if (StartsWith(aCodecMIMEType, "audio/")) {
+    trackInfo.reset(new AudioInfo());
+    trackInfo->mMimeType = aCodecMIMEType;
+  } else if (StartsWith(aCodecMIMEType, "video/")) {
+    trackInfo.reset(new VideoInfo());
+    trackInfo->mMimeType = aCodecMIMEType;
+  }
+  return trackInfo;
+}
+
 } // end namespace mozilla
