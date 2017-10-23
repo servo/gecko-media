@@ -34,6 +34,10 @@ addons:
       - pulseaudio
       - dbus-x11
 
+env:
+  - CARGO_FLAGS=""
+  - CARGO_FLAGS="--release"
+
 before_install:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
       brew update;
@@ -54,14 +58,12 @@ before_install:
       sudo xcodebuild -project NullAudio/AudioDriverExamples.xcodeproj -target NullAudio DSTROOT="/" install;
       sudo launchctl kickstart -kp system/com.apple.audio.coreaudiod || sudo killall coreaudiod;
     fi;
+  - if [ "${TRAVIS_OS_NAME}" != "osx" ]; then
+      export CC=gcc-5 CXX=g++-5;
+    fi
 
 script:
+  - ccache -s
+  - env
   - servo-tidy
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
-      cargo test --verbose;
-      cargo test --verbose --release;
-    else
-      CC=gcc-5 CXX=g++-5 cargo test --verbose;
-      CC=gcc-5 CXX=g++-5 cargo test --verbose;
-    fi;
-
+  - cargo test --verbose $CARGO_FLAGS
