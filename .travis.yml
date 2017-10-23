@@ -1,5 +1,5 @@
 dist: trusty
-sudo: required
+sudo: 9000
 language: rust
 rust:
   - nightly
