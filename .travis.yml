@@ -1,17 +1,23 @@
 dist: trusty
-sudo: required
+sudo: 9000
 language: rust
 rust:
   - nightly
 os:
   - linux
   - osx
+
 cache:
-  - cargo
-  - ccache
-  - pip
+  - cargo: true
+  - ccache: true
+  - directories:
+    - $HOME/.cache/pip
+before_cache:
+  - rm -f $HOME/.cache/pip/log/debug.log
+
 notifications:
   webhooks: http://build.servo.org:54856/travis
+
 addons:
   apt:
     sources:
@@ -28,34 +34,44 @@ addons:
       - pulseaudio
       - dbus-x11
 
+env:
+  - CARGO_FLAGS=""
+  - CARGO_FLAGS="--release"
+
 before_install:
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
-      brew update;
-      brew install zlib ccache;
-      export PATH="/usr/local/opt/ccache/libexec:$PATH";
-    else
-      export PATH="/usr/lib/ccache/:$PATH";
-    fi;
-  - virtualenv ../venv
-  - source ../venv/bin/activate
-  - python --version
-  - pip install servo-tidy
-  - if [ "${TRAVIS_OS_NAME}" != "osx" ]; then
-      export DISPLAY=:99.0;
-      /sbin/start-stop-daemon --start --quiet --pidfile /tmp/custom_xvfb_99.pid --make-pidfile --background --exec /usr/bin/Xvfb -- :99 -screen 0 1400x900x24 -ac +extension GLX +render -noreset;
-      dbus-launch pulseaudio --start;
+  - |
+    # Update Homebrew on macOS and install ccache.
+    if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+      brew update
+      brew install zlib ccache
+      export PATH="/usr/local/opt/ccache/libexec:$PATH"
+    fi
+  - |
+    # Install servo-tidy.
+    virtualenv ../venv
+    source ../venv/bin/activate
+    python --version
+    pip install servo-tidy
+  - |
+    # Start audio system services.
+    if [ "${TRAVIS_OS_NAME}" != "osx" ]; then
+      export DISPLAY=:99.0
+      /sbin/start-stop-daemon --start --quiet --pidfile /tmp/custom_xvfb_99.pid \
+        --make-pidfile --background --exec /usr/bin/Xvfb -- :99 \
+        -screen 0 1400x900x24 -ac +extension GLX +render -noreset
+      dbus-launch pulseaudio --start
     else
       sudo xcodebuild -project NullAudio/AudioDriverExamples.xcodeproj -target NullAudio DSTROOT="/" install;
       sudo launchctl kickstart -kp system/com.apple.audio.coreaudiod || sudo killall coreaudiod;
     fi;
+  - |
+    # Export Linux-specific env variables.
+    if [ "${TRAVIS_OS_NAME}" != "osx" ]; then
+      export CC=gcc-5 CXX=g++-5
+    fi
 
 script:
+  - ccache -s
+  - env
   - servo-tidy
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
-      cargo test --verbose;
-      cargo test --verbose --release;
-    else
-      CC=gcc-5 CXX=g++-5 cargo test --verbose;
-      CC=gcc-5 CXX=g++-5 cargo test --verbose;
-    fi;
-
+  - cargo test --verbose $CARGO_FLAGS
