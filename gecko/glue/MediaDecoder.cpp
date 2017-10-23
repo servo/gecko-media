@@ -241,7 +241,8 @@ class MediaDecoder::BackgroundVideoDecodingPermissionObserver final :
         return nullptr;
       }
 
-      return mDecoder->mOwner->GetDocument();
+      return nullptr;
+      // return mDecoder->mOwner->GetDocument();
     }
 
     bool IsValidEventSender(nsISupports* aSubject) const
@@ -550,12 +551,12 @@ MediaDecoder::OnDecoderDoctorEvent(DecoderDoctorEvent aEvent)
   MOZ_ASSERT(NS_IsMainThread());
   // OnDecoderDoctorEvent is disconnected at shutdown time.
   MOZ_DIAGNOSTIC_ASSERT(!IsShutdown());
-  nsIDocument* doc = GetOwner()->GetDocument();
-  if (!doc) {
-    return;
-  }
-  DecoderDoctorDiagnostics diags;
-  diags.StoreEvent(doc, aEvent, __func__);
+  // nsIDocument* doc = GetOwner()->GetDocument();
+  // if (!doc) {
+  //   return;
+  // }
+  // DecoderDoctorDiagnostics diags;
+  // diags.StoreEvent(doc, aEvent, __func__);
 }
 
 static const char*
