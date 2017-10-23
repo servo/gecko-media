@@ -747,11 +747,11 @@ add_library(speex_resampler OBJECT
 )
 
 if(FEATURE_AUDIO_SAMPLE_TYPE_F32 AND X86)
-  set(speex_non_s16_srcs gecko/src/media/libspeex_resampler/src/resample_sse.c)
+  target_sources(speex_resampler PRIVATE gecko/src/media/libspeex_resampler/src/resample_sse.c)
 endif()
 
 if(ARM)
-  set(speex_neon_srcs gecko/src/media/libspeex_resampler/src/resample_neon.c)
+  target_sources(speex_resampler PRIVATE gecko/src/media/libspeex_resampler/src/resample_neon.c)
 endif()
 
 target_compile_definitions(speex_resampler PRIVATE
