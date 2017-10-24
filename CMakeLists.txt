@@ -690,6 +690,7 @@ if(MACOS OR LINUX)
   )
 endif()
 
+target_compile_options(stagefright PRIVATE -Wno-multichar)
 
 
 
