@@ -164,6 +164,7 @@ add_library(gecko_core OBJECT
   gecko/glue/Telemetry.cpp
   gecko/glue/ThreadAnnotation.cpp
   gecko/glue/XPCOMInit.cpp
+  gecko/src/dom/media/AudioConverter.cpp
   gecko/src/dom/media/AudioStream.cpp
   gecko/src/dom/media/CubebUtils.cpp
   gecko/src/dom/media/MediaContainerType.cpp
@@ -276,6 +277,12 @@ if(LINUX)
 endif()
 if(MACOS)
   target_sources(gecko_core PRIVATE
+    gecko/glue/AppleDecoderModule.cpp
+    gecko/glue/AppleVTDecoder.cpp
+    gecko/glue/MacIOSurface.cpp
+    gecko/src/dom/media/platforms/apple/AppleATDecoder.cpp
+    gecko/src/dom/media/platforms/apple/AppleCMLinker.cpp
+    gecko/src/dom/media/platforms/apple/AppleVTLinker.cpp
     gecko/src/mozglue/misc/Mutex_posix.cpp
     gecko/src/mozglue/misc/TimeStamp_darwin.cpp
     gecko/src/dom/media/systemservices/OSXRunLoopSingleton.cpp
@@ -299,6 +306,7 @@ target_include_directories(gecko_core PRIVATE
     gecko/include/nspr
     gecko/include/nspr/private
     gecko/include/mozilla/
+    gecko/include/mozilla/gfx
     gecko/include/mozilla/double-conversion
     gecko/include/mozilla/media/libvorbis/include
     gecko/include/mozilla/media/libogg/include

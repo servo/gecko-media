@@ -1,4 +1,5 @@
 [
+    "dom/media/AudioConverter.cpp",
     "dom/media/AudioStream.cpp",
     "dom/media/CubebUtils.cpp",
     "dom/media/MediaContainerType.cpp",
@@ -16,6 +17,9 @@
     "dom/media/platforms/agnostic/OpusDecoder.cpp",
     "dom/media/platforms/agnostic/VorbisDecoder.cpp",
     "dom/media/platforms/agnostic/WAVDecoder.cpp",
+    "dom/media/platforms/apple/AppleATDecoder.cpp",
+    "dom/media/platforms/apple/AppleCMLinker.cpp",
+    "dom/media/platforms/apple/AppleVTLinker.cpp",
     "dom/media/platforms/ffmpeg/FFmpegAudioDecoder.cpp",
     "dom/media/platforms/ffmpeg/FFmpegDataDecoder.cpp",
     "dom/media/platforms/ffmpeg/FFmpegDecoderModule.cpp",

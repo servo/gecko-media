@@ -6,6 +6,5 @@
 // TODO: import media/audioipc?
 #undef MOZ_CUBEB_REMOTING
 
-#undef MOZ_APPLEMEDIA
 #undef MOZ_WIDGET_ANDROID
 #undef MOZ_AV1
