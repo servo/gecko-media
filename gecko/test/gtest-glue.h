@@ -10,6 +10,7 @@
 #define EXPECT_TRUE(condition) assert((condition))
 #define EXPECT_FALSE(condition) assert(!condition)
 #define EXPECT_EQ(A, B) assert((A) == (B))
+#define EXPECT_GT(A, B) assert((A) > (B))
 #define EXPECT_LT(A, B) assert((A) < (B))
 #define EXPECT_NE(A, B) assert((A) != (B))
 #define EXPECT_STREQ(A, B) assert(strcmp(A, B) == 0)
