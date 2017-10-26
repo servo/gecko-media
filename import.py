@@ -1,5 +1,6 @@
 import json
 import os
+import platform
 import re
 import subprocess
 import sys
@@ -31,7 +32,7 @@ def copy_local_files():
 
 def get_obj_dir_path(src_dir):
     if sys.platform == 'darwin':
-        obj_dir = "obj-x86_64-apple-darwin16.7.0"
+        obj_dir = "obj-x86_64-apple-darwin%s" % platform.release()
     elif sys.platform == 'linux':
         obj_dir = "obj-x86_64-pc-linux-gnu"
     else:
