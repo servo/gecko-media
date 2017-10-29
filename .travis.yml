@@ -38,13 +38,19 @@ env:
   - CARGO_FLAGS="--release"
 
 before_install:
-  - cargo install sccache
   - |
     # Install servo-tidy.
     virtualenv ../venv
     source ../venv/bin/activate
     python --version
     pip install servo-tidy
+  - |
+    if ! [ -x "$(command -v sccache)" ]; then
+      cargo install sccache
+    fi;
+    export RUSTC_WRAPPER=`which sccache`
+    export SCCACHE_DIR=~/.sccache
+    sccache --zero-stats
   - |
     # Start audio system services.
     if [ "${TRAVIS_OS_NAME}" != "osx" ]; then
@@ -66,5 +72,5 @@ before_install:
 script:
   - env
   - servo-tidy
-  - SCCACHE_DIR=$HOME/.sccache RUSTC_WRAPPER=`which sccache` cargo test --verbose $CARGO_FLAGS
+  - cargo test --verbose $CARGO_FLAGS
   - sccache --show-stats
