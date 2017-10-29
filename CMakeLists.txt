@@ -66,6 +66,12 @@ if($ENV{PROFILE} STREQUAL "debug")
 endif()
 
 
+find_program(SCCACHE_PROGRAM sccache)
+if(SCCACHE_PROGRAM)
+    set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${SCCACHE_PROGRAM}")
+endif()
+
+set(CMAKE_VERBOSE_MAKEFILE, 1)
 
 add_definitions(-DGECKO_MEDIA_CRATE=1)
 add_definitions(-DMOZILLA_INTERNAL_API=1)
