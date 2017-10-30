@@ -9,9 +9,9 @@ os:
 
 cache:
   - cargo: true
-  - ccache: true
   - directories:
     - $HOME/.cache/pip
+    - $HOME/.ccache
 before_cache:
   - rm -f $HOME/.cache/pip/log/debug.log
 
@@ -40,11 +40,13 @@ env:
 
 before_install:
   - |
-    # Update Homebrew on macOS and install ccache.
+    # Set up ccache.
     if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
       brew update
       brew install zlib ccache
       export PATH="/usr/local/opt/ccache/libexec:$PATH"
+    else
+      export PATH="/usr/lib/ccache:$PATH"
     fi
   - |
     # Install servo-tidy.
@@ -71,7 +73,8 @@ before_install:
     fi
 
 script:
-  - ccache -s
+  - ccache --zero-stats
   - env
   - servo-tidy
   - cargo test --verbose $CARGO_FLAGS
+  - ccache --show-stats
