@@ -471,7 +471,7 @@ TestDecoderTraits()
   assert(DecoderTraits::CanHandleContainerType(
     MediaContainerType(MEDIAMIMETYPE("video/mp4")), nullptr) == CANPLAY_NO);
   assert(DecoderTraits::CanHandleContainerType(
-    MediaContainerType(MEDIAMIMETYPE("audio/wav")), nullptr) == CANPLAY_NO);
+    MediaContainerType(MEDIAMIMETYPE("audio/wav")), nullptr) == CANPLAY_MAYBE);
 }
 
 } // namespace mozilla
