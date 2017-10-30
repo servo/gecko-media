@@ -9,9 +9,9 @@ os:
 
 cache:
   - cargo: true
-  - ccache: true
   - directories:
     - $HOME/.cache/pip
+    - $HOME/.sccache
 before_cache:
   - rm -f $HOME/.cache/pip/log/debug.log
 
@@ -27,7 +27,6 @@ addons:
       - sourceline: 'ppa:jonathonf/python-2.7'
     packages:
       - python
-      - ccache
       - gcc-5
       - g++-5
       - libpulse-dev
@@ -40,18 +39,18 @@ env:
 
 before_install:
   - |
-    # Update Homebrew on macOS and install ccache.
-    if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
-      brew update
-      brew install zlib ccache
-      export PATH="/usr/local/opt/ccache/libexec:$PATH"
-    fi
-  - |
     # Install servo-tidy.
     virtualenv ../venv
     source ../venv/bin/activate
     python --version
     pip install servo-tidy
+  - |
+    if ! [ -x "$(command -v sccache)" ]; then
+      cargo install sccache
+    fi;
+    export RUSTC_WRAPPER=`which sccache`
+    export SCCACHE_DIR=~/.sccache
+    sccache --zero-stats
   - |
     # Start audio system services.
     if [ "${TRAVIS_OS_NAME}" != "osx" ]; then
@@ -71,7 +70,7 @@ before_install:
     fi
 
 script:
-  - ccache -s
   - env
   - servo-tidy
   - cargo test --verbose $CARGO_FLAGS
+  - sccache --show-stats
