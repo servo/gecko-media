@@ -12,6 +12,8 @@
 #include "mozilla/SharedThreadPool.h"
 #include "nsThreadManager.h"
 #include "nsThreadUtils.h"
+#include "nsIObserverService.h"
+#include "mozilla/Services.h"
 
 void
 GeckoMedia_Initialize()
@@ -28,6 +30,12 @@ void
 GeckoMedia_Shutdown()
 {
   mozilla::Preferences::Shutdown();
+
+  // Broadcast a shutdown notification to all threads.
+  nsCOMPtr<nsIObserverService> obsService = mozilla::services::GetObserverService();
+  MOZ_ASSERT(obsService);
+  obsService->NotifyObservers(nullptr, "xpcom-shutdown-threads", nullptr);
+
   NS_ShutdownXPCOM(nullptr);
 }
 
