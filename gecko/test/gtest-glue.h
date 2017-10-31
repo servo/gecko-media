@@ -6,13 +6,18 @@
 #ifndef GTEST_GLUE_H
 #define GTEST_GLUE_H
 
+#include "mozilla/Assertions.h"
+
+// Note: We use release mode assertions so that tests in release mode
+// actually test. We also evaluate the A,B arguments to ensure there
+// are no macro processing issues when evaluating the inner macros here.
 #define TEST(A, B) void Test_##A##B ()
-#define EXPECT_TRUE(condition) assert((condition))
-#define EXPECT_FALSE(condition) assert(!condition)
-#define EXPECT_EQ(A, B) assert((A) == (B))
-#define EXPECT_GT(A, B) assert((A) > (B))
-#define EXPECT_LT(A, B) assert((A) < (B))
-#define EXPECT_NE(A, B) assert((A) != (B))
-#define EXPECT_STREQ(A, B) assert(strcmp(A, B) == 0)
+#define EXPECT_TRUE(condition) { auto c = condition; MOZ_RELEASE_ASSERT(c); }
+#define EXPECT_FALSE(condition) { auto c = condition; MOZ_RELEASE_ASSERT(!c); }
+#define EXPECT_EQ(A, B) { auto a = (A); auto b = (B); MOZ_RELEASE_ASSERT(a == b); }
+#define EXPECT_GT(A, B) { auto a = (A); auto b = (B); MOZ_RELEASE_ASSERT(a > b); }
+#define EXPECT_LT(A, B) { auto a = (A); auto b = (B); MOZ_RELEASE_ASSERT(a < b); }
+#define EXPECT_NE(A, B) { auto a = (A); auto b = (B); MOZ_RELEASE_ASSERT(a != b); }
+#define EXPECT_STREQ(A, B) { auto a = (A); auto b = (B); MOZ_RELEASE_ASSERT(strcmp(a, b) == 0); }
 
 #endif
