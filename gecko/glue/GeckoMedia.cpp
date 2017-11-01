@@ -58,6 +58,11 @@ AddMainThreadObserver(rust_msg_sender_t* aSender)
 bool
 GeckoMedia_Initialize(rust_msg_sender_t* aSender)
 {
+  static bool initialized = false;
+  if (initialized) {
+    return true;
+  }
+  initialized = true;
   NS_SetMainThread();
   if (NS_FAILED(nsThreadManager::get().Init())) {
     return false;
