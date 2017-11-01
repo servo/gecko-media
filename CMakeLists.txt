@@ -131,7 +131,6 @@ add_library(gecko_core OBJECT
   gecko/glue/AbstractThread.cpp
   gecko/glue/AgnosticDecoderModule.cpp
   gecko/glue/Benchmark.cpp
-  gecko/glue/BlockingResourceBase.cpp
   gecko/glue/CooperativeThreadPool.cpp
   gecko/glue/DecoderTraits.cpp
   gecko/glue/FFmpegRuntimeLinker.cpp
@@ -220,6 +219,7 @@ add_library(gecko_core OBJECT
   gecko/src/xpcom/string/nsReadableUtilsSSE2.cpp
   gecko/src/xpcom/string/nsUTF8UtilsSSE2.cpp
   gecko/src/xpcom/string/unified.cpp
+  gecko/src/xpcom/threads/BlockingResourceBase.cpp
   gecko/src/xpcom/threads/EventQueue.cpp
   gecko/src/xpcom/threads/nsILabelableRunnable.cpp
   gecko/src/xpcom/threads/nsThreadManager.cpp

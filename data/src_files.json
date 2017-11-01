@@ -399,6 +399,7 @@
     "xpcom/string/nsTSubstringTuple.cpp",
     "xpcom/string/nsUTF8UtilsSSE2.cpp",
     "xpcom/string/precompiled_templates.cpp",
+    "xpcom/threads/BlockingResourceBase.cpp",
     "xpcom/threads/EventQueue.cpp",
     "xpcom/threads/nsILabelableRunnable.cpp",
     "xpcom/threads/nsThreadManager.cpp",
