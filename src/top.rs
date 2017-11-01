@@ -4,11 +4,12 @@
 
 use CanPlayType;
 use bindings::{rust_msg_sender_t, GeckoMedia_CanPlayType, GeckoMedia_Initialize,
-               GeckoMedia_Shutdown};
+               GeckoMedia_ProcessEvents, GeckoMedia_Shutdown};
 use std::ffi::CString;
+use std::mem::transmute;
 use std::ops::Drop;
 use std::sync::Mutex;
-use std::sync::atomic::{ATOMIC_USIZE_INIT, AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicUsize, Ordering, ATOMIC_USIZE_INIT};
 use std::sync::mpsc::{self, Sender};
 use std::thread::Builder;
 
@@ -25,7 +26,7 @@ impl GeckoMedia {
             None => {
                 OUTSTANDING_HANDLES.fetch_sub(1, Ordering::SeqCst);
                 Err(())
-            },
+            }
         }
     }
 
@@ -46,9 +47,11 @@ impl GeckoMedia {
     pub fn can_play_type(&self, mime_type: &str) -> CanPlayType {
         if let Ok(mime_type) = CString::new(mime_type.as_bytes()) {
             let (sender, receiver) = mpsc::channel();
-            self.sender.send(GeckoMediaMsg::CanPlayType(mime_type, sender)).unwrap();
+            self.sender
+                .send(GeckoMediaMsg::CanPlayType(mime_type, sender))
+                .unwrap();
             receiver.recv().unwrap()
-        }  else {
+        } else {
             CanPlayType::No
         }
     }
@@ -67,11 +70,11 @@ impl Drop for GeckoMedia {
     }
 }
 
-enum GeckoMediaMsg {
+pub enum GeckoMediaMsg {
     Exit(Sender<()>),
     CanPlayType(CString, Sender<CanPlayType>),
-    #[cfg(test)]
-    Test(Sender<()>),
+    #[cfg(test)] Test(Sender<()>),
+    CallProcessGeckoEvents,
 }
 
 #[no_mangle]
@@ -83,14 +86,43 @@ pub extern "C" fn finish_tests(ptr: *mut Sender<()>) {
     sender.send(()).unwrap();
 }
 
+#[no_mangle]
+pub extern "C" fn call_gecko_process_events(ptr: *mut Sender<GeckoMediaMsg>) {
+    if ptr.is_null() {
+        return;
+    }
+    let sender = unsafe { &mut *(ptr) };
+    sender.send(GeckoMediaMsg::CallProcessGeckoEvents).unwrap();
+}
+
+#[no_mangle]
+pub extern "C" fn free_gecko_process_events_sender(ptr: *mut Sender<GeckoMediaMsg>) {
+    if !ptr.is_null() {
+        return;
+    }
+    unsafe {
+        Box::from_raw(ptr);
+    }
+}
+
 static OUTSTANDING_HANDLES: AtomicUsize = ATOMIC_USIZE_INIT;
 
 lazy_static! {
     static ref SENDER: Mutex<Option<Sender<GeckoMediaMsg>>> = {
         let (msg_sender, msg_receiver) = mpsc::channel();
         let (ok_sender, ok_receiver) = mpsc::channel();
+        let msg_sender_clone = msg_sender.clone();
         Builder::new().name("GeckoMedia".to_owned()).spawn(move || {
-            unsafe { GeckoMedia_Initialize(); }
+            let ptr = Box::into_raw(Box::new(msg_sender_clone));
+            let ok = unsafe {
+                let raw_msg_sender =
+                    transmute::<*mut Sender<GeckoMediaMsg>,
+                                *mut rust_msg_sender_t>(ptr);
+                GeckoMedia_Initialize(raw_msg_sender)
+            };
+            if !ok {
+                panic!("Failed to initialize GeckoMedia");
+            }
             ok_sender.send(()).unwrap();
             drop(ok_sender);
             loop {
@@ -103,6 +135,13 @@ lazy_static! {
                     GeckoMediaMsg::CanPlayType(mime_type, sender) => {
                         unsafe {
                             sender.send(GeckoMedia_CanPlayType(mime_type.as_ptr())).unwrap();
+                        }
+                    },
+                    GeckoMediaMsg::CallProcessGeckoEvents => {
+                        // Process any pending messages in Gecko's main thread
+                        // event queue.
+                        unsafe {
+                            GeckoMedia_ProcessEvents();
                         }
                     },
                     #[cfg(test)]

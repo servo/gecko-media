@@ -9,8 +9,8 @@
 
 struct rust_msg_sender_t;
 
-void
-GeckoMedia_Initialize();
+bool
+GeckoMedia_Initialize(rust_msg_sender_t* aSender);
 
 void
 GeckoMedia_Shutdown();
@@ -24,5 +24,8 @@ enum CanPlayTypeResult
 
 CanPlayTypeResult
 GeckoMedia_CanPlayType(const char* aMimeType);
+
+void
+GeckoMedia_ProcessEvents();
 
 #endif // GeckoMedia_h_
