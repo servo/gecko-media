@@ -9,7 +9,7 @@
 #include "AppleDecoderModule.h"
 #include "AppleVTDecoder.h"
 #include "AppleVTLinker.h"
-// #include "MacIOSurfaceImage.h"
+#include "mozilla/gfx/MacIOSurface.h"
 #include "MediaPrefs.h"
 #include "mozilla/DebugOnly.h"
 #include "mozilla/Logging.h"
@@ -36,9 +36,8 @@ AppleDecoderModule::Init()
   }
 
   // Ensure IOSurface framework is loaded.
-  // MacIOSurfaceLib::LoadLibrary();
-  // const bool loaded = MacIOSurfaceLib::isInit();
-  const bool loaded = true;
+  MacIOSurfaceLib::LoadLibrary();
+  const bool loaded = MacIOSurfaceLib::isInit();
 
   // dlopen CoreMedia.framework if it's available.
   sIsCoreMediaAvailable = AppleCMLinker::Link();
@@ -52,7 +51,7 @@ AppleDecoderModule::Init()
 
   // sCanUseHardwareVideoDecoder = loaded &&
   //   gfx::gfxVars::CanUseHardwareVideoDecoding();
-  sCanUseHardwareVideoDecoder = false;
+  sCanUseHardwareVideoDecoder = true;
 
   sInitialized = true;
 }
