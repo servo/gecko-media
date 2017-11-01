@@ -734,6 +734,7 @@
     "nsProxyRelease.h": "xpcom/threads/nsProxyRelease.h",
     "nsThreadManager.h": "xpcom/threads/nsThreadManager.h",
     "nsThreadPool.h": "xpcom/threads/nsThreadPool.h",
+    "nsThread.h": "xpcom/threads/nsThread.h",
     "nsThreadUtils.h": "xpcom/threads/nsThreadUtils.h",
     "nsThreadSyncDispatch.h": "xpcom/threads/nsThreadSyncDispatch.h",
     "nsTimerImpl.h": "xpcom/threads/nsTimerImpl.h",
