@@ -49,7 +49,7 @@ fn compile_gecko_media() {
 }
 
 fn print_rerun_if() {
-   println!("cargo:rerun-if-changed=CMakeLists.txt");
+    println!("cargo:rerun-if-changed=CMakeLists.txt");
     for entry in WalkDir::new("gecko") {
         let entry = entry.unwrap();
         println!("cargo:rerun-if-changed={}", entry.path().display());

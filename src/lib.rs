@@ -8,7 +8,8 @@
 
 #[allow(unused_extern_crates)]
 extern crate cubeb_pulse;
-#[macro_use] extern crate lazy_static;
+#[macro_use]
+extern crate lazy_static;
 extern crate libc;
 extern crate mime;
 extern crate mp4parse_capi;
