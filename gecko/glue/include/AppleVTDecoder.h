@@ -99,7 +99,7 @@ private:
 
   const RefPtr<TaskQueue> mTaskQueue;
   const uint32_t mMaxRefFrames;
-  // const RefPtr<layers::ImageContainer> mImageContainer;
+  const RefPtr<layers::ImageContainer> mImageContainer;
   const bool mUseSoftwareImages;
 
   // Set on reader/decode thread calling Flush() to indicate that output is

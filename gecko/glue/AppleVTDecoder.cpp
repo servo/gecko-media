@@ -18,8 +18,9 @@
 #include "nsThreadUtils.h"
 #include "mozilla/Logging.h"
 #include "VideoUtils.h"
+#include "ImageContainer.h"
 // #include "gfxPlatform.h"
-#include "mozilla/gfx/MacIOSurface.h"
+#include "MacIOSurfaceImage.h"
 
 #define LOG(...) MOZ_LOG(sPDMLog, mozilla::LogLevel::Debug, (__VA_ARGS__))
 
@@ -35,7 +36,7 @@ AppleVTDecoder::AppleVTDecoder(const VideoInfo& aConfig,
   , mDisplayHeight(aConfig.mDisplay.height)
   , mTaskQueue(aTaskQueue)
   , mMaxRefFrames(mp4_demuxer::H264::ComputeMaxRefFrames(aConfig.mExtraData))
-  // , mImageContainer(aImageContainer)
+  , mImageContainer(aImageContainer)
 #ifdef MOZ_WIDGET_UIKIT
   , mUseSoftwareImages(true)
 #else
@@ -408,16 +409,16 @@ AppleVTDecoder::OutputFrame(CVPixelBufferRef aImage,
                                         mPictureHeight);
 
     // Copy the image data into our own format.
-    // data =
-    //   VideoData::CreateAndCopyData(info,
-    //                                mImageContainer,
-    //                                aFrameRef.byte_offset,
-    //                                aFrameRef.composition_timestamp,
-    //                                aFrameRef.duration,
-    //                                buffer,
-    //                                aFrameRef.is_sync_point,
-    //                                aFrameRef.decode_timestamp,
-    //                                visible);
+    data =
+      VideoData::CreateAndCopyData(info,
+                                   mImageContainer,
+                                   aFrameRef.byte_offset,
+                                   aFrameRef.composition_timestamp,
+                                   aFrameRef.duration,
+                                   buffer,
+                                   aFrameRef.is_sync_point,
+                                   aFrameRef.decode_timestamp,
+                                   visible);
     // Unlock the returned image data.
     CVPixelBufferUnlockBaseAddress(aImage, kCVPixelBufferLock_ReadOnly);
   } else {
@@ -427,16 +428,16 @@ AppleVTDecoder::OutputFrame(CVPixelBufferRef aImage,
 
     RefPtr<MacIOSurface> macSurface = new MacIOSurface(surface);
 
-    // RefPtr<layers::Image> image = new MacIOSurfaceImage(macSurface);
+    RefPtr<layers::Image> image = new layers::MacIOSurfaceImage(macSurface);
 
-    // data =
-    //   VideoData::CreateFromImage(info.mDisplay,
-    //                              aFrameRef.byte_offset,
-    //                              aFrameRef.composition_timestamp,
-    //                              aFrameRef.duration,
-    //                              image.forget(),
-    //                              aFrameRef.is_sync_point,
-    //                              aFrameRef.decode_timestamp);
+    data =
+      VideoData::CreateFromImage(info.mDisplay,
+                                 aFrameRef.byte_offset,
+                                 aFrameRef.composition_timestamp,
+                                 aFrameRef.duration,
+                                 image.forget(),
+                                 aFrameRef.is_sync_point,
+                                 aFrameRef.decode_timestamp);
 #else
     MOZ_ASSERT_UNREACHABLE("No MacIOSurface on iOS");
 #endif
