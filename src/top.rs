@@ -3,8 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use CanPlayType;
-use bindings::{rust_msg_sender_t, GeckoMedia_CanPlayType, GeckoMedia_Initialize,
-               GeckoMedia_ProcessEvents, GeckoMedia_Shutdown};
+use bindings::*;
 use std::ffi::CString;
 use std::mem::transmute;
 use std::ops::Drop;
