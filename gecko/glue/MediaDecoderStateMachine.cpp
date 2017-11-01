@@ -44,7 +44,7 @@
 
 // #include "AudioSegment.h"
 // #include "DOMMediaStream.h"
-// #include "ImageContainer.h"
+#include "ImageContainer.h"
 #include "MediaDecoder.h"
 #include "MediaDecoderStateMachine.h"
 // #include "MediaShutdownManager.h"
