@@ -463,8 +463,32 @@ nsThread::ThreadFunc(void* aArg)
 
   mozilla::IOInterposer::UnregisterCurrentThread();
 #else
-  self->mShutdownNow = false;
-  while (!self->mShutdownNow) {
+
+  // Under high load the thread might shut down before starting. So this first
+  // loop would spin forever. Hence the test on mShutdownNow. This loop is the
+  // GeckoMedia equivalent of the message loop deactivated above.
+  if (!self->mShutdownNow) {
+    while (true) {
+      if (NS_ProcessNextEvent(self, false))
+        continue;
+
+      NS_ProcessNextEvent(self, true);
+
+      MonitorAutoLock mon(self->mShutdownMonitor);
+      mon.Wait(10);
+      if (self->mShutdownNow)
+        break;
+    }
+  }
+
+  while (true) {
+    // Check and see if we're waiting on any threads.
+    self->WaitForAllAsynchronousShutdowns();
+
+    if (self->mEvents->ShutdownIfNoPendingEvents()) {
+      break;
+    }
+
     NS_ProcessPendingEvents(self);
   }
 #endif
@@ -474,6 +498,7 @@ nsThread::ThreadFunc(void* aArg)
 
 #ifndef GECKO_MEDIA_CRATE
   profiler_unregister_thread();
+#endif
   // Dispatch shutdown ACK
   NotNull<nsThreadShutdownContext*> context =
     WrapNotNull(self->mShutdownContext);
@@ -484,7 +509,6 @@ nsThread::ThreadFunc(void* aArg)
   } else {
     context->mJoiningThread->Dispatch(event, NS_DISPATCH_NORMAL);
   }
-#endif
 
   // Release any observer of the thread here.
   self->SetObserver(nullptr);
@@ -585,6 +609,7 @@ nsThread::nsThread(NotNull<SynchronizedEventQueue*> aQueue,
   , mLastUnlabeledRunnable(TimeStamp::Now())
   , mCanInvokeJS(false)
 #ifdef GECKO_MEDIA_CRATE
+  , mShutdownMonitor("shutdown")
   , mShutdownNow(false)
 #endif
 {
@@ -755,6 +780,11 @@ nsThread::ShutdownInternal(bool aSync)
   // XXXroc What if posting the event fails due to OOM?
   mEvents->PutEvent(event.forget(), EventPriority::Normal);
 
+#ifdef GECKO_MEDIA_CRATE
+  mShutdownNow = true;
+  mShutdownMonitor.NotifyAll();
+#endif
+
   // We could still end up with other events being added after the shutdown
   // task, but that's okay because we process pending events in ThreadFunc
   // after setting mShutdownContext just before exiting.
@@ -764,10 +794,6 @@ nsThread::ShutdownInternal(bool aSync)
 void
 nsThread::ShutdownComplete(NotNull<nsThreadShutdownContext*> aContext)
 {
-#ifdef GECKO_MEDIA_CRATE
-  if (mShutdownNow)
-    return;
-#endif
   MOZ_ASSERT(mThread);
   MOZ_ASSERT(aContext->mTerminatingThread == this);
 
@@ -779,10 +805,6 @@ nsThread::ShutdownComplete(NotNull<nsThreadShutdownContext*> aContext)
   }
 
   // Now, it should be safe to join without fear of dead-locking.
-
-#ifdef GECKO_MEDIA_CRATE
-  mShutdownNow = true;
-#endif
 
   PR_JoinThread(mThread);
   mThread = nullptr;
@@ -824,21 +846,15 @@ nsThread::Shutdown()
     return NS_OK;
   }
 
-  bool aSync = true;
-#ifdef GECKO_MEDIA_CRATE
-  aSync = false;
-#endif
-  nsThreadShutdownContext* maybeContext = ShutdownInternal(aSync);
+  nsThreadShutdownContext* maybeContext = ShutdownInternal(true);
   NS_ENSURE_TRUE(maybeContext, NS_ERROR_UNEXPECTED);
   NotNull<nsThreadShutdownContext*> context = WrapNotNull(maybeContext);
 
-#ifndef GECKO_MEDIA_CRATE
   // Process events on the current thread until we receive a shutdown ACK.
   // Allows waiting; ensure no locks are held that would deadlock us!
   SpinEventLoopUntil([&, context]() {
       return !context->mAwaitingShutdownAck;
     }, context->mJoiningThread);
-#endif
   ShutdownComplete(context);
 
   return NS_OK;
@@ -967,13 +983,11 @@ nsThread::ProcessNextEvent(bool aMayWait, bool* aResult)
   // and repeat the nested event loop since its state change hasn't happened yet.
   bool reallyWait = aMayWait && (mNestedEventLoopDepth > 0 || !ShuttingDown());
 
-#ifndef GECKO_MEDIA_CRATE
   Maybe<Scheduler::EventLoopActivation> activation;
   if (mIsMainThread == MAIN_THREAD) {
     DoMainThreadSpecificProcessing(reallyWait);
     activation.emplace();
   }
-#endif
 
   ++mNestedEventLoopDepth;
 
@@ -1237,7 +1251,6 @@ nsThread::DoMainThreadSpecificProcessing(bool aReallyWait)
 
 #ifndef GECKO_MEDIA_CRATE
   ipc::CancelCPOWs();
-#endif
 
   if (aReallyWait) {
     HangMonitor::Suspend();
@@ -1260,6 +1273,7 @@ nsThread::DoMainThreadSpecificProcessing(bool aReallyWait)
       }
     }
   }
+#endif
 
 #ifdef MOZ_CRASHREPORTER
   if (!ShuttingDown()) {

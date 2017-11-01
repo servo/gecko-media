@@ -16,6 +16,7 @@
 #include "nsTObserverArray.h"
 #include "mozilla/Attributes.h"
 #include "mozilla/SynchronizedEventQueue.h"
+#include "mozilla/Monitor.h"
 #include "mozilla/NotNull.h"
 #include "mozilla/TimeStamp.h"
 #include "nsAutoPtr.h"
@@ -184,6 +185,7 @@ protected:
 #endif
 
 #ifdef GECKO_MEDIA_CRATE
+  mozilla::Monitor mShutdownMonitor;
   bool mShutdownNow;
 #endif
 };
