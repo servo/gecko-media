@@ -477,7 +477,10 @@ TestDecoderTraits()
 } // namespace mozilla
 
 extern "C" void
-TestGecko()
+finish_tests(rust_msg_sender_t* aSender);
+
+extern "C" void
+TestGecko(rust_msg_sender_t* aSender)
 {
   mozilla::TestPreferences();
   mozilla::TestString();
@@ -492,4 +495,9 @@ TestGecko()
   mozilla::Test_MediaMIMETypes();
   mozilla::Test_MP4Demuxer();
   mozilla::TestDecoderTraits();
+
+  RefPtr<mozilla::Runnable> task = NS_NewRunnableFunction(
+    "RustMessageDispatcher", [aSender]() { finish_tests(aSender); });
+  auto rv = NS_DispatchToMainThread(task.forget());
+  MOZ_ASSERT(NS_SUCCEEDED(rv));
 }

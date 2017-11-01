@@ -3,7 +3,8 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use CanPlayType;
-use bindings::{GeckoMedia_CanPlayType, GeckoMedia_Initialize, GeckoMedia_Shutdown};
+use bindings::{rust_msg_sender_t, GeckoMedia_CanPlayType, GeckoMedia_Initialize,
+               GeckoMedia_Shutdown};
 use std::ffi::CString;
 use std::ops::Drop;
 use std::sync::Mutex;
@@ -73,6 +74,15 @@ enum GeckoMediaMsg {
     Test(Sender<()>),
 }
 
+#[no_mangle]
+pub extern "C" fn finish_tests(ptr: *mut Sender<()>) {
+    if ptr.is_null() {
+        return;
+    }
+    let sender = unsafe { Box::from_raw(ptr) };
+    sender.send(()).unwrap();
+}
+
 static OUTSTANDING_HANDLES: AtomicUsize = ATOMIC_USIZE_INIT;
 
 lazy_static! {
@@ -97,9 +107,18 @@ lazy_static! {
                     },
                     #[cfg(test)]
                     GeckoMediaMsg::Test(sender) => {
-                        extern "C" { fn TestGecko(); }
-                        unsafe { TestGecko(); }
-                        sender.send(()).unwrap();
+                        // To test threading, we pass the sender to Gecko
+                        // for it to send a () over once the test completes
+                        // asynchronously.
+
+                        // Sender doesn't have an FFI safe representation,
+                        // but since we're not using representation of this
+                        // struct on the C side, it should be OK to supress
+                        // the warning.
+                        #[allow(improper_ctypes)]
+                        extern "C" { fn TestGecko(ptr: *mut Sender<()>); }
+                        let raw_sender = Box::into_raw(Box::new(sender));
+                        unsafe { TestGecko(raw_sender); }
                     }
                 }
             }

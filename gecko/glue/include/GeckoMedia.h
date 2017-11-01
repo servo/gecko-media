@@ -7,6 +7,8 @@
 #ifndef GeckoMedia_h_
 #define GeckoMedia_h_
 
+struct rust_msg_sender_t;
+
 void
 GeckoMedia_Initialize();
 

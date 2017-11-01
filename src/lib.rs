@@ -23,6 +23,7 @@ pub mod bindings {
 #[doc(inline)]
 pub use bindings::CanPlayTypeResult as CanPlayType;
 pub use top::GeckoMedia;
+pub use top::finish_tests;
 
 #[cfg(test)]
 mod tests {
