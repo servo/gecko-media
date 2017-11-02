@@ -68,7 +68,7 @@ impl Drop for GeckoMedia {
     }
 }
 
-pub enum GeckoMediaMsg {
+enum GeckoMediaMsg {
     Exit(Sender<()>),
     CanPlayType(CString, Sender<CanPlayType>),
     #[cfg(test)] Test(Sender<()>),
