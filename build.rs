@@ -37,7 +37,8 @@ fn compile_gecko_media() {
     println!("cargo:rustc-link-lib=dl");
     #[cfg(target_os = "macos")]
     {
-        let frameworks = vec!["CoreFoundation", "CoreAudio", "AudioUnit"];
+        let frameworks = vec!["CoreFoundation", "CoreAudio", "AudioUnit", "AudioToolbox",
+                              "AVFoundation", "CoreVideo", "VideoToolbox"];
         for framework in &frameworks {
             println!("cargo:rustc-link-lib=framework={}", framework);
         }

@@ -129,9 +129,11 @@ target_include_directories(ogg PRIVATE gecko/include/mozilla/media/libogg/includ
 
 add_library(gecko_core OBJECT
   gecko/glue/AbstractThread.cpp
-  gecko/glue/BlockingResourceBase.cpp
+  gecko/glue/AgnosticDecoderModule.cpp
+  gecko/glue/Benchmark.cpp
   gecko/glue/CooperativeThreadPool.cpp
   gecko/glue/DecoderTraits.cpp
+  gecko/glue/FFmpegRuntimeLinker.cpp
   gecko/glue/GeckoMedia.cpp
   gecko/glue/ImageContainer.cpp
   gecko/glue/InputEventStatistics.cpp
@@ -141,6 +143,7 @@ add_library(gecko_core OBJECT
   gecko/glue/MainThreadIdlePeriod.cpp
   gecko/glue/MediaData.cpp
   gecko/glue/MediaDecoder.cpp
+  gecko/glue/MediaDecoderStateMachine.cpp
   gecko/glue/MediaFormatReader.cpp
   gecko/glue/PDMFactory.cpp
   gecko/glue/nsAppRunner.cpp
@@ -159,8 +162,8 @@ add_library(gecko_core OBJECT
   gecko/glue/Services.cpp
   gecko/glue/Telemetry.cpp
   gecko/glue/ThreadAnnotation.cpp
-  gecko/glue/VideoUtils.cpp
   gecko/glue/XPCOMInit.cpp
+  gecko/src/dom/media/AudioConverter.cpp
   gecko/src/dom/media/AudioStream.cpp
   gecko/src/dom/media/CubebUtils.cpp
   gecko/src/dom/media/MediaContainerType.cpp
@@ -168,8 +171,19 @@ add_library(gecko_core OBJECT
   gecko/src/dom/media/MediaMIMETypes.cpp
   gecko/src/dom/media/MediaPrefs.cpp
   gecko/src/dom/media/MediaResource.cpp
+  gecko/src/dom/media/QueueObject.cpp
+  gecko/src/dom/media/fmp4/MP4Decoder.cpp
   gecko/src/dom/media/fmp4/MP4Demuxer.cpp
+  gecko/src/dom/media/ogg/OpusParser.cpp
+  gecko/src/dom/media/platforms/agnostic/BlankDecoderModule.cpp
+  gecko/src/dom/media/platforms/agnostic/DummyMediaDataDecoder.cpp
+  gecko/src/dom/media/platforms/agnostic/NullDecoderModule.cpp
   gecko/src/dom/media/platforms/agnostic/OpusDecoder.cpp
+  gecko/src/dom/media/platforms/agnostic/VorbisDecoder.cpp
+  gecko/src/dom/media/platforms/agnostic/WAVDecoder.cpp
+  gecko/src/dom/media/platforms/ffmpeg/FFmpegLibWrapper.cpp
+  gecko/src/dom/media/platforms/wrappers/H264Converter.cpp
+  gecko/src/dom/media/VideoUtils.cpp
   gecko/src/dom/media/wave/WaveDecoder.cpp
   gecko/src/dom/media/wave/WaveDemuxer.cpp
   gecko/src/memory/fallible/fallible.cpp
@@ -205,6 +219,7 @@ add_library(gecko_core OBJECT
   gecko/src/xpcom/string/nsReadableUtilsSSE2.cpp
   gecko/src/xpcom/string/nsUTF8UtilsSSE2.cpp
   gecko/src/xpcom/string/unified.cpp
+  gecko/src/xpcom/threads/BlockingResourceBase.cpp
   gecko/src/xpcom/threads/EventQueue.cpp
   gecko/src/xpcom/threads/nsILabelableRunnable.cpp
   gecko/src/xpcom/threads/nsThreadManager.cpp
@@ -243,6 +258,7 @@ add_library(gecko_core OBJECT
   gecko/src/nsprpub/pr/src/misc/prinit.c
   gecko/src/nsprpub/pr/src/misc/prinrval.c
   gecko/src/nsprpub/pr/src/misc/prnetdb.c
+  gecko/src/nsprpub/pr/src/misc/prsystem.c
   gecko/src/nsprpub/pr/src/misc/prtime.c
   gecko/src/nsprpub/pr/src/pthreads/ptio.c
   gecko/src/nsprpub/pr/src/pthreads/ptmisc.c
@@ -261,6 +277,12 @@ if(LINUX)
 endif()
 if(MACOS)
   target_sources(gecko_core PRIVATE
+    gecko/glue/AppleDecoderModule.cpp
+    gecko/glue/AppleVTDecoder.cpp
+    gecko/glue/MacIOSurface.cpp
+    gecko/src/dom/media/platforms/apple/AppleATDecoder.cpp
+    gecko/src/dom/media/platforms/apple/AppleCMLinker.cpp
+    gecko/src/dom/media/platforms/apple/AppleVTLinker.cpp
     gecko/src/mozglue/misc/Mutex_posix.cpp
     gecko/src/mozglue/misc/TimeStamp_darwin.cpp
     gecko/src/dom/media/systemservices/OSXRunLoopSingleton.cpp
@@ -284,6 +306,7 @@ target_include_directories(gecko_core PRIVATE
     gecko/include/nspr
     gecko/include/nspr/private
     gecko/include/mozilla/
+    gecko/include/mozilla/gfx
     gecko/include/mozilla/double-conversion
     gecko/include/mozilla/media/libvorbis/include
     gecko/include/mozilla/media/libogg/include
@@ -305,7 +328,51 @@ target_compile_definitions(gecko_core PRIVATE
   RUST_BINDGEN=1
 )
 
+############
+# ffvpx
+############
 
+if (LINUX OR MACOS)
+add_library(ffvpx OBJECT
+  gecko/src/dom/media/platforms/ffmpeg/FFmpegAudioDecoder.cpp
+  gecko/src/dom/media/platforms/ffmpeg/FFmpegDataDecoder.cpp
+  gecko/src/dom/media/platforms/ffmpeg/FFmpegDecoderModule.cpp
+  gecko/glue/FFmpegVideoDecoder.cpp
+  gecko/src/dom/media/platforms/ffmpeg/ffvpx/FFVPXRuntimeLinker.cpp
+)
+target_include_directories(ffvpx PRIVATE
+    gecko/include/ffmpeg57/include
+    gecko/include/nspr
+    gecko/include/nspr/private
+    gecko/include
+    gecko/glue/include
+    gecko/include/mozilla/
+)
+target_compile_definitions(ffvpx PRIVATE
+  FFVPX_VERSION=46465650
+  USING_MOZFFVPX=1
+)
+endif()
+
+############
+# ffmpeg
+############
+if (LINUX OR MACOS)
+add_library(ffmpeg57 OBJECT
+  gecko/src/dom/media/platforms/ffmpeg/FFmpegAudioDecoder.cpp
+  gecko/src/dom/media/platforms/ffmpeg/FFmpegDataDecoder.cpp
+  gecko/src/dom/media/platforms/ffmpeg/FFmpegDecoderModule.cpp
+  gecko/glue/FFmpegVideoDecoder.cpp
+)
+target_include_directories(ffmpeg57 PRIVATE
+    gecko/include/ffmpeg57/include
+    gecko/include/nspr
+    gecko/include/nspr/private
+    gecko/include
+    gecko/glue/include
+    gecko/include/mozilla/
+)
+endif()
 
 
 ############
@@ -689,6 +756,7 @@ if(MACOS OR LINUX)
   )
 endif()
 
+target_compile_options(stagefright PRIVATE -Wno-multichar)
 
 
 
@@ -857,6 +925,7 @@ target_include_directories(cubeb PRIVATE
 add_library(tests OBJECT
   gecko/test/test.cpp
   gecko/test/MockMediaResource.cpp
+  gecko/test/TestMediaDataDecoder.cpp
   gecko/test/TestMediaMIMETypes.cpp
   gecko/test/TestMP4Demuxer.cpp
 )
@@ -888,6 +957,13 @@ target_include_directories(tests PRIVATE
 ##########
 # gecko_media
 ##########
+set(FFVPX_OBJS )
+set(FFMPEG57_OBJS )
+if (LINUX OR MACOS)
+  set(FFVPX_OBJS $<TARGET_OBJECTS:ffvpx>)
+  set(FFMPEG57_OBJS $<TARGET_OBJECTS:ffmpeg57>)
+endif()
+
 add_library(gecko_media_cmake STATIC
   $<TARGET_OBJECTS:ogg>
   $<TARGET_OBJECTS:gecko_core>
@@ -898,7 +974,10 @@ add_library(gecko_media_cmake STATIC
   $<TARGET_OBJECTS:speex_resampler>
   $<TARGET_OBJECTS:cubeb>
   $<TARGET_OBJECTS:tests>
+  ${FFVPX_OBJS}
+  ${FFMPEG57_OBJS}
 )
+
 
 install(TARGETS gecko_media_cmake
   DESTINATION ${CMAKE_INSTALL_PREFIX}
