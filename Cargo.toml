@@ -4,9 +4,6 @@ version = "0.1.0"
 license = "MPL-2.0"
 authors = ["Chris Pearce <cpearce@mozilla.com>", "Philippe Normand <philn@igalia.com>"]
 
-[build]
-rustflags = ["-C link-arg=-fno-exceptions"]
-
 [target.'cfg(unix)'.dependencies]
 cubeb-pulse = { git = "https://github.com/djg/cubeb-pulse-rs", branch = "dev", features = ["pulse-dlopen"]}
 
