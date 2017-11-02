@@ -144,13 +144,8 @@ lazy_static! {
                         // for it to send a () over once the test completes
                         // asynchronously.
 
-                        // Sender doesn't have an FFI safe representation,
-                        // but since we're not using representation of this
-                        // struct on the C side, it should be OK to supress
-                        // the warning.
-                        #[allow(improper_ctypes)]
-                        extern "C" { fn TestGecko(ptr: *mut Sender<()>); }
-                        let raw_sender = Box::into_raw(Box::new(sender));
+                        extern "C" { fn TestGecko(ptr: *mut rust_msg_sender_t); }
+                        let raw_sender = Box::into_raw(Box::new(sender)) as *mut _;
                         unsafe { TestGecko(raw_sender); }
                     }
                 }
