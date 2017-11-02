@@ -309,7 +309,9 @@ public:
   NS_IMETHOD Run() override
   {
     mThread->mShutdownContext = mShutdownContext;
-    // MessageLoop::current()->Quit();
+#ifndef GECKO_MEDIA_CRATE
+    MessageLoop::current()->Quit();
+#endif // GECKO_MEDIA_CRATE
     return NS_OK;
   }
 private:
@@ -430,8 +432,8 @@ nsThread::ThreadFunc(void* aArg)
   event->Run();  // unblocks nsThread::Init
   event = nullptr;
 
-#ifndef GECKO_MEDIA_CRATE
   {
+#ifndef GECKO_MEDIA_CRATE
     // Scope for MessageLoop.
     nsAutoPtr<MessageLoop> loop(
       new MessageLoop(MessageLoop::TYPE_MOZILLA_NONMAINTHREAD, self));
@@ -440,6 +442,16 @@ nsThread::ThreadFunc(void* aArg)
     loop->Run();
 
     BackgroundChild::CloseForCurrentThread();
+#else
+    // This is functionally equivalent to the MessageLoop::Run()
+    // call above.
+    while (NS_ProcessNextEvent(self, true)) {
+      continue;
+    }
+    // Note: We'll exit the NS_ProcessNextEvent() loop above when
+    // nsThread::ShuttingDown() starts to return true.
+#endif // GECKO_MEDIA_CRATE
+
 
     // NB: The main thread does not shut down here!  It shuts down via
     // nsThreadManager::Shutdown.
@@ -461,37 +473,9 @@ nsThread::ThreadFunc(void* aArg)
     }
   }
 
+#ifndef GECKO_MEDIA_CRATE
   mozilla::IOInterposer::UnregisterCurrentThread();
-#else
-
-  // Under high load the thread might shut down before starting. So this first
-  // loop would spin forever. Hence the test on mShutdownNow. This loop is the
-  // GeckoMedia equivalent of the message loop deactivated above.
-  if (!self->mShutdownNow) {
-    while (true) {
-      if (NS_ProcessNextEvent(self, false))
-        continue;
-
-      NS_ProcessNextEvent(self, true);
-
-      MonitorAutoLock mon(self->mShutdownMonitor);
-      mon.Wait(10);
-      if (self->mShutdownNow)
-        break;
-    }
-  }
-
-  while (true) {
-    // Check and see if we're waiting on any threads.
-    self->WaitForAllAsynchronousShutdowns();
-
-    if (self->mEvents->ShutdownIfNoPendingEvents()) {
-      break;
-    }
-
-    NS_ProcessPendingEvents(self);
-  }
-#endif
+#endif // GECKO_MEDIA_CRATE
 
   // Inform the threadmanager that this thread is going away
   nsThreadManager::get().UnregisterCurrentThread(*self);
@@ -608,10 +592,6 @@ nsThread::nsThread(NotNull<SynchronizedEventQueue*> aQueue,
   , mIsMainThread(aMainThread)
   , mLastUnlabeledRunnable(TimeStamp::Now())
   , mCanInvokeJS(false)
-#ifdef GECKO_MEDIA_CRATE
-  , mShutdownMonitor("shutdown")
-  , mShutdownNow(false)
-#endif
 {
 }
 
@@ -780,11 +760,6 @@ nsThread::ShutdownInternal(bool aSync)
   // XXXroc What if posting the event fails due to OOM?
   mEvents->PutEvent(event.forget(), EventPriority::Normal);
 
-#ifdef GECKO_MEDIA_CRATE
-  mShutdownNow = true;
-  mShutdownMonitor.NotifyAll();
-#endif
-
   // We could still end up with other events being added after the shutdown
   // task, but that's okay because we process pending events in ThreadFunc
   // after setting mShutdownContext just before exiting.
@@ -846,7 +821,7 @@ nsThread::Shutdown()
     return NS_OK;
   }
 
-  nsThreadShutdownContext* maybeContext = ShutdownInternal(true);
+  nsThreadShutdownContext* maybeContext = ShutdownInternal(/* aSync = */ true);
   NS_ENSURE_TRUE(maybeContext, NS_ERROR_UNEXPECTED);
   NotNull<nsThreadShutdownContext*> context = WrapNotNull(maybeContext);
 
@@ -855,6 +830,7 @@ nsThread::Shutdown()
   SpinEventLoopUntil([&, context]() {
       return !context->mAwaitingShutdownAck;
     }, context->mJoiningThread);
+
   ShutdownComplete(context);
 
   return NS_OK;

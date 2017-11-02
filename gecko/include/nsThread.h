@@ -16,7 +16,6 @@
 #include "nsTObserverArray.h"
 #include "mozilla/Attributes.h"
 #include "mozilla/SynchronizedEventQueue.h"
-#include "mozilla/Monitor.h"
 #include "mozilla/NotNull.h"
 #include "mozilla/TimeStamp.h"
 #include "nsAutoPtr.h"
@@ -182,11 +181,6 @@ protected:
 
 #ifndef RELEASE_OR_BETA
   mozilla::TimeStamp mNextIdleDeadline;
-#endif
-
-#ifdef GECKO_MEDIA_CRATE
-  mozilla::Monitor mShutdownMonitor;
-  bool mShutdownNow;
 #endif
 };
 
