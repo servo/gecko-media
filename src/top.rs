@@ -5,7 +5,6 @@
 use CanPlayType;
 use bindings::*;
 use std::ffi::CString;
-use std::mem::transmute;
 use std::ops::Drop;
 use std::sync::Mutex;
 use std::sync::atomic::{AtomicUsize, Ordering, ATOMIC_USIZE_INIT};
@@ -113,15 +112,11 @@ lazy_static! {
         let msg_sender_clone = msg_sender.clone();
         Builder::new().name("GeckoMedia".to_owned()).spawn(move || {
             let ptr = Box::into_raw(Box::new(msg_sender_clone));
-            let ok = unsafe {
-                let raw_msg_sender =
-                    transmute::<*mut Sender<GeckoMediaMsg>,
-                                *mut rust_msg_sender_t>(ptr);
-                GeckoMedia_Initialize(raw_msg_sender)
-            };
-            if !ok {
-                panic!("Failed to initialize GeckoMedia");
-            }
+            let raw_msg_sender = ptr as *mut rust_msg_sender_t;
+            assert!(
+                unsafe { GeckoMedia_Initialize(raw_msg_sender) },
+                "failed to initialize GeckoMedia"
+            );
             ok_sender.send(()).unwrap();
             drop(ok_sender);
             loop {
