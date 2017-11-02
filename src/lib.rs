@@ -12,6 +12,7 @@ extern crate cubeb_pulse;
 extern crate lazy_static;
 extern crate libc;
 extern crate mime;
+#[allow(unused_extern_crates)]
 extern crate mp4parse_capi;
 
 pub mod mime_parser_glue;
@@ -24,6 +25,7 @@ pub mod bindings {
 #[doc(inline)]
 pub use bindings::CanPlayTypeResult as CanPlayType;
 pub use top::GeckoMedia;
+#[cfg(test)]
 pub use top::finish_tests;
 pub use top::call_gecko_process_events;
 pub use top::free_gecko_process_events_sender;

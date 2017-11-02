@@ -5,7 +5,6 @@
 use CanPlayType;
 use bindings::*;
 use std::ffi::CString;
-use std::mem::transmute;
 use std::ops::Drop;
 use std::sync::Mutex;
 use std::sync::atomic::{AtomicUsize, Ordering, ATOMIC_USIZE_INIT};
@@ -69,39 +68,11 @@ impl Drop for GeckoMedia {
     }
 }
 
-pub enum GeckoMediaMsg {
+enum GeckoMediaMsg {
     Exit(Sender<()>),
     CanPlayType(CString, Sender<CanPlayType>),
     #[cfg(test)] Test(Sender<()>),
     CallProcessGeckoEvents,
-}
-
-#[no_mangle]
-pub extern "C" fn finish_tests(ptr: *mut Sender<()>) {
-    if ptr.is_null() {
-        return;
-    }
-    let sender = unsafe { Box::from_raw(ptr) };
-    sender.send(()).unwrap();
-}
-
-#[no_mangle]
-pub extern "C" fn call_gecko_process_events(ptr: *mut Sender<GeckoMediaMsg>) {
-    if ptr.is_null() {
-        return;
-    }
-    let sender = unsafe { &mut *(ptr) };
-    sender.send(GeckoMediaMsg::CallProcessGeckoEvents).unwrap();
-}
-
-#[no_mangle]
-pub extern "C" fn free_gecko_process_events_sender(ptr: *mut Sender<GeckoMediaMsg>) {
-    if !ptr.is_null() {
-        return;
-    }
-    unsafe {
-        Box::from_raw(ptr);
-    }
 }
 
 static OUTSTANDING_HANDLES: AtomicUsize = ATOMIC_USIZE_INIT;
@@ -113,15 +84,11 @@ lazy_static! {
         let msg_sender_clone = msg_sender.clone();
         Builder::new().name("GeckoMedia".to_owned()).spawn(move || {
             let ptr = Box::into_raw(Box::new(msg_sender_clone));
-            let ok = unsafe {
-                let raw_msg_sender =
-                    transmute::<*mut Sender<GeckoMediaMsg>,
-                                *mut rust_msg_sender_t>(ptr);
-                GeckoMedia_Initialize(raw_msg_sender)
-            };
-            if !ok {
-                panic!("Failed to initialize GeckoMedia");
-            }
+            let raw_msg_sender = ptr as *mut rust_msg_sender_t;
+            assert!(
+                unsafe { GeckoMedia_Initialize(raw_msg_sender) },
+                "failed to initialize GeckoMedia"
+            );
             ok_sender.send(()).unwrap();
             drop(ok_sender);
             loop {
@@ -149,13 +116,8 @@ lazy_static! {
                         // for it to send a () over once the test completes
                         // asynchronously.
 
-                        // Sender doesn't have an FFI safe representation,
-                        // but since we're not using representation of this
-                        // struct on the C side, it should be OK to supress
-                        // the warning.
-                        #[allow(improper_ctypes)]
-                        extern "C" { fn TestGecko(ptr: *mut Sender<()>); }
-                        let raw_sender = Box::into_raw(Box::new(sender));
+                        extern "C" { fn TestGecko(ptr: *mut rust_msg_sender_t); }
+                        let raw_sender = Box::into_raw(Box::new(sender)) as *mut _;
                         unsafe { TestGecko(raw_sender); }
                     }
                 }
@@ -164,4 +126,31 @@ lazy_static! {
         ok_receiver.recv().unwrap();
         Mutex::new(Some(msg_sender))
     };
+}
+
+#[cfg(test)]
+#[no_mangle]
+pub unsafe extern "C" fn finish_tests(ptr: *mut rust_msg_sender_t) {
+    if ptr.is_null() {
+        return;
+    }
+    let sender = Box::from_raw(ptr as *mut Sender<()>);
+    sender.send(()).unwrap();
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn call_gecko_process_events(ptr: *mut rust_msg_sender_t) {
+    if ptr.is_null() {
+        return;
+    }
+    let sender = &*(ptr as *const Sender<GeckoMediaMsg>);
+    sender.send(GeckoMediaMsg::CallProcessGeckoEvents).unwrap();
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn free_gecko_process_events_sender(ptr: *mut rust_msg_sender_t) {
+    if !ptr.is_null() {
+        return;
+    }
+    drop(Box::from_raw(ptr as *mut Sender<GeckoMediaMsg>));
 }
