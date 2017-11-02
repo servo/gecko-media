@@ -172,7 +172,7 @@ public:
   virtual VideoFrameContainer* GetVideoFrameContainer() { return nullptr; }
 
   // Return the decoder owner's owner document.
-  virtual nsIDocument* GetDocument() const { return nullptr; }
+  // virtual nsIDocument* GetDocument() const { return nullptr; }
 
   // Called by the media decoder to create a GMPCrashHelper.
   virtual already_AddRefed<GMPCrashHelper> CreateGMPCrashHelper()

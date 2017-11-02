@@ -36,9 +36,7 @@
 
 #include "MediaInfo.h"
 #include "MediaPrefs.h"
-#ifndef GECKO_MEDIA_CRATE
 #include "H264Converter.h"
-#endif
 
 #include "AgnosticDecoderModule.h"
 #ifndef GECKO_MEDIA_CRATE
@@ -47,12 +45,12 @@
 
 #include "DecoderDoctorDiagnostics.h"
 
-#ifndef GECKO_MEDIA_CRATE
 #include "MP4Decoder.h"
+#ifndef GECKO_MEDIA_CRATE
 #include "mozilla/dom/RemoteVideoDecoder.h"
+#endif
 
 #include "mp4_demuxer/H264.h"
-#endif
 
 #include "VideoUtils.h"
 
@@ -68,7 +66,6 @@ class PDMFactoryImpl final
 public:
   PDMFactoryImpl()
   {
-#ifndef GECKO_MEDIA_CRATE
 #ifdef XP_WIN
     WMFDecoderModule::Init();
 #endif
@@ -81,7 +78,6 @@ public:
 #ifdef MOZ_FFMPEG
     FFmpegRuntimeLinker::Init();
 #endif
-#endif // GECKO_MEDIA_CRATE
   }
 };
 
@@ -131,7 +127,6 @@ public:
       RefPtr<MediaByteBuffer> extraData =
         aTrackConfig.GetAsVideoInfo()->mExtraData;
       AddToCheckList([mimeType, extraData]() {
-#ifndef GECKO_MEDIA_CRATE
         if (MP4Decoder::IsH264(mimeType)) {
           mp4_demuxer::SPSData spsdata;
           // WMF H.264 Video Decoder and Apple ATDecoder
@@ -148,7 +143,6 @@ public:
                                         "with YUV444 chroma subsampling.")));
           }
         }
-#endif
         return CheckResult(SupportChecker::Reason::kSupported);
       });
     }
@@ -303,7 +297,6 @@ PDMFactory::CreateDecoderWithPDM(PlatformDecoderModule* aPDM,
     return nullptr;
   }
 
-#ifndef GECKO_MEDIA_CRATE
   if (MP4Decoder::IsH264(config.mMimeType) && !aParams.mUseNullDecoder.mUse) {
     RefPtr<H264Converter> h = new H264Converter(aPDM, aParams);
     const MediaResult result = h->GetLastError();
@@ -315,9 +308,7 @@ PDMFactory::CreateDecoderWithPDM(PlatformDecoderModule* aPDM,
     } else if (aParams.mError) {
       *aParams.mError = result;
     }
-  } else
-#endif
-  {
+  } else {
     m = aPDM->CreateVideoDecoder(aParams);
   }
 

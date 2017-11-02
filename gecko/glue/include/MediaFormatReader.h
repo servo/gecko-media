@@ -78,7 +78,7 @@ typedef void* MediaDecoderOwnerID;
 struct MOZ_STACK_CLASS MediaFormatReaderInit
 {
   MediaResource* mResource = nullptr;
-  VideoFrameContainer* mVideoFrameContainer = nullptr;
+  // VideoFrameContainer* mVideoFrameContainer = nullptr;
   FrameStatistics* mFrameStats = nullptr;
   already_AddRefed<layers::KnowsCompositor> mKnowsCompositor;
   already_AddRefed<GMPCrashHelper> mCrashHelper;
@@ -733,10 +733,10 @@ private:
   Maybe<media::TimeUnit> mPendingSeekTime;
   MozPromiseHolder<SeekPromise> mSeekPromise;
 
-  RefPtr<VideoFrameContainer> mVideoFrameContainer;
-  layers::ImageContainer* GetImageContainer();
+  // RefPtr<VideoFrameContainer> mVideoFrameContainer;
+  // layers::ImageContainer* GetImageContainer();
 
-  RefPtr<CDMProxy> mCDMProxy;
+  // RefPtr<CDMProxy> mCDMProxy;
 
   RefPtr<GMPCrashHelper> mCrashHelper;
 

@@ -25,6 +25,7 @@ addons:
       - sourceline: 'deb http://apt.llvm.org/trusty/ llvm-toolchain-trusty-3.8 main'
         keyurl: 'http://apt.llvm.org/llvm-snapshot.gpg.key'
       - sourceline: 'ppa:jonathonf/python-2.7'
+      - sourceline: 'ppa:jonathonf/ffmpeg-3'
     packages:
       - python
       - gcc-5
@@ -32,6 +33,11 @@ addons:
       - libpulse-dev
       - pulseaudio
       - dbus-x11
+      - libavcodec-dev
+      - libavformat-dev
+      - libswscale-dev
+      - libavutil-dev
+      - libswresample-dev
 
 env:
   - CARGO_FLAGS=""

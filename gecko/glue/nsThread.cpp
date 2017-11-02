@@ -309,7 +309,9 @@ public:
   NS_IMETHOD Run() override
   {
     mThread->mShutdownContext = mShutdownContext;
-    // MessageLoop::current()->Quit();
+#ifndef GECKO_MEDIA_CRATE
+    MessageLoop::current()->Quit();
+#endif // GECKO_MEDIA_CRATE
     return NS_OK;
   }
 private:
@@ -430,8 +432,8 @@ nsThread::ThreadFunc(void* aArg)
   event->Run();  // unblocks nsThread::Init
   event = nullptr;
 
-#ifndef GECKO_MEDIA_CRATE
   {
+#ifndef GECKO_MEDIA_CRATE
     // Scope for MessageLoop.
     nsAutoPtr<MessageLoop> loop(
       new MessageLoop(MessageLoop::TYPE_MOZILLA_NONMAINTHREAD, self));
@@ -440,6 +442,16 @@ nsThread::ThreadFunc(void* aArg)
     loop->Run();
 
     BackgroundChild::CloseForCurrentThread();
+#else
+    // This is functionally equivalent to the MessageLoop::Run()
+    // call above.
+    while (NS_ProcessNextEvent(self, true)) {
+      continue;
+    }
+    // Note: We'll exit the NS_ProcessNextEvent() loop above when
+    // nsThread::ShuttingDown() starts to return true.
+#endif // GECKO_MEDIA_CRATE
+
 
     // NB: The main thread does not shut down here!  It shuts down via
     // nsThreadManager::Shutdown.
@@ -461,19 +473,16 @@ nsThread::ThreadFunc(void* aArg)
     }
   }
 
+#ifndef GECKO_MEDIA_CRATE
   mozilla::IOInterposer::UnregisterCurrentThread();
-#else
-  self->mShutdownNow = false;
-  while (!self->mShutdownNow) {
-    NS_ProcessPendingEvents(self);
-  }
-#endif
+#endif // GECKO_MEDIA_CRATE
 
   // Inform the threadmanager that this thread is going away
   nsThreadManager::get().UnregisterCurrentThread(*self);
 
 #ifndef GECKO_MEDIA_CRATE
   profiler_unregister_thread();
+#endif
   // Dispatch shutdown ACK
   NotNull<nsThreadShutdownContext*> context =
     WrapNotNull(self->mShutdownContext);
@@ -484,7 +493,6 @@ nsThread::ThreadFunc(void* aArg)
   } else {
     context->mJoiningThread->Dispatch(event, NS_DISPATCH_NORMAL);
   }
-#endif
 
   // Release any observer of the thread here.
   self->SetObserver(nullptr);
@@ -584,9 +592,6 @@ nsThread::nsThread(NotNull<SynchronizedEventQueue*> aQueue,
   , mIsMainThread(aMainThread)
   , mLastUnlabeledRunnable(TimeStamp::Now())
   , mCanInvokeJS(false)
-#ifdef GECKO_MEDIA_CRATE
-  , mShutdownNow(false)
-#endif
 {
 }
 
@@ -764,10 +769,6 @@ nsThread::ShutdownInternal(bool aSync)
 void
 nsThread::ShutdownComplete(NotNull<nsThreadShutdownContext*> aContext)
 {
-#ifdef GECKO_MEDIA_CRATE
-  if (mShutdownNow)
-    return;
-#endif
   MOZ_ASSERT(mThread);
   MOZ_ASSERT(aContext->mTerminatingThread == this);
 
@@ -779,10 +780,6 @@ nsThread::ShutdownComplete(NotNull<nsThreadShutdownContext*> aContext)
   }
 
   // Now, it should be safe to join without fear of dead-locking.
-
-#ifdef GECKO_MEDIA_CRATE
-  mShutdownNow = true;
-#endif
 
   PR_JoinThread(mThread);
   mThread = nullptr;
@@ -824,21 +821,16 @@ nsThread::Shutdown()
     return NS_OK;
   }
 
-  bool aSync = true;
-#ifdef GECKO_MEDIA_CRATE
-  aSync = false;
-#endif
-  nsThreadShutdownContext* maybeContext = ShutdownInternal(aSync);
+  nsThreadShutdownContext* maybeContext = ShutdownInternal(/* aSync = */ true);
   NS_ENSURE_TRUE(maybeContext, NS_ERROR_UNEXPECTED);
   NotNull<nsThreadShutdownContext*> context = WrapNotNull(maybeContext);
 
-#ifndef GECKO_MEDIA_CRATE
   // Process events on the current thread until we receive a shutdown ACK.
   // Allows waiting; ensure no locks are held that would deadlock us!
   SpinEventLoopUntil([&, context]() {
       return !context->mAwaitingShutdownAck;
     }, context->mJoiningThread);
-#endif
+
   ShutdownComplete(context);
 
   return NS_OK;
@@ -967,13 +959,11 @@ nsThread::ProcessNextEvent(bool aMayWait, bool* aResult)
   // and repeat the nested event loop since its state change hasn't happened yet.
   bool reallyWait = aMayWait && (mNestedEventLoopDepth > 0 || !ShuttingDown());
 
-#ifndef GECKO_MEDIA_CRATE
   Maybe<Scheduler::EventLoopActivation> activation;
   if (mIsMainThread == MAIN_THREAD) {
     DoMainThreadSpecificProcessing(reallyWait);
     activation.emplace();
   }
-#endif
 
   ++mNestedEventLoopDepth;
 
@@ -1237,7 +1227,6 @@ nsThread::DoMainThreadSpecificProcessing(bool aReallyWait)
 
 #ifndef GECKO_MEDIA_CRATE
   ipc::CancelCPOWs();
-#endif
 
   if (aReallyWait) {
     HangMonitor::Suspend();
@@ -1260,6 +1249,7 @@ nsThread::DoMainThreadSpecificProcessing(bool aReallyWait)
       }
     }
   }
+#endif
 
 #ifdef MOZ_CRASHREPORTER
   if (!ShuttingDown()) {

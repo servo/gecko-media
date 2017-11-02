@@ -19,10 +19,10 @@
 #ifdef MOZ_ANDROID_HLS_SUPPORT
 #include "HLSDecoder.h"
 #endif
-// #ifdef MOZ_FMP4
-// #include "MP4Decoder.h"
-// #include "MP4Demuxer.h"
-// #endif
+#ifdef MOZ_FMP4
+#include "MP4Decoder.h"
+#include "MP4Demuxer.h"
+#endif
 #include "MediaFormatReader.h"
 
 // #include "MP3Decoder.h"
@@ -60,11 +60,11 @@ DecoderTraits::IsHttpLiveStreamingType(const MediaContainerType& aType)
 DecoderTraits::IsMP4SupportedType(const MediaContainerType& aType,
                                   DecoderDoctorDiagnostics* aDiagnostics)
 {
-// #ifdef MOZ_FMP4
-//   return MP4Decoder::IsSupportedType(aType, aDiagnostics);
-// #else
+#ifdef MOZ_FMP4
+  return MP4Decoder::IsSupportedType(aType, aDiagnostics);
+#else
   return false;
-// #endif
+#endif
 }
 
 static
@@ -104,17 +104,17 @@ CanHandleCodecsType(const MediaContainerType& aType,
 //     return CANPLAY_NO;
 //   }
 // #endif
-// #ifdef MOZ_FMP4
-//   if (MP4Decoder::IsSupportedType(mimeType,
-//                                   /* DecoderDoctorDiagnostics* */ nullptr)) {
-//     if (MP4Decoder::IsSupportedType(aType, aDiagnostics)) {
-//       return CANPLAY_YES;
-//     }
-//     // We can only reach this position if a particular codec was requested,
-//     // fmp4 is supported and working: the codec must be invalid.
-//     return CANPLAY_NO;
-//   }
-// #endif
+#ifdef MOZ_FMP4
+  if (MP4Decoder::IsSupportedType(mimeType,
+                                  /* DecoderDoctorDiagnostics* */ nullptr)) {
+    if (MP4Decoder::IsSupportedType(aType, aDiagnostics)) {
+      return CANPLAY_YES;
+    }
+    // We can only reach this position if a particular codec was requested,
+    // fmp4 is supported and working: the codec must be invalid.
+    return CANPLAY_NO;
+  }
+#endif
 //   if (MP3Decoder::IsSupportedType(aType)) {
 //     return CANPLAY_YES;
 //   }
@@ -161,11 +161,11 @@ CanHandleMediaType(const MediaContainerType& aType,
   if (WaveDecoder::IsSupportedType(mimeType)) {
     return CANPLAY_MAYBE;
   }
-// #ifdef MOZ_FMP4
-//   if (MP4Decoder::IsSupportedType(mimeType, aDiagnostics)) {
-//     return CANPLAY_MAYBE;
-//   }
-// #endif
+#ifdef MOZ_FMP4
+  if (MP4Decoder::IsSupportedType(mimeType, aDiagnostics)) {
+    return CANPLAY_MAYBE;
+  }
+#endif
 // #if !defined(MOZ_OMX_WEBM_DECODER)
 //   if (WebMDecoder::IsSupportedType(mimeType)) {
 //     return CANPLAY_MAYBE;
@@ -273,9 +273,9 @@ DecoderTraits::IsSupportedType(const MediaContainerType& aType)
 //     &ADTSDecoder::IsSupportedType,
 //     &FlacDecoder::IsSupportedType,
 //     &MP3Decoder::IsSupportedType,
-// #ifdef MOZ_FMP4
-//     &MP4Decoder::IsSupportedTypeWithoutDiagnostics,
-// #endif
+#ifdef MOZ_FMP4
+    &MP4Decoder::IsSupportedTypeWithoutDiagnostics,
+#endif
 //     &OggDecoder::IsSupportedType,
     &WaveDecoder::IsSupportedType,
 //     &WebMDecoder::IsSupportedType,
@@ -307,9 +307,9 @@ bool DecoderTraits::IsSupportedInVideoDocument(const nsACString& aType)
   return
 //     OggDecoder::IsSupportedType(*type) ||
 //     WebMDecoder::IsSupportedType(*type) ||
-// #ifdef MOZ_FMP4
-//     MP4Decoder::IsSupportedType(*type, /* DecoderDoctorDiagnostics* */ nullptr) ||
-// #endif
+#ifdef MOZ_FMP4
+    MP4Decoder::IsSupportedType(*type, /* DecoderDoctorDiagnostics* */ nullptr) ||
+#endif
 //     MP3Decoder::IsSupportedType(*type) ||
 //     ADTSDecoder::IsSupportedType(*type) ||
 //     FlacDecoder::IsSupportedType(*type) ||

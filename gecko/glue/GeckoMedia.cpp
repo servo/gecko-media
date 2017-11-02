@@ -12,6 +12,8 @@
 #include "mozilla/SharedThreadPool.h"
 #include "nsThreadManager.h"
 #include "nsThreadUtils.h"
+#include "nsIObserverService.h"
+#include "mozilla/Services.h"
 
 extern "C" void
 call_gecko_process_events(rust_msg_sender_t* aSender);
@@ -98,6 +100,12 @@ GeckoMedia_Shutdown()
   MOZ_ASSERT(NS_IsMainThread());
 
   mozilla::Preferences::Shutdown();
+
+  // Broadcast a shutdown notification to all threads.
+  nsCOMPtr<nsIObserverService> obsService = mozilla::services::GetObserverService();
+  MOZ_ASSERT(obsService);
+  obsService->NotifyObservers(nullptr, "xpcom-shutdown-threads", nullptr);
+
   NS_ShutdownXPCOM(nullptr);
 
   free_gecko_process_events_sender(sProcessEventsRustSender);
