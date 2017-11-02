@@ -75,32 +75,6 @@ pub enum GeckoMediaMsg {
     CallProcessGeckoEvents,
 }
 
-#[no_mangle]
-pub extern "C" fn finish_tests(ptr: *mut rust_msg_sender_t) {
-    if ptr.is_null() {
-        return;
-    }
-    let sender = unsafe { Box::from_raw(ptr as *mut Sender<()>) };
-    sender.send(()).unwrap();
-}
-
-#[no_mangle]
-pub extern "C" fn call_gecko_process_events(ptr: *mut rust_msg_sender_t) {
-    if ptr.is_null() {
-        return;
-    }
-    let sender = unsafe { &*(ptr as *const Sender<GeckoMediaMsg>) };
-    sender.send(GeckoMediaMsg::CallProcessGeckoEvents).unwrap();
-}
-
-#[no_mangle]
-pub extern "C" fn free_gecko_process_events_sender(ptr: *mut rust_msg_sender_t) {
-    if !ptr.is_null() {
-        return;
-    }
-    drop(unsafe { Box::from_raw(ptr as *mut Sender<GeckoMediaMsg>) });
-}
-
 static OUTSTANDING_HANDLES: AtomicUsize = ATOMIC_USIZE_INIT;
 
 lazy_static! {
@@ -152,4 +126,30 @@ lazy_static! {
         ok_receiver.recv().unwrap();
         Mutex::new(Some(msg_sender))
     };
+}
+
+#[no_mangle]
+pub extern "C" fn finish_tests(ptr: *mut rust_msg_sender_t) {
+    if ptr.is_null() {
+        return;
+    }
+    let sender = unsafe { Box::from_raw(ptr as *mut Sender<()>) };
+    sender.send(()).unwrap();
+}
+
+#[no_mangle]
+pub extern "C" fn call_gecko_process_events(ptr: *mut rust_msg_sender_t) {
+    if ptr.is_null() {
+        return;
+    }
+    let sender = unsafe { &*(ptr as *const Sender<GeckoMediaMsg>) };
+    sender.send(GeckoMediaMsg::CallProcessGeckoEvents).unwrap();
+}
+
+#[no_mangle]
+pub extern "C" fn free_gecko_process_events_sender(ptr: *mut rust_msg_sender_t) {
+    if !ptr.is_null() {
+        return;
+    }
+    drop(unsafe { Box::from_raw(ptr as *mut Sender<GeckoMediaMsg>) });
 }
