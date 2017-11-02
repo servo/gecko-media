@@ -128,6 +128,7 @@ lazy_static! {
     };
 }
 
+#[cfg(test)]
 #[no_mangle]
 pub extern "C" fn finish_tests(ptr: *mut rust_msg_sender_t) {
     if ptr.is_null() {

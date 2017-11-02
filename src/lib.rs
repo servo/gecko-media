@@ -25,6 +25,7 @@ pub mod bindings {
 #[doc(inline)]
 pub use bindings::CanPlayTypeResult as CanPlayType;
 pub use top::GeckoMedia;
+#[cfg(test)]
 pub use top::finish_tests;
 pub use top::call_gecko_process_events;
 pub use top::free_gecko_process_events_sender;
