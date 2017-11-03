@@ -59,28 +59,16 @@ impl GeckoMedia {
     where
         F: FnOnce(),
     {
-        trait Task {
-            fn run(self: Box<Self>);
-        }
-
-        impl<T> Task for T
+        unsafe extern fn call<F>(ptr: *mut c_void)
         where
-            T: FnOnce(),
+            F: FnOnce(),
         {
-            fn run(self: Box<Self>) {
-                (*self)()
-            }
+            Box::from_raw(ptr as *mut F)()
         }
 
-        unsafe extern fn call(ptr: *mut c_void) {
-            Box::from_raw(ptr as *mut Box<Task>).run()
-        }
-
-        let boxed: Box<Box<Task>> = Box::new(Box::new(f));
-        let data: *mut Box<Task> = Box::into_raw(boxed);
         let runnable = RustRunnable {
-            data: data as *mut c_void,
-            function: Some(call),
+            data: Box::into_raw(Box::new(f)) as *mut c_void,
+            function: Some(call::<F>),
         };
 
         unsafe { GeckoMedia_QueueRustRunnable(runnable) }
