@@ -28,4 +28,13 @@ GeckoMedia_CanPlayType(const char* aMimeType);
 void
 GeckoMedia_ProcessEvents();
 
+struct RustRunnable
+{
+  void *data;
+  void (*function)(void *data);
+};
+
+void
+GeckoMedia_QueueRustRunnable(RustRunnable runnable);
+
 #endif // GeckoMedia_h_

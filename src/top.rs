@@ -6,6 +6,7 @@ use CanPlayType;
 use bindings::*;
 use std::ffi::CString;
 use std::ops::Drop;
+use std::os::raw::c_void;
 use std::sync::Mutex;
 use std::sync::atomic::{AtomicUsize, Ordering, ATOMIC_USIZE_INIT};
 use std::sync::mpsc::{self, Sender};
@@ -54,11 +55,40 @@ impl GeckoMedia {
         }
     }
 
+    pub fn queue_task<F>(&self, f: F)
+    where
+        F: FnOnce(),
+    {
+        trait Task {
+            fn run(self: Box<Self>);
+        }
+
+        impl<T> Task for T
+        where
+            T: FnOnce(),
+        {
+            fn run(self: Box<Self>) {
+                (*self)()
+            }
+        }
+
+        unsafe extern fn call(ptr: *mut c_void) {
+            Box::from_raw(ptr as *mut Box<Task>).run()
+        }
+
+        let boxed: Box<Box<Task>> = Box::new(Box::new(f));
+        let data: *mut Box<Task> = Box::into_raw(boxed);
+        let runnable = RustRunnable {
+            data: data as *mut c_void,
+            function: Some(call),
+        };
+
+        unsafe { GeckoMedia_QueueRustRunnable(runnable) }
+    }
+
     #[cfg(test)]
     pub fn test(&self) {
-        let (sender, receiver) = mpsc::channel();
-        self.sender.send(GeckoMediaMsg::Test(sender)).unwrap();
-        receiver.recv().unwrap();
+        self.sender.send(GeckoMediaMsg::Test).unwrap();
     }
 }
 
@@ -71,7 +101,8 @@ impl Drop for GeckoMedia {
 enum GeckoMediaMsg {
     Exit(Sender<()>),
     CanPlayType(CString, Sender<CanPlayType>),
-    #[cfg(test)] Test(Sender<()>),
+    #[cfg(test)]
+    Test,
     CallProcessGeckoEvents,
 }
 
@@ -111,14 +142,9 @@ lazy_static! {
                         }
                     },
                     #[cfg(test)]
-                    GeckoMediaMsg::Test(sender) => {
-                        // To test threading, we pass the sender to Gecko
-                        // for it to send a () over once the test completes
-                        // asynchronously.
-
-                        extern "C" { fn TestGecko(ptr: *mut rust_msg_sender_t); }
-                        let raw_sender = Box::into_raw(Box::new(sender)) as *mut _;
-                        unsafe { TestGecko(raw_sender); }
+                    GeckoMediaMsg::Test => {
+                        extern "C" { fn TestGecko(); }
+                        unsafe { TestGecko(); }
                     }
                 }
             }
@@ -126,16 +152,6 @@ lazy_static! {
         ok_receiver.recv().unwrap();
         Mutex::new(Some(msg_sender))
     };
-}
-
-#[cfg(test)]
-#[no_mangle]
-pub unsafe extern "C" fn finish_tests(ptr: *mut rust_msg_sender_t) {
-    if ptr.is_null() {
-        return;
-    }
-    let sender = Box::from_raw(ptr as *mut Sender<()>);
-    sender.send(()).unwrap();
 }
 
 #[no_mangle]
