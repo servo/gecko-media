@@ -14,14 +14,16 @@ use std::thread::Builder;
 
 pub struct GeckoMedia {
     sender: Sender<GeckoMediaMsg>,
+    id: usize,
 }
 
 impl GeckoMedia {
     pub fn get() -> Result<Self, ()> {
         OUTSTANDING_HANDLES.fetch_add(1, Ordering::SeqCst);
+        let id = INSTANCE_COUNT.fetch_add(1, Ordering::SeqCst);
         let sender = SENDER.lock().unwrap();
         match sender.clone() {
-            Some(sender) => Ok(GeckoMedia { sender }),
+            Some(sender) => Ok(GeckoMedia { sender, id }),
             None => {
                 OUTSTANDING_HANDLES.fetch_sub(1, Ordering::SeqCst);
                 Err(())
@@ -95,6 +97,7 @@ enum GeckoMediaMsg {
 }
 
 static OUTSTANDING_HANDLES: AtomicUsize = ATOMIC_USIZE_INIT;
+static INSTANCE_COUNT: AtomicUsize = ATOMIC_USIZE_INIT;
 
 lazy_static! {
     static ref SENDER: Mutex<Option<Sender<GeckoMediaMsg>>> = {
