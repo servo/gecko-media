@@ -8,3 +8,5 @@
 
 #undef MOZ_WIDGET_ANDROID
 #undef MOZ_AV1
+
+#undef MOZ_WEBRTC

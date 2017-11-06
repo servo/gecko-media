@@ -8,6 +8,8 @@
 #include "AudioStream.h"
 #include "DecoderTraits.h"
 #include "GeckoMedia.h"
+#include "GeckoMediaDecoder.h"
+#include "GeckoMediaDecoderOwner.h"
 #include "ImageContainer.h"
 #include "MediaData.h"
 #include "PlatformDecoderModule.h"
@@ -477,6 +479,39 @@ TestDecoderTraits()
     MediaContainerType(MEDIAMIMETYPE("audio/wav")), nullptr) == CANPLAY_MAYBE);
 }
 
+void
+TestGeckoDecoder()
+{
+  GeckoMediaDecoderOwner owner;
+  MediaDecoderInit decoderInit(&owner,
+                               1.0, // volume
+                               true, // mPreservesPitch
+                               1.0, // mPlaybackRate
+                               false, // mMinimizePreroll
+                               false, // mHasSuspendTaint
+                               false, // mLooping
+                               MediaContainerType(MEDIAMIMETYPE("audio/wav")));
+  RefPtr<GeckoMediaDecoder> decoder = new GeckoMediaDecoder(decoderInit);
+  FILE* f = fopen("gecko/test/audiotest.wav", "rb");
+  fseek(f, 0, SEEK_END);
+  long fsize = ftell(f);
+  fseek(f, 0, SEEK_SET);
+
+  char* data = (char*) malloc(fsize + 1);
+  fread(data, fsize, 1, f);
+  fclose(f);
+  data[fsize] = 0;
+
+  RefPtr<BufferMediaResource> resource = new BufferMediaResource((uint8_t*)data, (uint32_t)fsize);
+  decoder->Load(resource);
+
+  decoder->Play();
+
+  SpinEventLoopUntil([decoder]() { return decoder->IsEnded(); });
+  decoder->Shutdown();
+  free(data);
+}
+
 } // namespace mozilla
 
 extern "C" void
@@ -496,4 +531,5 @@ TestGecko()
   mozilla::Test_MediaMIMETypes();
   mozilla::Test_MP4Demuxer();
   mozilla::TestDecoderTraits();
+  mozilla::TestGeckoDecoder();
 }

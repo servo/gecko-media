@@ -2029,10 +2029,10 @@ MediaFormatReader::DecodeDemuxedSamples(TrackType aTrack,
 
              // When we recovered from a GPU crash and get the first decoded
              // frame, report the recovery time telemetry.
-             if (aTrack == TrackType::kVideoTrack) {
-               GPUProcessCrashTelemetryLogger::ReportTelemetry(
-                 mMediaDecoderOwnerID, decoder.mDecoder.get());
-             }
+             // if (aTrack == TrackType::kVideoTrack) {
+             //   GPUProcessCrashTelemetryLogger::ReportTelemetry(
+             //     mMediaDecoderOwnerID, decoder.mDecoder.get());
+             // }
            },
            [self, this, aTrack, &decoder](const MediaResult& aError) {
              decoder.mDecodeRequest.Complete();

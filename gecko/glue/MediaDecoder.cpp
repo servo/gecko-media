@@ -1613,12 +1613,12 @@ MediaMemoryTracker::MediaMemoryTracker()
 void
 MediaMemoryTracker::InitMemoryReporter()
 {
-  RegisterWeakAsyncMemoryReporter(this);
+  // RegisterWeakAsyncMemoryReporter(this);
 }
 
 MediaMemoryTracker::~MediaMemoryTracker()
 {
-  UnregisterWeakMemoryReporter(this);
+  // UnregisterWeakMemoryReporter(this);
 }
 
 } // namespace mozilla

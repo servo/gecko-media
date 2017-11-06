@@ -135,6 +135,7 @@ add_library(gecko_core OBJECT
   gecko/glue/DecoderTraits.cpp
   gecko/glue/FFmpegRuntimeLinker.cpp
   gecko/glue/GeckoMedia.cpp
+  gecko/glue/GeckoMediaDecoder.cpp
   gecko/glue/ImageContainer.cpp
   gecko/glue/InputEventStatistics.cpp
   gecko/glue/nsDebugImpl.cpp
@@ -145,6 +146,7 @@ add_library(gecko_core OBJECT
   gecko/glue/MediaDecoder.cpp
   gecko/glue/MediaDecoderStateMachine.cpp
   gecko/glue/MediaFormatReader.cpp
+  gecko/glue/MediaStreamGraph.cpp
   gecko/glue/PDMFactory.cpp
   gecko/glue/nsAppRunner.cpp
   gecko/glue/nsContentTypeParser.cpp
@@ -162,8 +164,11 @@ add_library(gecko_core OBJECT
   gecko/glue/Services.cpp
   gecko/glue/Telemetry.cpp
   gecko/glue/ThreadAnnotation.cpp
+  gecko/glue/VideoSegment.cpp
+  gecko/glue/WebAudioUtils.cpp
   gecko/glue/XPCOMInit.cpp
   gecko/src/dom/media/AudioConverter.cpp
+  gecko/src/dom/media/AudioSegment.cpp
   gecko/src/dom/media/AudioStream.cpp
   gecko/src/dom/media/CubebUtils.cpp
   gecko/src/dom/media/MediaContainerType.cpp
@@ -171,9 +176,18 @@ add_library(gecko_core OBJECT
   gecko/src/dom/media/MediaMIMETypes.cpp
   gecko/src/dom/media/MediaPrefs.cpp
   gecko/src/dom/media/MediaResource.cpp
+  gecko/src/dom/media/MediaStreamListener.cpp
+  gecko/src/dom/media/MediaTimer.cpp
   gecko/src/dom/media/QueueObject.cpp
+  gecko/src/dom/media/ReaderProxy.cpp
+  gecko/src/dom/media/SeekJob.cpp
+  gecko/src/dom/media/StreamTracks.cpp
   gecko/src/dom/media/fmp4/MP4Decoder.cpp
   gecko/src/dom/media/fmp4/MP4Demuxer.cpp
+  gecko/src/dom/media/mediasink/AudioSink.cpp
+  gecko/src/dom/media/mediasink/AudioSinkWrapper.cpp
+  gecko/src/dom/media/mediasink/DecodedStream.cpp
+  gecko/src/dom/media/mediasink/OutputStreamManager.cpp
   gecko/src/dom/media/ogg/OpusParser.cpp
   gecko/src/dom/media/platforms/agnostic/BlankDecoderModule.cpp
   gecko/src/dom/media/platforms/agnostic/DummyMediaDataDecoder.cpp
@@ -210,6 +224,7 @@ add_library(gecko_core OBJECT
   gecko/src/xpcom/components/GenericFactory.cpp
   gecko/src/xpcom/ds/PLDHashTable.cpp
   gecko/src/xpcom/ds/nsCOMArray.cpp
+  gecko/src/xpcom/ds/nsDeque.cpp
   gecko/src/xpcom/ds/nsEnumeratorUtils.cpp
   gecko/src/xpcom/ds/nsQuickSort.cpp
   gecko/src/xpcom/ds/nsSupportsPrimitives.cpp
@@ -222,6 +237,7 @@ add_library(gecko_core OBJECT
   gecko/src/xpcom/threads/BlockingResourceBase.cpp
   gecko/src/xpcom/threads/EventQueue.cpp
   gecko/src/xpcom/threads/nsILabelableRunnable.cpp
+  gecko/src/xpcom/threads/nsProxyRelease.cpp
   gecko/src/xpcom/threads/nsThreadManager.cpp
   gecko/src/xpcom/threads/nsThreadPool.cpp
   gecko/src/xpcom/threads/nsThreadUtils.cpp
@@ -305,6 +321,7 @@ target_include_directories(gecko_core PRIVATE
     gecko/include/system_wrappers
     gecko/include/nspr
     gecko/include/nspr/private
+    gecko/include/mediasink
     gecko/include/mozilla/
     gecko/include/mozilla/gfx
     gecko/include/mozilla/double-conversion

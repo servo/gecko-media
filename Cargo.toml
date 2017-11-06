@@ -21,6 +21,7 @@ lazy_static = "0.2.9"
 libc = "0.2.32"
 mp4parse = "0.8.0"
 mp4parse_capi = "0.8.0"
+encoding_c = "0.8.0"
 
 [features]
 default = ["audio-sample-type-f32"]
