@@ -15,21 +15,17 @@
 #include "nsIObserverService.h"
 #include "mozilla/Services.h"
 
-extern "C" void
-call_gecko_process_events(rust_msg_sender_t* aSender);
-extern "C" void
-free_gecko_process_events_sender(rust_msg_sender_t* aSender);
-
-static rust_msg_sender_t* sProcessEventsRustSender = nullptr;
-
-class GeckoMediaMainThreadObserver final : public nsIThreadObserver
+class IndirectThreadObserver final : public nsIThreadObserver
 {
 public:
   NS_DECL_THREADSAFE_ISUPPORTS
 
+  IndirectThreadObserver(ThreadObserverObject aObject)
+      : nsIThreadObserver(), mObject(aObject) {}
+
   NS_IMETHOD OnDispatchedEvent(void) override
   {
-    call_gecko_process_events(sProcessEventsRustSender);
+    (mObject.mVtable->mOnDispatchedEvent)(mObject.mData);
     return NS_OK;
   }
   NS_IMETHOD OnProcessNextEvent(nsIThreadInternal* thread,
@@ -44,27 +40,26 @@ public:
   }
 
 private:
-  ~GeckoMediaMainThreadObserver() {}
+  ThreadObserverObject mObject;
+
+  ~IndirectThreadObserver()
+  {
+    (mObject.mVtable->mFree)(mObject.mData);
+  }
 };
-NS_IMPL_ISUPPORTS(GeckoMediaMainThreadObserver, nsIThreadObserver)
+NS_IMPL_ISUPPORTS(IndirectThreadObserver, nsIThreadObserver)
 
 static bool
-AddMainThreadObserver(rust_msg_sender_t* aSender)
+AddMainThreadObserver(ThreadObserverObject aObject)
 {
-  sProcessEventsRustSender = aSender;
   nsCOMPtr<nsIThreadInternal> thread = do_QueryInterface(NS_GetCurrentThread());
   return thread &&
-         NS_SUCCEEDED(thread->SetObserver(new GeckoMediaMainThreadObserver()));
+         NS_SUCCEEDED(thread->SetObserver(new IndirectThreadObserver(aObject)));
 }
 
 bool
-GeckoMedia_Initialize(rust_msg_sender_t* aSender)
+GeckoMedia_Initialize(ThreadObserverObject aObject)
 {
-  static bool initialized = false;
-  if (initialized) {
-    return true;
-  }
-  initialized = true;
   NS_SetMainThread();
   if (NS_FAILED(nsThreadManager::get().Init())) {
     return false;
@@ -82,7 +77,7 @@ GeckoMedia_Initialize(rust_msg_sender_t* aSender)
   // loop to run the tasks on the Rust message loop thread. This
   // ensures we use the Rust message loop as the Gecko "main"
   // thread.
-  if (!AddMainThreadObserver(aSender)) {
+  if (!AddMainThreadObserver(aObject)) {
     return false;
   }
 
@@ -107,8 +102,6 @@ GeckoMedia_Shutdown()
   obsService->NotifyObservers(nullptr, "xpcom-shutdown-threads", nullptr);
 
   NS_ShutdownXPCOM(nullptr);
-
-  free_gecko_process_events_sender(sProcessEventsRustSender);
 }
 
 CanPlayTypeResult
