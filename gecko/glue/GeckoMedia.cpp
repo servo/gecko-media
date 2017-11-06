@@ -118,10 +118,10 @@ GeckoMedia_ProcessEvents()
 }
 
 void
-GeckoMedia_QueueRustRunnable(RustRunnable runnable) {
+GeckoMedia_QueueRustRunnable(RustRunnable aRunnable) {
   RefPtr<mozilla::Runnable> task = NS_NewRunnableFunction(
       "RustRunnableDispatcher",
-      [runnable]() { (runnable.function)(runnable.data); });
+      [aRunnable]() { (aRunnable.mFunction)(aRunnable.mData); });
   auto rv = NS_DispatchToMainThread(task.forget());
   MOZ_ASSERT(NS_SUCCEEDED(rv));
 }

@@ -39,11 +39,11 @@ GeckoMedia_ProcessEvents();
 
 struct RustRunnable
 {
-  void *data;
-  void (*function)(void *data);
+  void *mData;
+  void (*mFunction)(void *aData);
 };
 
 void
-GeckoMedia_QueueRustRunnable(RustRunnable runnable);
+GeckoMedia_QueueRustRunnable(RustRunnable aRunnable);
 
 #endif // GeckoMedia_h_

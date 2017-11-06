@@ -67,8 +67,8 @@ impl GeckoMedia {
         }
 
         let runnable = RustRunnable {
-            data: Box::into_raw(Box::new(f)) as *mut c_void,
-            function: Some(call::<F>),
+            mData: Box::into_raw(Box::new(f)) as *mut c_void,
+            mFunction: Some(call::<F>),
         };
 
         unsafe { GeckoMedia_QueueRustRunnable(runnable) }
