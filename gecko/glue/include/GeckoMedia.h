@@ -7,10 +7,19 @@
 #ifndef GeckoMedia_h_
 #define GeckoMedia_h_
 
-struct rust_msg_sender_t;
+struct ThreadObserverVtable
+{
+  void (*mOnDispatchedEvent)(void *aData);
+  void (*mFree)(void *aData);
+};
+
+struct ThreadObserverObject {
+  void *mData;
+  const ThreadObserverVtable *mVtable;
+};
 
 bool
-GeckoMedia_Initialize(rust_msg_sender_t* aSender);
+GeckoMedia_Initialize(ThreadObserverObject aObject);
 
 void
 GeckoMedia_Shutdown();
@@ -30,11 +39,11 @@ GeckoMedia_ProcessEvents();
 
 struct RustRunnable
 {
-  void *data;
-  void (*function)(void *data);
+  void *mData;
+  void (*mFunction)(void *aData);
 };
 
 void
-GeckoMedia_QueueRustRunnable(RustRunnable runnable);
+GeckoMedia_QueueRustRunnable(RustRunnable aRunnable);
 
 #endif // GeckoMedia_h_

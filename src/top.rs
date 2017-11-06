@@ -67,8 +67,8 @@ impl GeckoMedia {
         }
 
         let runnable = RustRunnable {
-            data: Box::into_raw(Box::new(f)) as *mut c_void,
-            function: Some(call::<F>),
+            mData: Box::into_raw(Box::new(f)) as *mut c_void,
+            mFunction: Some(call::<F>),
         };
 
         unsafe { GeckoMedia_QueueRustRunnable(runnable) }
@@ -102,10 +102,9 @@ lazy_static! {
         let (ok_sender, ok_receiver) = mpsc::channel();
         let msg_sender_clone = msg_sender.clone();
         Builder::new().name("GeckoMedia".to_owned()).spawn(move || {
-            let ptr = Box::into_raw(Box::new(msg_sender_clone));
-            let raw_msg_sender = ptr as *mut rust_msg_sender_t;
+            let thread_observer_object = thread_observer_object(msg_sender_clone);
             assert!(
-                unsafe { GeckoMedia_Initialize(raw_msg_sender) },
+                unsafe { GeckoMedia_Initialize(thread_observer_object) },
                 "failed to initialize GeckoMedia"
             );
             ok_sender.send(()).unwrap();
@@ -142,19 +141,23 @@ lazy_static! {
     };
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn call_gecko_process_events(ptr: *mut rust_msg_sender_t) {
-    if ptr.is_null() {
-        return;
+fn thread_observer_object(sender: Sender<GeckoMediaMsg>) -> ThreadObserverObject {
+    unsafe extern fn on_dispatched_event(ptr: *mut c_void) {
+        let sender = &*(ptr as *const Sender<GeckoMediaMsg>);
+        sender.send(GeckoMediaMsg::CallProcessGeckoEvents).unwrap();
     }
-    let sender = &*(ptr as *const Sender<GeckoMediaMsg>);
-    sender.send(GeckoMediaMsg::CallProcessGeckoEvents).unwrap();
-}
 
-#[no_mangle]
-pub unsafe extern "C" fn free_gecko_process_events_sender(ptr: *mut rust_msg_sender_t) {
-    if !ptr.is_null() {
-        return;
+    unsafe extern fn free(ptr: *mut c_void) {
+        drop(Box::from_raw(ptr as *mut Sender<GeckoMediaMsg>));
     }
-    drop(Box::from_raw(ptr as *mut Sender<GeckoMediaMsg>));
+
+    static VTABLE: ThreadObserverVtable = ThreadObserverVtable {
+        mOnDispatchedEvent: Some(on_dispatched_event),
+        mFree: Some(free),
+    };
+
+    ThreadObserverObject {
+        mData: Box::into_raw(Box::new(sender)) as *mut c_void,
+        mVtable: &VTABLE,
+    }
 }
