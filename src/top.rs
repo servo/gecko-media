@@ -120,10 +120,15 @@ lazy_static! {
         let (ok_sender, ok_receiver) = mpsc::channel();
         let msg_sender_clone = msg_sender.clone();
         Builder::new().name("GeckoMedia".to_owned()).spawn(move || {
+            let functions = RustFunctions {
+                CallGeckoProcessEvents: Some(call_gecko_process_events),
+                FreeProcessEventsSender: Some(free_gecko_process_events_sender),
+                FreeRustVecU8: Some(free_rust_vec_u8),
+            };
             let ptr = Box::into_raw(Box::new(msg_sender_clone));
             let raw_msg_sender = ptr as *mut rust_msg_sender_t;
             assert!(
-                unsafe { GeckoMedia_Initialize(raw_msg_sender) },
+                unsafe { GeckoMedia_Initialize(&functions, raw_msg_sender) },
                 "failed to initialize GeckoMedia"
             );
             ok_sender.send(()).unwrap();
@@ -175,8 +180,7 @@ lazy_static! {
     };
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn call_gecko_process_events(ptr: *mut rust_msg_sender_t) {
+unsafe extern "C" fn call_gecko_process_events(ptr: *mut rust_msg_sender_t) {
     if ptr.is_null() {
         return;
     }
@@ -184,18 +188,16 @@ pub unsafe extern "C" fn call_gecko_process_events(ptr: *mut rust_msg_sender_t) 
     sender.send(GeckoMediaMsg::CallProcessGeckoEvents).unwrap();
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn free_gecko_process_events_sender(ptr: *mut rust_msg_sender_t) {
+unsafe extern "C" fn free_gecko_process_events_sender(ptr: *mut rust_msg_sender_t) {
     if !ptr.is_null() {
         return;
     }
     drop(Box::from_raw(ptr as *mut Sender<GeckoMediaMsg>));
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn free_rust_vec_u8(ptr: *mut u8, len: usize) {
+unsafe extern "C" fn free_rust_vec_u8(ptr: *const u8, len: usize) {
     if !ptr.is_null() {
         return;
     }
-    drop(Vec::from_raw_parts(ptr, len, len));
+    drop(Vec::from_raw_parts(ptr as *mut u8, len, len));
 }

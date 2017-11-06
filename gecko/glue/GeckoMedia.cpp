@@ -7,6 +7,7 @@
 #include "GeckoMedia.h"
 
 #include "MediaPrefs.h"
+#include "RustFunctions.h"
 #include "mozilla/Logging.h"
 #include "mozilla/Preferences.h"
 #include "mozilla/SharedThreadPool.h"
@@ -15,10 +16,6 @@
 #include "nsIObserverService.h"
 #include "mozilla/Services.h"
 
-extern "C" void
-call_gecko_process_events(rust_msg_sender_t* aSender);
-extern "C" void
-free_gecko_process_events_sender(rust_msg_sender_t* aSender);
 
 static rust_msg_sender_t* sProcessEventsRustSender = nullptr;
 
@@ -29,7 +26,7 @@ public:
 
   NS_IMETHOD OnDispatchedEvent(void) override
   {
-    call_gecko_process_events(sProcessEventsRustSender);
+    CallGeckoProcessEvents(sProcessEventsRustSender);
     return NS_OK;
   }
   NS_IMETHOD OnProcessNextEvent(nsIThreadInternal* thread,
@@ -58,13 +55,15 @@ AddMainThreadObserver(rust_msg_sender_t* aSender)
 }
 
 bool
-GeckoMedia_Initialize(rust_msg_sender_t* aSender)
+GeckoMedia_Initialize(const RustFunctions* aRustFunctions,
+                      rust_msg_sender_t* aSender)
 {
   static bool initialized = false;
   if (initialized) {
     return true;
   }
   initialized = true;
+  InitializeRustFunctions(aRustFunctions);
   NS_SetMainThread();
   if (NS_FAILED(nsThreadManager::get().Init())) {
     return false;
@@ -108,7 +107,7 @@ GeckoMedia_Shutdown()
 
   NS_ShutdownXPCOM(nullptr);
 
-  free_gecko_process_events_sender(sProcessEventsRustSender);
+  FreeProcessEventsSender(sProcessEventsRustSender);
 }
 
 CanPlayTypeResult

@@ -1,9 +1,9 @@
 #include "MediaDecoderFFI.h"
-#include <unordered_map>
-
+#include "RustFunctions.h"
 #include "mozilla/Assertions.h"
 #include "mozilla/Range.h"
 #include "nsThreadUtils.h"
+#include <unordered_map>
 
 static std::unordered_map<size_t, mozilla::Range<const uint8_t>> sBlobs;
 
@@ -19,9 +19,6 @@ MediaDecoder_Load(size_t aId,
   sBlobs.insert({ aId, mozilla::Range<const uint8_t>(aData, aDataLength) });
 }
 
-extern "C" void
-free_rust_vec_u8(const uint8_t* aVec, size_t aLength);
-
 void
 MediaDecoder_Unload(size_t aId)
 {
@@ -32,6 +29,6 @@ MediaDecoder_Unload(size_t aId)
   if (itr != sBlobs.end()) {
     mozilla::Range<const uint8_t> r = itr->second;
     sBlobs.erase(itr);
-    free_rust_vec_u8(r.begin().get(), r.length());
+    FreeRustVecU8(r.begin().get(), r.length());
   }
 }
