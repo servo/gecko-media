@@ -10,12 +10,11 @@
 #include "RustFunctions.h"
 #include "mozilla/Logging.h"
 #include "mozilla/Preferences.h"
+#include "mozilla/Services.h"
 #include "mozilla/SharedThreadPool.h"
+#include "nsIObserverService.h"
 #include "nsThreadManager.h"
 #include "nsThreadUtils.h"
-#include "nsIObserverService.h"
-#include "mozilla/Services.h"
-
 
 static rust_msg_sender_t* sProcessEventsRustSender = nullptr;
 
@@ -101,7 +100,8 @@ GeckoMedia_Shutdown()
   mozilla::Preferences::Shutdown();
 
   // Broadcast a shutdown notification to all threads.
-  nsCOMPtr<nsIObserverService> obsService = mozilla::services::GetObserverService();
+  nsCOMPtr<nsIObserverService> obsService =
+    mozilla::services::GetObserverService();
   MOZ_ASSERT(obsService);
   obsService->NotifyObservers(nullptr, "xpcom-shutdown-threads", nullptr);
 
@@ -124,10 +124,12 @@ GeckoMedia_ProcessEvents()
 }
 
 void
-GeckoMedia_QueueRustRunnable(RustRunnable runnable) {
-  RefPtr<mozilla::Runnable> task = NS_NewRunnableFunction(
-      "RustRunnableDispatcher",
-      [runnable]() { (runnable.function)(runnable.data); });
+GeckoMedia_QueueRustRunnable(RustRunnable runnable)
+{
+  RefPtr<mozilla::Runnable> task =
+    NS_NewRunnableFunction("RustRunnableDispatcher", [runnable]() {
+      (runnable.function)(runnable.data);
+    });
   auto rv = NS_DispatchToMainThread(task.forget());
   MOZ_ASSERT(NS_SUCCEEDED(rv));
 }
