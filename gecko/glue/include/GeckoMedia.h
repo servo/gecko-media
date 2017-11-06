@@ -7,6 +7,8 @@
 #ifndef GeckoMedia_h_
 #define GeckoMedia_h_
 
+#include "MediaDecoderFFI.h"
+
 struct rust_msg_sender_t;
 
 bool
@@ -30,8 +32,8 @@ GeckoMedia_ProcessEvents();
 
 struct RustRunnable
 {
-  void *data;
-  void (*function)(void *data);
+  void* data;
+  void (*function)(void* data);
 };
 
 void

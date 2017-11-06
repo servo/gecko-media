@@ -27,6 +27,7 @@ pub use bindings::CanPlayTypeResult as CanPlayType;
 pub use top::GeckoMedia;
 pub use top::call_gecko_process_events;
 pub use top::free_gecko_process_events_sender;
+pub use top::free_rust_vec_u8;
 
 #[cfg(test)]
 mod tests {

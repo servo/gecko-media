@@ -5,6 +5,7 @@
 use CanPlayType;
 use bindings::*;
 use std::ffi::CString;
+use std::mem;
 use std::ops::Drop;
 use std::os::raw::c_void;
 use std::sync::Mutex;
@@ -57,11 +58,23 @@ impl GeckoMedia {
         }
     }
 
+    pub fn load(&self, blob: Vec<u8>, mime_type: &str) -> Result<(), ()> {
+        match CString::new(mime_type.as_bytes()) {
+            Ok(mime_type) => {
+                self.sender
+                    .send(GeckoMediaMsg::Load(self.id, blob, mime_type))
+                    .unwrap();
+                Ok(())
+            }
+            _ => Err(()),
+        }
+    }
+
     pub fn queue_task<F>(&self, f: F)
     where
         F: FnOnce(),
     {
-        unsafe extern fn call<F>(ptr: *mut c_void)
+        unsafe extern "C" fn call<F>(ptr: *mut c_void)
         where
             F: FnOnce(),
         {
@@ -84,6 +97,7 @@ impl GeckoMedia {
 
 impl Drop for GeckoMedia {
     fn drop(&mut self) {
+        self.sender.send(GeckoMediaMsg::Unload(self.id)).unwrap();
         OUTSTANDING_HANDLES.fetch_sub(1, Ordering::SeqCst);
     }
 }
@@ -91,8 +105,9 @@ impl Drop for GeckoMedia {
 enum GeckoMediaMsg {
     Exit(Sender<()>),
     CanPlayType(CString, Sender<CanPlayType>),
-    #[cfg(test)]
-    Test,
+    Load(usize, Vec<u8>, CString),
+    Unload(usize),
+    #[cfg(test)] Test,
     CallProcessGeckoEvents,
 }
 
@@ -132,6 +147,21 @@ lazy_static! {
                             GeckoMedia_ProcessEvents();
                         }
                     },
+                    GeckoMediaMsg::Load(id, blob, mime_type) => {
+                        unsafe {
+                            let ptr = blob.as_ptr();
+                            let len = blob.len();
+                            // C++ code is responsible for calling back to deallocate
+                            // memory when finished with it.
+                            mem::forget(blob);
+                            MediaDecoder_Load(id, ptr, len, mime_type.as_ptr());
+                        }
+                    },
+                    GeckoMediaMsg::Unload(id) => {
+                        unsafe {
+                            MediaDecoder_Unload(id);
+                        }
+                    },
                     #[cfg(test)]
                     GeckoMediaMsg::Test => {
                         extern "C" { fn TestGecko(); }
@@ -160,4 +190,12 @@ pub unsafe extern "C" fn free_gecko_process_events_sender(ptr: *mut rust_msg_sen
         return;
     }
     drop(Box::from_raw(ptr as *mut Sender<GeckoMediaMsg>));
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn free_rust_vec_u8(ptr: *mut u8, len: usize) {
+    if !ptr.is_null() {
+        return;
+    }
+    drop(Vec::from_raw_parts(ptr, len, len));
 }
