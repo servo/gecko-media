@@ -25,8 +25,6 @@ pub mod bindings {
 #[doc(inline)]
 pub use bindings::CanPlayTypeResult as CanPlayType;
 pub use top::GeckoMedia;
-pub use top::call_gecko_process_events;
-pub use top::free_gecko_process_events_sender;
 
 #[cfg(test)]
 mod tests {
@@ -44,7 +42,9 @@ mod tests {
         test_can_play_type();
         GeckoMedia::get().unwrap().test();
         let (sender, receiver) = mpsc::channel();
-        GeckoMedia::get().unwrap().queue_task(move || sender.send(()).unwrap());
+        GeckoMedia::get()
+            .unwrap()
+            .queue_task(move || sender.send(()).unwrap());
         receiver.recv().unwrap();
         GeckoMedia::shutdown().unwrap();
     }

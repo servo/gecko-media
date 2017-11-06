@@ -7,10 +7,20 @@
 #ifndef GeckoMedia_h_
 #define GeckoMedia_h_
 
+#include "MediaDecoderFFI.h"
+
 struct rust_msg_sender_t;
 
+struct RustFunctions
+{
+  void (*CallGeckoProcessEvents)(rust_msg_sender_t*);
+  void (*FreeProcessEventsSender)(rust_msg_sender_t*);
+  void (*FreeRustVecU8)(const uint8_t*, size_t);
+};
+
 bool
-GeckoMedia_Initialize(rust_msg_sender_t* aSender);
+GeckoMedia_Initialize(const RustFunctions* aFunctions,
+                      rust_msg_sender_t* aSender);
 
 void
 GeckoMedia_Shutdown();
@@ -30,8 +40,8 @@ GeckoMedia_ProcessEvents();
 
 struct RustRunnable
 {
-  void *data;
-  void (*function)(void *data);
+  void* data;
+  void (*function)(void* data);
 };
 
 void

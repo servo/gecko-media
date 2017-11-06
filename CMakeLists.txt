@@ -135,6 +135,8 @@ add_library(gecko_core OBJECT
   gecko/glue/DecoderTraits.cpp
   gecko/glue/FFmpegRuntimeLinker.cpp
   gecko/glue/GeckoMedia.cpp
+  gecko/glue/MediaDecoderFFI.cpp
+  gecko/glue/RustFunctions.cpp
   gecko/glue/ImageContainer.cpp
   gecko/glue/InputEventStatistics.cpp
   gecko/glue/nsDebugImpl.cpp
