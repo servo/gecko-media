@@ -45,7 +45,9 @@ mod tests {
         test_can_play_type();
         GeckoMedia::get().unwrap().test();
         let (sender, receiver) = mpsc::channel();
-        GeckoMedia::get().unwrap().queue_task(move || sender.send(()).unwrap());
+        GeckoMedia::get()
+            .unwrap()
+            .queue_task(move || sender.send(()).unwrap());
         receiver.recv().unwrap();
         GeckoMedia::shutdown().unwrap();
     }
