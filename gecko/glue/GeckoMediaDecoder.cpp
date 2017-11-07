@@ -8,7 +8,7 @@
 #include "DecoderTraits.h"
 #include "mozilla/Logging.h"
 #include "MediaDecoderStateMachine.h"
-// #include "MediaShutdownManager.h"
+#include "MediaShutdownManager.h"
 #include "VideoUtils.h"
 #include <algorithm>
 
@@ -58,10 +58,10 @@ GeckoMediaDecoder::Load(BufferMediaResource* aResource)
   }
 
   nsresult rv;
-  // rv = MediaShutdownManager::Instance().Register(this);
-  // if (NS_WARN_IF(NS_FAILED(rv))) {
-  //   return rv;
-  // }
+  rv = MediaShutdownManager::Instance().Register(this);
+  if (NS_WARN_IF(NS_FAILED(rv))) {
+    return rv;
+  }
 
   SetStateMachine(CreateStateMachine());
   if (!GetStateMachine()) {

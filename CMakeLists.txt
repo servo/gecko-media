@@ -176,6 +176,7 @@ add_library(gecko_core OBJECT
   gecko/src/dom/media/MediaContainerType.cpp
   gecko/src/dom/media/MediaInfo.cpp
   gecko/src/dom/media/MediaMIMETypes.cpp
+  gecko/src/dom/media/MediaShutdownManager.cpp
   gecko/src/dom/media/MediaPrefs.cpp
   gecko/src/dom/media/MediaResource.cpp
   gecko/src/dom/media/MediaStreamListener.cpp

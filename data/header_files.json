@@ -26,6 +26,7 @@
     "MediaEventSource.h": "dom/media/MediaEventSource.h",
     "MediaInfo.h": "dom/media/MediaInfo.h",
     "MediaMetadataManager.h": "dom/media/MediaMetadataManager.h",
+    "MediaShutdownManager.h": "dom/media/MediaShutdownManager.h",
     "MediaMIMETypes.h": "dom/media/MediaMIMETypes.h",
     "MediaPrefs.h": "dom/media/MediaPrefs.h",
     "MediaQueue.h": "dom/media/MediaQueue.h",

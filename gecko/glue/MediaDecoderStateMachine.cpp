@@ -47,7 +47,7 @@
 #include "ImageContainer.h"
 #include "MediaDecoder.h"
 #include "MediaDecoderStateMachine.h"
-// #include "MediaShutdownManager.h"
+#include "MediaShutdownManager.h"
 #include "MediaPrefs.h"
 #include "MediaTimer.h"
 #include "ReaderProxy.h"

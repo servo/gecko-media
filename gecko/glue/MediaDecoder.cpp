@@ -11,7 +11,7 @@
 #include "MediaDecoderStateMachine.h"
 #include "MediaFormatReader.h"
 #include "MediaResource.h"
-// #include "MediaShutdownManager.h"
+#include "MediaShutdownManager.h"
 // #include "VideoFrameContainer.h"
 #include "VideoUtils.h"
 #include "Visibility.h"
@@ -418,7 +418,7 @@ MediaDecoder::MediaDecoder(MediaDecoderInit& aInit)
   mWatchManager.Watch(mIsAudioDataAudible,
                       &MediaDecoder::NotifyAudibleStateChanged);
 
-  // MediaShutdownManager::InitStatics();
+  MediaShutdownManager::InitStatics();
   mVideoDecodingOberver->RegisterEvent();
 }
 
@@ -466,7 +466,7 @@ MediaDecoder::Shutdown()
     nsCOMPtr<nsIRunnable> r =
       NS_NewRunnableFunction("MediaDecoder::Shutdown", [self]() {
         // self->mVideoFrameContainer = nullptr;
-        // MediaShutdownManager::Instance().Unregister(self);
+        MediaShutdownManager::Instance().Unregister(self);
       });
     mAbstractMainThread->Dispatch(r.forget());
   }
@@ -595,7 +595,7 @@ MediaDecoder::FinishShutdown()
   MOZ_ASSERT(NS_IsMainThread());
   SetStateMachine(nullptr);
   // mVideoFrameContainer = nullptr;
-  // MediaShutdownManager::Instance().Unregister(this);
+  MediaShutdownManager::Instance().Unregister(this);
 }
 
 nsresult
