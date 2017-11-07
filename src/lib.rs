@@ -8,6 +8,8 @@
 
 #[allow(unused_extern_crates)]
 extern crate cubeb_pulse;
+#[allow(unused_extern_crates)]
+extern crate encoding_c;
 #[macro_use]
 extern crate lazy_static;
 extern crate libc;

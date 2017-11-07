@@ -13,6 +13,7 @@
 #include "nsThreadPool.h"
 #include "nsTimerImpl.h"
 #include "nsXPCOMCIDInternal.h"
+#include "AsyncShutdown.h"
 
 #include "mozilla/ClearOnShutdown.h"
 #include "mozilla/Module.h"
@@ -89,6 +90,8 @@ const mozilla::Module kXPCOMModule = {
 XPCOM_API(nsresult)
 NS_InitMinimalXPCOM()
 {
+  mozilla::TimeStamp::Startup();
+
   nsresult rv = NS_OK;
 
   // Create the Component/Service Manager
@@ -98,6 +101,12 @@ NS_InitMinimalXPCOM()
   rv = nsComponentManagerImpl::gComponentManager->Init();
   if (NS_FAILED(rv)) {
     NS_RELEASE(nsComponentManagerImpl::gComponentManager);
+    return rv;
+  }
+
+  // Set up the timer globals/timer thread.
+  rv = nsTimerImpl::Startup();
+  if (NS_WARN_IF(NS_FAILED(rv))) {
     return rv;
   }
 

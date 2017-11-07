@@ -5,13 +5,9 @@ import re
 import subprocess
 import sys
 from pathlib import Path
-from shutil import copyfile
+from shutil import copy2
 from shutil import rmtree
 from os import listdir
-
-local_files = {
-    "DecoderData.cpp": "media/libstagefright/binding/",
-}
 
 with open(os.path.join("data", "header_files.json")) as f:
     header_files = json.load(f)
@@ -21,14 +17,6 @@ with open(os.path.join("data", "objdir_files.json")) as f:
 
 with open(os.path.join("data", "src_files.json")) as f:
     src_files = json.load(f)
-
-def copy_local_files():
-    for filename, dirname in local_files.items():
-        dst_dir = os.path.join("gecko", "src", dirname)
-        src = os.path.join("local", filename)
-        dst = os.path.join(dst_dir, filename)
-        ensure_dir_exists(dst)
-        copyfile(src, dst)
 
 def get_obj_dir_path(src_dir):
     if sys.platform == 'darwin':
@@ -71,14 +59,14 @@ def ensure_dir_exists(dst_path):
 def copy_files(src_dir, dst_dir):
     for (dst, src) in header_files.items():
         ensure_dir_exists(dst_dir + "include/" + dst)
-        copyfile(src_dir + src, dst_dir + "include/" + dst)
+        copy2(src_dir + src, dst_dir + "include/" + dst)
     for src in src_files:
         ensure_dir_exists(dst_dir + "src/" + src)
-        copyfile(src_dir + src, dst_dir + "src/" + src)
+        copy2(src_dir + src, dst_dir + "src/" + src)
     obj_include_dir = get_obj_dir_include_path(src_dir)
     for src in objdir_files:
         ensure_dir_exists(dst_dir + "include/" + src)
-        copyfile(obj_include_dir + src, dst_dir + "include/" + src)
+        copy2(obj_include_dir + src, dst_dir + "include/" + src)
 
 def remove_previous_copy(src_dir, dst_dir):
     rmtree(dst_dir + "include/")
@@ -192,7 +180,7 @@ def main(args):
 
     remove_previous_copy(src_dir, dst_dir)
     copy_files(src_dir, dst_dir)
-    copy_local_files()
+
     # Gecko's string classes only build in unified mode...
     write_unified_cpp_file(dst_dir + "src/xpcom/string")
     write_gecko_revision_file(src_dir)

@@ -14,6 +14,7 @@
 #include "nsThreadUtils.h"
 #include "nsIObserverService.h"
 #include "mozilla/Services.h"
+#include "AsyncShutdown.h"
 
 class IndirectThreadObserver final : public nsIThreadObserver
 {
@@ -94,14 +95,25 @@ GeckoMedia_Shutdown()
 {
   MOZ_ASSERT(NS_IsMainThread());
 
-  mozilla::Preferences::Shutdown();
+  RefPtr<AsyncShutdownService> asyncShutdownService = AsyncShutdownService::Get();
+  asyncShutdownService->BeginAsyncShutdown();
 
   // Broadcast a shutdown notification to all threads.
+  // This causes thread pools to shutdown.
   nsCOMPtr<nsIObserverService> obsService = mozilla::services::GetObserverService();
   MOZ_ASSERT(obsService);
   obsService->NotifyObservers(nullptr, "xpcom-shutdown-threads", nullptr);
 
+  // Block waiting for async shutdown to complete. Note this must happen after
+  // we've sent the "xpcom-shutdown-threads" notification, else the decoders may
+  // not have had enough time running on the thread pool threads to complete
+  // shutdown, and we'll crash if the thread pool threads are deallocated before
+  // we're finished running on them.
+  asyncShutdownService->SpinEventLoopUntilShutdown();
+
   NS_ShutdownXPCOM(nullptr);
+
+  mozilla::Preferences::Shutdown();
 }
 
 CanPlayTypeResult

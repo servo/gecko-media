@@ -8,8 +8,12 @@
 #include "AudioStream.h"
 #include "DecoderTraits.h"
 #include "GeckoMedia.h"
+#include "GeckoMediaDecoder.h"
+#include "GeckoMediaDecoderOwner.h"
 #include "ImageContainer.h"
 #include "MediaData.h"
+#include "MediaDecoder.h"
+#include "MediaStreamGraph.h"
 #include "PlatformDecoderModule.h"
 #include "VideoUtils.h"
 #include "gecko_media_prefs.h"
@@ -27,8 +31,6 @@
 #include "nsTArray.h"
 #include "nsThreadManager.h"
 #include "nsThreadUtils.h"
-#include "MediaStreamGraph.h"
-#include "MediaDecoder.h"
 
 #define SIMPLE_STRING "I'm a simple ASCII string"
 #define UTF8_STRING                                                            \
@@ -470,11 +472,68 @@ void
 TestDecoderTraits()
 {
   assert(DecoderTraits::CanHandleContainerType(
-    MediaContainerType(MEDIAMIMETYPE("audio/mp4")), nullptr) == CANPLAY_MAYBE);
+           MediaContainerType(MEDIAMIMETYPE("audio/mp4")), nullptr) ==
+         CANPLAY_MAYBE);
   assert(DecoderTraits::CanHandleContainerType(
-    MediaContainerType(MEDIAMIMETYPE("video/mp4")), nullptr) == CANPLAY_MAYBE);
+           MediaContainerType(MEDIAMIMETYPE("video/mp4")), nullptr) ==
+         CANPLAY_MAYBE);
   assert(DecoderTraits::CanHandleContainerType(
-    MediaContainerType(MEDIAMIMETYPE("audio/wav")), nullptr) == CANPLAY_MAYBE);
+           MediaContainerType(MEDIAMIMETYPE("audio/wav")), nullptr) ==
+         CANPLAY_MAYBE);
+}
+
+class OwningBufferMediaResource : public BufferMediaResource
+{
+public:
+  static already_AddRefed<BufferMediaResource> Create(const char* aFilename)
+  {
+    FILE* f = fopen(aFilename, "rb");
+    fseek(f, 0, SEEK_END);
+    long fsize = ftell(f);
+    fseek(f, 0, SEEK_SET);
+    uint8_t* data = new uint8_t[fsize];
+    size_t x = fread(data, fsize, 1, f);
+    assert(x == 1);
+    fclose(f);
+    RefPtr<BufferMediaResource> resource =
+      new OwningBufferMediaResource(data, fsize);
+    return resource.forget();
+  }
+private:
+  OwningBufferMediaResource(const uint8_t* aBuffer, size_t aLength)
+    : BufferMediaResource(aBuffer, aLength)
+    , mBuffer(aBuffer)
+  {
+  }
+  ~OwningBufferMediaResource() {
+    delete[] mBuffer;
+  }
+  const uint8_t* mBuffer;
+};
+
+void
+TestGeckoDecoder()
+{
+  GeckoMediaDecoderOwner owner;
+  MediaDecoderInit decoderInit(&owner,
+                               0.05,  // volume
+                               true,  // mPreservesPitch
+                               1.0,   // mPlaybackRate
+                               false, // mMinimizePreroll
+                               false, // mHasSuspendTaint
+                               false, // mLooping
+                               MediaContainerType(MEDIAMIMETYPE("audio/wav")));
+  RefPtr<GeckoMediaDecoder> decoder = new GeckoMediaDecoder(decoderInit);
+
+  RefPtr<BufferMediaResource> resource =
+    OwningBufferMediaResource::Create("gecko/test/audiotest.wav");
+  decoder->Load(resource);
+
+  decoder->Play();
+
+  SpinEventLoopUntil([decoder, &owner]() { return decoder->IsEnded() || owner.HasError(); });
+  MOZ_ASSERT(!owner.HasError());
+  decoder->Shutdown();
 }
 
 } // namespace mozilla
@@ -496,4 +555,5 @@ TestGecko()
   mozilla::Test_MediaMIMETypes();
   mozilla::Test_MP4Demuxer();
   mozilla::TestDecoderTraits();
+  mozilla::TestGeckoDecoder();
 }

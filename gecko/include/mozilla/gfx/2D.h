@@ -1,5 +1,6 @@
-/* -*- Mode: C++; tab-width: 20; indent-tabs-mode: nil; c-basic-offset: 2 -*-
- * This Source Code Form is subject to the terms of the Mozilla Public
+/* -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+/* vim: set ts=8 sts=2 et sw=2 tw=80: */
+/* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
@@ -67,6 +68,9 @@ struct gfxFontStyle;
 struct CGContext;
 typedef struct CGContext *CGContextRef;
 
+struct CGFont;
+typedef CGFont* CGFontRef;
+
 namespace mozilla {
 
 class Mutex;
@@ -83,6 +87,7 @@ class ScaledFont;
 
 namespace gfx {
 
+class AlphaBoxBlur;
 class ScaledFont;
 class SourceSurface;
 class DataSourceSurface;
@@ -871,24 +876,6 @@ public:
   virtual ~NativeFontResource() {}
 };
 
-/** This class is designed to allow passing additional glyph rendering
- * parameters to the glyph drawing functions. This is an empty wrapper class
- * merely used to allow holding on to and passing around platform specific
- * parameters. This is because different platforms have unique rendering
- * parameters.
- */
-class GlyphRenderingOptions : public RefCounted<GlyphRenderingOptions>
-{
-public:
-  MOZ_DECLARE_REFCOUNTED_VIRTUAL_TYPENAME(GlyphRenderingOptions)
-  virtual ~GlyphRenderingOptions() {}
-
-  virtual FontType GetType() const = 0;
-
-protected:
-  GlyphRenderingOptions() {}
-};
-
 class DrawTargetCapture;
 
 /** This is the main class used for all the drawing. It is created through the
@@ -1101,8 +1088,7 @@ public:
   virtual void FillGlyphs(ScaledFont *aFont,
                           const GlyphBuffer &aBuffer,
                           const Pattern &aPattern,
-                          const DrawOptions &aOptions = DrawOptions(),
-                          const GlyphRenderingOptions *aRenderingOptions = nullptr) = 0;
+                          const DrawOptions &aOptions = DrawOptions()) = 0;
 
   /**
    * Stroke a series of glyphs on the draw target with a certain source pattern.
@@ -1111,8 +1097,7 @@ public:
                             const GlyphBuffer& aBuffer,
                             const Pattern& aPattern,
                             const StrokeOptions& aStrokeOptions = StrokeOptions(),
-                            const DrawOptions& aOptions = DrawOptions(),
-                            const GlyphRenderingOptions* aRenderingOptions = nullptr);
+                            const DrawOptions& aOptions = DrawOptions());
 
   /**
    * This takes a source pattern and a mask, and composites the source pattern
@@ -1211,6 +1196,14 @@ public:
   virtual void PopLayer() { MOZ_CRASH("GFX: PopLayer"); }
 
   /**
+   * Perform an in-place blur operation. This is only supported on data draw
+   * targets.
+   */
+  virtual void Blur(const AlphaBoxBlur& aBlur) {
+    MOZ_CRASH("GFX: DoBlur");
+  }
+
+  /**
    * Create a SourceSurface optimized for use with this DrawTarget from
    * existing bitmap data in memory.
    *
@@ -1256,6 +1249,18 @@ public:
   virtual already_AddRefed<DrawTarget>
     CreateShadowDrawTarget(const IntSize &aSize, SurfaceFormat aFormat,
                            float aSigma) const
+  {
+    return CreateSimilarDrawTarget(aSize, aFormat);
+  }
+
+  /**
+   * Create a similar draw target, but if the draw target is not backed by a
+   * raster backend (for example, it is capturing or recording), force it to
+   * create a raster target instead. This is intended for code that wants to
+   * cache pixels, and would have no effect if it were caching a recording.
+   */
+  virtual RefPtr<DrawTarget>
+  CreateSimilarRasterTarget(const IntSize& aSize, SurfaceFormat aFormat) const
   {
     return CreateSimilarDrawTarget(aSize, aFormat);
   }
@@ -1512,6 +1517,9 @@ public:
   static already_AddRefed<DrawTargetCapture>
     CreateCaptureDrawTarget(BackendType aBackend, const IntSize &aSize, SurfaceFormat aFormat);
 
+  static already_AddRefed<DrawTargetCapture>
+    CreateCaptureDrawTargetForData(BackendType aBackend, const IntSize &aSize, SurfaceFormat aFormat,
+                                   int32_t aStride, size_t aSurfaceAllocationSize);
 
   static already_AddRefed<DrawTarget>
     CreateWrapAndRecordDrawTarget(DrawEventRecorder *aRecorder, DrawTarget *aDT);
@@ -1531,6 +1539,12 @@ public:
   static already_AddRefed<ScaledFont>
     CreateScaledFontForFontconfigFont(cairo_scaled_font_t* aScaledFont, FcPattern* aPattern,
                                       const RefPtr<UnscaledFont>& aUnscaledFont, Float aSize);
+#endif
+
+#ifdef XP_DARWIN
+  static already_AddRefed<ScaledFont>
+    CreateScaledFontForMacFont(CGFontRef aCGFont, const RefPtr<UnscaledFont>& aUnscaledFont, Float aSize,
+                               const Color& aFontSmoothingBackgroundColor, bool aUseFontSmoothing = true);
 #endif
 
   /**
@@ -1648,11 +1662,6 @@ public:
 
 #ifdef USE_SKIA
   static already_AddRefed<DrawTarget> CreateDrawTargetWithSkCanvas(SkCanvas* aCanvas);
-#endif
-
-#ifdef XP_DARWIN
-  static already_AddRefed<GlyphRenderingOptions>
-    CreateCGGlyphRenderingOptions(const Color &aFontSmoothingBackgroundColor);
 #endif
 
 #ifdef MOZ_ENABLE_FREETYPE

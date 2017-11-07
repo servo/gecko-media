@@ -9,6 +9,8 @@ MOZ_SERVICE(ObserverService, nsIObserverService,
             "@mozilla.org/observer-service;1")
 MOZ_SERVICE(StringBundleService, nsIStringBundleService,
             "@mozilla.org/intl/stringbundle;1")
+MOZ_SERVICE(AsyncShutdown, nsIAsyncShutdownService,
+            "@mozilla.org/async-shutdown-service;1")
 #ifndef GECKO_MEDIA_CRATE
 MOZ_SERVICE(ChromeRegistryService, nsIChromeRegistry,
             "@mozilla.org/chrome/chrome-registry;1")
@@ -28,8 +30,6 @@ MOZ_SERVICE(PermissionManager, nsIPermissionManager,
             "@mozilla.org/permissionmanager;1");
 MOZ_SERVICE(ServiceWorkerManager, nsIServiceWorkerManager,
             "@mozilla.org/serviceworkers/manager;1");
-MOZ_SERVICE(AsyncShutdown, nsIAsyncShutdownService,
-            "@mozilla.org/async-shutdown-service;1")
 MOZ_SERVICE(UUIDGenerator, nsIUUIDGenerator,
             "@mozilla.org/uuid-generator;1");
 MOZ_SERVICE(GfxInfo, nsIGfxInfo,

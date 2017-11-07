@@ -229,23 +229,24 @@ DecoderTraits::CreateReader(const MediaContainerType& aType,
                             MediaFormatReaderInit& aInit)
 {
   MOZ_ASSERT(NS_IsMainThread());
-  // MediaFormatReader* decoderReader = nullptr;
-  // MediaResource* resource = aInit.mResource;
+  MediaFormatReader* decoderReader = nullptr;
+  MediaResource* resource = aInit.mResource;
 
-// #ifdef MOZ_FMP4
-//   if (MP4Decoder::IsSupportedType(aType,
-//                                   /* DecoderDoctorDiagnostics* */ nullptr)) {
-//     decoderReader = new MediaFormatReader(aInit, new MP4Demuxer(resource));
-//   } else
-// #endif
+#ifdef MOZ_FMP4
+  if (MP4Decoder::IsSupportedType(aType,
+                                  /* DecoderDoctorDiagnostics* */ nullptr)) {
+    decoderReader = new MediaFormatReader(aInit, new MP4Demuxer(resource));
+  } else
+#endif
 //   if (MP3Decoder::IsSupportedType(aType)) {
 //     decoderReader = new MediaFormatReader(aInit, new MP3Demuxer(resource));
 //   } else
 //   if (ADTSDecoder::IsSupportedType(aType)) {
 //     decoderReader = new MediaFormatReader(aInit, new ADTSDemuxer(resource));
 //   } else
-//   if (WaveDecoder::IsSupportedType(aType)) {
-//     decoderReader = new MediaFormatReader(aInit, new WAVDemuxer(resource));
+  if (WaveDecoder::IsSupportedType(aType)) {
+    decoderReader = new MediaFormatReader(aInit, new WAVDemuxer(resource));
+  }
 //   } else
 //   if (FlacDecoder::IsSupportedType(aType)) {
 //     decoderReader = new MediaFormatReader(aInit, new FlacDemuxer(resource));
@@ -260,8 +261,7 @@ DecoderTraits::CreateReader(const MediaContainerType& aType,
 //     decoderReader = new MediaFormatReader(aInit, new WebMDemuxer(resource));
 //   }
 
-  // return decoderReader;
-  return nullptr;
+  return decoderReader;
 }
 
 /* static */

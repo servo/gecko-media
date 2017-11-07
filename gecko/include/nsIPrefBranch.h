@@ -36,8 +36,8 @@ class NS_NO_VTABLE nsIPrefBranch : public nsISupports {
     PREF_BOOL = 128
   };
 
-  /* readonly attribute string root; */
-  NS_IMETHOD GetRoot(char * *aRoot) = 0;
+  /* readonly attribute ACString root; */
+  NS_IMETHOD GetRoot(nsACString & aRoot) = 0;
 
   /* long getPrefType (in string aPrefName); */
   NS_IMETHOD GetPrefType(const char * aPrefName, int32_t *_retval) = 0;
@@ -57,14 +57,14 @@ class NS_NO_VTABLE nsIPrefBranch : public nsISupports {
   /* [binaryname(GetFloatPref),noscript] float getFloatPrefXPCOM (in string aPrefName); */
   NS_IMETHOD GetFloatPref(const char * aPrefName, float *_retval) = 0;
 
-  /* [binaryname(GetCharPrefWithDefault),optional_argc] string getCharPref (in string aPrefName, [optional] in string aDefaultValue); */
-  NS_IMETHOD GetCharPrefWithDefault(const char * aPrefName, const char * aDefaultValue, uint8_t _argc, char * *_retval) = 0;
+  /* [binaryname(GetCharPrefWithDefault),optional_argc] ACString getCharPref (in string aPrefName, [optional] in ACString aDefaultValue); */
+  NS_IMETHOD GetCharPrefWithDefault(const char * aPrefName, const nsACString & aDefaultValue, uint8_t _argc, nsACString & _retval) = 0;
 
-  /* [binaryname(GetCharPref),noscript] string getCharPrefXPCOM (in string aPrefName); */
-  NS_IMETHOD GetCharPref(const char * aPrefName, char * *_retval) = 0;
+  /* [binaryname(GetCharPref),noscript] ACString getCharPrefXPCOM (in string aPrefName); */
+  NS_IMETHOD GetCharPref(const char * aPrefName, nsACString & _retval) = 0;
 
-  /* void setCharPref (in string aPrefName, in string aValue); */
-  NS_IMETHOD SetCharPref(const char * aPrefName, const char * aValue) = 0;
+  /* void setCharPref (in string aPrefName, in ACString aValue); */
+  NS_IMETHOD SetCharPref(const char * aPrefName, const nsACString & aValue) = 0;
 
   /* [optional_argc] AUTF8String getStringPref (in string aPrefName, [optional] in AUTF8String aDefaultValue); */
   NS_IMETHOD GetStringPref(const char * aPrefName, const nsACString & aDefaultValue, uint8_t _argc, nsACString & _retval) = 0;
@@ -123,16 +123,16 @@ class NS_NO_VTABLE nsIPrefBranch : public nsISupports {
 
 /* Use this macro when declaring classes that implement this interface. */
 #define NS_DECL_NSIPREFBRANCH \
-  NS_IMETHOD GetRoot(char * *aRoot) override; \
+  NS_IMETHOD GetRoot(nsACString & aRoot) override; \
   NS_IMETHOD GetPrefType(const char * aPrefName, int32_t *_retval) override; \
   NS_IMETHOD GetBoolPrefWithDefault(const char * aPrefName, bool aDefaultValue, uint8_t _argc, bool *_retval) override; \
   NS_IMETHOD GetBoolPref(const char * aPrefName, bool *_retval) override; \
   NS_IMETHOD SetBoolPref(const char * aPrefName, bool aValue) override; \
   NS_IMETHOD GetFloatPrefWithDefault(const char * aPrefName, float aDefaultValue, uint8_t _argc, float *_retval) override; \
   NS_IMETHOD GetFloatPref(const char * aPrefName, float *_retval) override; \
-  NS_IMETHOD GetCharPrefWithDefault(const char * aPrefName, const char * aDefaultValue, uint8_t _argc, char * *_retval) override; \
-  NS_IMETHOD GetCharPref(const char * aPrefName, char * *_retval) override; \
-  NS_IMETHOD SetCharPref(const char * aPrefName, const char * aValue) override; \
+  NS_IMETHOD GetCharPrefWithDefault(const char * aPrefName, const nsACString & aDefaultValue, uint8_t _argc, nsACString & _retval) override; \
+  NS_IMETHOD GetCharPref(const char * aPrefName, nsACString & _retval) override; \
+  NS_IMETHOD SetCharPref(const char * aPrefName, const nsACString & aValue) override; \
   NS_IMETHOD GetStringPref(const char * aPrefName, const nsACString & aDefaultValue, uint8_t _argc, nsACString & _retval) override; \
   NS_IMETHOD SetStringPref(const char * aPrefName, const nsACString & aValue) override; \
   NS_IMETHOD GetIntPrefWithDefault(const char * aPrefName, int32_t aDefaultValue, uint8_t _argc, int32_t *_retval) override; \
@@ -154,16 +154,16 @@ class NS_NO_VTABLE nsIPrefBranch : public nsISupports {
 /* Use this macro when declaring the members of this interface when the
    class doesn't implement the interface. This is useful for forwarding. */
 #define NS_DECL_NON_VIRTUAL_NSIPREFBRANCH \
-  nsresult GetRoot(char * *aRoot); \
+  nsresult GetRoot(nsACString & aRoot); \
   nsresult GetPrefType(const char * aPrefName, int32_t *_retval); \
   nsresult GetBoolPrefWithDefault(const char * aPrefName, bool aDefaultValue, uint8_t _argc, bool *_retval); \
   nsresult GetBoolPref(const char * aPrefName, bool *_retval); \
   nsresult SetBoolPref(const char * aPrefName, bool aValue); \
   nsresult GetFloatPrefWithDefault(const char * aPrefName, float aDefaultValue, uint8_t _argc, float *_retval); \
   nsresult GetFloatPref(const char * aPrefName, float *_retval); \
-  nsresult GetCharPrefWithDefault(const char * aPrefName, const char * aDefaultValue, uint8_t _argc, char * *_retval); \
-  nsresult GetCharPref(const char * aPrefName, char * *_retval); \
-  nsresult SetCharPref(const char * aPrefName, const char * aValue); \
+  nsresult GetCharPrefWithDefault(const char * aPrefName, const nsACString & aDefaultValue, uint8_t _argc, nsACString & _retval); \
+  nsresult GetCharPref(const char * aPrefName, nsACString & _retval); \
+  nsresult SetCharPref(const char * aPrefName, const nsACString & aValue); \
   nsresult GetStringPref(const char * aPrefName, const nsACString & aDefaultValue, uint8_t _argc, nsACString & _retval); \
   nsresult SetStringPref(const char * aPrefName, const nsACString & aValue); \
   nsresult GetIntPrefWithDefault(const char * aPrefName, int32_t aDefaultValue, uint8_t _argc, int32_t *_retval); \
@@ -184,16 +184,16 @@ class NS_NO_VTABLE nsIPrefBranch : public nsISupports {
 
 /* Use this macro to declare functions that forward the behavior of this interface to another object. */
 #define NS_FORWARD_NSIPREFBRANCH(_to) \
-  NS_IMETHOD GetRoot(char * *aRoot) override { return _to GetRoot(aRoot); } \
+  NS_IMETHOD GetRoot(nsACString & aRoot) override { return _to GetRoot(aRoot); } \
   NS_IMETHOD GetPrefType(const char * aPrefName, int32_t *_retval) override { return _to GetPrefType(aPrefName, _retval); } \
   NS_IMETHOD GetBoolPrefWithDefault(const char * aPrefName, bool aDefaultValue, uint8_t _argc, bool *_retval) override { return _to GetBoolPrefWithDefault(aPrefName, aDefaultValue, _argc, _retval); } \
   NS_IMETHOD GetBoolPref(const char * aPrefName, bool *_retval) override { return _to GetBoolPref(aPrefName, _retval); } \
   NS_IMETHOD SetBoolPref(const char * aPrefName, bool aValue) override { return _to SetBoolPref(aPrefName, aValue); } \
   NS_IMETHOD GetFloatPrefWithDefault(const char * aPrefName, float aDefaultValue, uint8_t _argc, float *_retval) override { return _to GetFloatPrefWithDefault(aPrefName, aDefaultValue, _argc, _retval); } \
   NS_IMETHOD GetFloatPref(const char * aPrefName, float *_retval) override { return _to GetFloatPref(aPrefName, _retval); } \
-  NS_IMETHOD GetCharPrefWithDefault(const char * aPrefName, const char * aDefaultValue, uint8_t _argc, char * *_retval) override { return _to GetCharPrefWithDefault(aPrefName, aDefaultValue, _argc, _retval); } \
-  NS_IMETHOD GetCharPref(const char * aPrefName, char * *_retval) override { return _to GetCharPref(aPrefName, _retval); } \
-  NS_IMETHOD SetCharPref(const char * aPrefName, const char * aValue) override { return _to SetCharPref(aPrefName, aValue); } \
+  NS_IMETHOD GetCharPrefWithDefault(const char * aPrefName, const nsACString & aDefaultValue, uint8_t _argc, nsACString & _retval) override { return _to GetCharPrefWithDefault(aPrefName, aDefaultValue, _argc, _retval); } \
+  NS_IMETHOD GetCharPref(const char * aPrefName, nsACString & _retval) override { return _to GetCharPref(aPrefName, _retval); } \
+  NS_IMETHOD SetCharPref(const char * aPrefName, const nsACString & aValue) override { return _to SetCharPref(aPrefName, aValue); } \
   NS_IMETHOD GetStringPref(const char * aPrefName, const nsACString & aDefaultValue, uint8_t _argc, nsACString & _retval) override { return _to GetStringPref(aPrefName, aDefaultValue, _argc, _retval); } \
   NS_IMETHOD SetStringPref(const char * aPrefName, const nsACString & aValue) override { return _to SetStringPref(aPrefName, aValue); } \
   NS_IMETHOD GetIntPrefWithDefault(const char * aPrefName, int32_t aDefaultValue, uint8_t _argc, int32_t *_retval) override { return _to GetIntPrefWithDefault(aPrefName, aDefaultValue, _argc, _retval); } \
@@ -214,16 +214,16 @@ class NS_NO_VTABLE nsIPrefBranch : public nsISupports {
 
 /* Use this macro to declare functions that forward the behavior of this interface to another object in a safe way. */
 #define NS_FORWARD_SAFE_NSIPREFBRANCH(_to) \
-  NS_IMETHOD GetRoot(char * *aRoot) override { return !_to ? NS_ERROR_NULL_POINTER : _to->GetRoot(aRoot); } \
+  NS_IMETHOD GetRoot(nsACString & aRoot) override { return !_to ? NS_ERROR_NULL_POINTER : _to->GetRoot(aRoot); } \
   NS_IMETHOD GetPrefType(const char * aPrefName, int32_t *_retval) override { return !_to ? NS_ERROR_NULL_POINTER : _to->GetPrefType(aPrefName, _retval); } \
   NS_IMETHOD GetBoolPrefWithDefault(const char * aPrefName, bool aDefaultValue, uint8_t _argc, bool *_retval) override { return !_to ? NS_ERROR_NULL_POINTER : _to->GetBoolPrefWithDefault(aPrefName, aDefaultValue, _argc, _retval); } \
   NS_IMETHOD GetBoolPref(const char * aPrefName, bool *_retval) override { return !_to ? NS_ERROR_NULL_POINTER : _to->GetBoolPref(aPrefName, _retval); } \
   NS_IMETHOD SetBoolPref(const char * aPrefName, bool aValue) override { return !_to ? NS_ERROR_NULL_POINTER : _to->SetBoolPref(aPrefName, aValue); } \
   NS_IMETHOD GetFloatPrefWithDefault(const char * aPrefName, float aDefaultValue, uint8_t _argc, float *_retval) override { return !_to ? NS_ERROR_NULL_POINTER : _to->GetFloatPrefWithDefault(aPrefName, aDefaultValue, _argc, _retval); } \
   NS_IMETHOD GetFloatPref(const char * aPrefName, float *_retval) override { return !_to ? NS_ERROR_NULL_POINTER : _to->GetFloatPref(aPrefName, _retval); } \
-  NS_IMETHOD GetCharPrefWithDefault(const char * aPrefName, const char * aDefaultValue, uint8_t _argc, char * *_retval) override { return !_to ? NS_ERROR_NULL_POINTER : _to->GetCharPrefWithDefault(aPrefName, aDefaultValue, _argc, _retval); } \
-  NS_IMETHOD GetCharPref(const char * aPrefName, char * *_retval) override { return !_to ? NS_ERROR_NULL_POINTER : _to->GetCharPref(aPrefName, _retval); } \
-  NS_IMETHOD SetCharPref(const char * aPrefName, const char * aValue) override { return !_to ? NS_ERROR_NULL_POINTER : _to->SetCharPref(aPrefName, aValue); } \
+  NS_IMETHOD GetCharPrefWithDefault(const char * aPrefName, const nsACString & aDefaultValue, uint8_t _argc, nsACString & _retval) override { return !_to ? NS_ERROR_NULL_POINTER : _to->GetCharPrefWithDefault(aPrefName, aDefaultValue, _argc, _retval); } \
+  NS_IMETHOD GetCharPref(const char * aPrefName, nsACString & _retval) override { return !_to ? NS_ERROR_NULL_POINTER : _to->GetCharPref(aPrefName, _retval); } \
+  NS_IMETHOD SetCharPref(const char * aPrefName, const nsACString & aValue) override { return !_to ? NS_ERROR_NULL_POINTER : _to->SetCharPref(aPrefName, aValue); } \
   NS_IMETHOD GetStringPref(const char * aPrefName, const nsACString & aDefaultValue, uint8_t _argc, nsACString & _retval) override { return !_to ? NS_ERROR_NULL_POINTER : _to->GetStringPref(aPrefName, aDefaultValue, _argc, _retval); } \
   NS_IMETHOD SetStringPref(const char * aPrefName, const nsACString & aValue) override { return !_to ? NS_ERROR_NULL_POINTER : _to->SetStringPref(aPrefName, aValue); } \
   NS_IMETHOD GetIntPrefWithDefault(const char * aPrefName, int32_t aDefaultValue, uint8_t _argc, int32_t *_retval) override { return !_to ? NS_ERROR_NULL_POINTER : _to->GetIntPrefWithDefault(aPrefName, aDefaultValue, _argc, _retval); } \

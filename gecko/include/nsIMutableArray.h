@@ -27,17 +27,17 @@ class NS_NO_VTABLE nsIMutableArray : public nsIArrayExtensions {
 
   NS_DECLARE_STATIC_IID_ACCESSOR(NS_IMUTABLEARRAY_IID)
 
-  /* void appendElement (in nsISupports element, [optional] in boolean weak); */
-  NS_IMETHOD AppendElement(nsISupports *element, bool weak) = 0;
+  /* void appendElement (in nsISupports element); */
+  NS_IMETHOD AppendElement(nsISupports *element) = 0;
 
   /* void removeElementAt (in unsigned long index); */
   NS_IMETHOD RemoveElementAt(uint32_t index) = 0;
 
-  /* void insertElementAt (in nsISupports element, in unsigned long index, in boolean weak); */
-  NS_IMETHOD InsertElementAt(nsISupports *element, uint32_t index, bool weak) = 0;
+  /* void insertElementAt (in nsISupports element, in unsigned long index); */
+  NS_IMETHOD InsertElementAt(nsISupports *element, uint32_t index) = 0;
 
-  /* void replaceElementAt (in nsISupports element, in unsigned long index, in boolean weak); */
-  NS_IMETHOD ReplaceElementAt(nsISupports *element, uint32_t index, bool weak) = 0;
+  /* void replaceElementAt (in nsISupports element, in unsigned long index); */
+  NS_IMETHOD ReplaceElementAt(nsISupports *element, uint32_t index) = 0;
 
   /* void clear (); */
   NS_IMETHOD Clear(void) = 0;
@@ -48,35 +48,35 @@ class NS_NO_VTABLE nsIMutableArray : public nsIArrayExtensions {
 
 /* Use this macro when declaring classes that implement this interface. */
 #define NS_DECL_NSIMUTABLEARRAY \
-  NS_IMETHOD AppendElement(nsISupports *element, bool weak) override; \
+  NS_IMETHOD AppendElement(nsISupports *element) override; \
   NS_IMETHOD RemoveElementAt(uint32_t index) override; \
-  NS_IMETHOD InsertElementAt(nsISupports *element, uint32_t index, bool weak) override; \
-  NS_IMETHOD ReplaceElementAt(nsISupports *element, uint32_t index, bool weak) override; \
+  NS_IMETHOD InsertElementAt(nsISupports *element, uint32_t index) override; \
+  NS_IMETHOD ReplaceElementAt(nsISupports *element, uint32_t index) override; \
   NS_IMETHOD Clear(void) override; 
 
 /* Use this macro when declaring the members of this interface when the
    class doesn't implement the interface. This is useful for forwarding. */
 #define NS_DECL_NON_VIRTUAL_NSIMUTABLEARRAY \
-  nsresult AppendElement(nsISupports *element, bool weak); \
+  nsresult AppendElement(nsISupports *element); \
   nsresult RemoveElementAt(uint32_t index); \
-  nsresult InsertElementAt(nsISupports *element, uint32_t index, bool weak); \
-  nsresult ReplaceElementAt(nsISupports *element, uint32_t index, bool weak); \
+  nsresult InsertElementAt(nsISupports *element, uint32_t index); \
+  nsresult ReplaceElementAt(nsISupports *element, uint32_t index); \
   nsresult Clear(void); 
 
 /* Use this macro to declare functions that forward the behavior of this interface to another object. */
 #define NS_FORWARD_NSIMUTABLEARRAY(_to) \
-  NS_IMETHOD AppendElement(nsISupports *element, bool weak) override { return _to AppendElement(element, weak); } \
+  NS_IMETHOD AppendElement(nsISupports *element) override { return _to AppendElement(element); } \
   NS_IMETHOD RemoveElementAt(uint32_t index) override { return _to RemoveElementAt(index); } \
-  NS_IMETHOD InsertElementAt(nsISupports *element, uint32_t index, bool weak) override { return _to InsertElementAt(element, index, weak); } \
-  NS_IMETHOD ReplaceElementAt(nsISupports *element, uint32_t index, bool weak) override { return _to ReplaceElementAt(element, index, weak); } \
+  NS_IMETHOD InsertElementAt(nsISupports *element, uint32_t index) override { return _to InsertElementAt(element, index); } \
+  NS_IMETHOD ReplaceElementAt(nsISupports *element, uint32_t index) override { return _to ReplaceElementAt(element, index); } \
   NS_IMETHOD Clear(void) override { return _to Clear(); } 
 
 /* Use this macro to declare functions that forward the behavior of this interface to another object in a safe way. */
 #define NS_FORWARD_SAFE_NSIMUTABLEARRAY(_to) \
-  NS_IMETHOD AppendElement(nsISupports *element, bool weak) override { return !_to ? NS_ERROR_NULL_POINTER : _to->AppendElement(element, weak); } \
+  NS_IMETHOD AppendElement(nsISupports *element) override { return !_to ? NS_ERROR_NULL_POINTER : _to->AppendElement(element); } \
   NS_IMETHOD RemoveElementAt(uint32_t index) override { return !_to ? NS_ERROR_NULL_POINTER : _to->RemoveElementAt(index); } \
-  NS_IMETHOD InsertElementAt(nsISupports *element, uint32_t index, bool weak) override { return !_to ? NS_ERROR_NULL_POINTER : _to->InsertElementAt(element, index, weak); } \
-  NS_IMETHOD ReplaceElementAt(nsISupports *element, uint32_t index, bool weak) override { return !_to ? NS_ERROR_NULL_POINTER : _to->ReplaceElementAt(element, index, weak); } \
+  NS_IMETHOD InsertElementAt(nsISupports *element, uint32_t index) override { return !_to ? NS_ERROR_NULL_POINTER : _to->InsertElementAt(element, index); } \
+  NS_IMETHOD ReplaceElementAt(nsISupports *element, uint32_t index) override { return !_to ? NS_ERROR_NULL_POINTER : _to->ReplaceElementAt(element, index); } \
   NS_IMETHOD Clear(void) override { return !_to ? NS_ERROR_NULL_POINTER : _to->Clear(); } 
 
 

@@ -20,6 +20,8 @@
     // COMPONENT(CONSOLESERVICE, nsConsoleServiceConstructor)
     COMPONENT_M(OBSERVERSERVICE, nsObserverService::Create, Module::ALLOW_IN_GPU_PROCESS)
 
+    COMPONENT_M(ASYNCSHUTDOWNSERVICE, AsyncShutdownService::Create, Module::ALLOW_IN_GPU_PROCESS)
+
     COMPONENT_M(TIMER, nsTimerConstructor, Module::ALLOW_IN_GPU_PROCESS)
 
 // #define COMPONENT_SUPPORTS(TYPE, Type)                                         \
