@@ -15,7 +15,7 @@
 #include "mozilla/StaticPtr.h"
 #include "mozilla/Sprintf.h"
 #include "mozilla/Atomics.h"
-#include "mozilla/Sprintf.h"
+#include "mozilla/Printf.h"
 #include "mozilla/UniquePtrExtensions.h"
 #include "nsClassHashtable.h"
 #include "nsDebug.h"
