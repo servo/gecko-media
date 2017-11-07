@@ -43,12 +43,11 @@
 
 namespace mozilla {
 
-extern LazyLogModule gStateWatchingLog;
-
 // Mirror<T> and Canonical<T> inherit WatchTarget, so we piggy-back on the
 // logging that WatchTarget already does. Given that, it makes sense to share
 // the same log module.
 #define MIRROR_LOG(x, ...) \
+  MOZ_ASSERT(gStateWatchingLog); \
   MOZ_LOG(gStateWatchingLog, LogLevel::Debug, (x, ##__VA_ARGS__))
 
 template<typename T> class AbstractMirror;

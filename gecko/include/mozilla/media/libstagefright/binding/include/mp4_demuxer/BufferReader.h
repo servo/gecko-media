@@ -53,7 +53,7 @@ public:
 
   size_t Remaining() const { return mRemaining; }
 
-  Result<uint8_t, nsresult> ReadU8()
+  mozilla::Result<uint8_t, nsresult> ReadU8()
   {
     auto ptr = Read(1);
     if (!ptr) {
@@ -63,7 +63,7 @@ public:
     return *ptr;
   }
 
-  Result<uint16_t, nsresult> ReadU16()
+  mozilla::Result<uint16_t, nsresult> ReadU16()
   {
     auto ptr = Read(2);
     if (!ptr) {
@@ -73,7 +73,7 @@ public:
     return mozilla::BigEndian::readUint16(ptr);
   }
 
-  Result<int16_t, nsresult> ReadLE16()
+  mozilla::Result<int16_t, nsresult> ReadLE16()
   {
     auto ptr = Read(2);
     if (!ptr) {
@@ -83,7 +83,7 @@ public:
     return mozilla::LittleEndian::readInt16(ptr);
   }
 
-  Result<uint32_t, nsresult> ReadU24()
+  mozilla::Result<uint32_t, nsresult> ReadU24()
   {
     auto ptr = Read(3);
     if (!ptr) {
@@ -93,16 +93,12 @@ public:
     return ptr[0] << 16 | ptr[1] << 8 | ptr[2];
   }
 
-  Result<int32_t, nsresult> Read24()
+  mozilla::Result<int32_t, nsresult> Read24()
   {
-    auto res = ReadU24();
-    if (res.isErr()) {
-      return mozilla::Err(NS_ERROR_FAILURE);
-    }
-    return (int32_t)res.unwrap();
+    return ReadU24().map([] (uint32_t x) { return (int32_t)x; });
   }
 
-  Result<int32_t, nsresult> ReadLE24()
+  mozilla::Result<int32_t, nsresult> ReadLE24()
   {
     auto ptr = Read(3);
     if (!ptr) {
@@ -116,7 +112,7 @@ public:
     return result;
   }
 
-  Result<uint32_t, nsresult> ReadU32()
+  mozilla::Result<uint32_t, nsresult> ReadU32()
   {
     auto ptr = Read(4);
     if (!ptr) {
@@ -126,7 +122,7 @@ public:
     return mozilla::BigEndian::readUint32(ptr);
   }
 
-  Result<int32_t, nsresult> Read32()
+  mozilla::Result<int32_t, nsresult> Read32()
   {
     auto ptr = Read(4);
     if (!ptr) {
@@ -136,7 +132,7 @@ public:
     return mozilla::BigEndian::readInt32(ptr);
   }
 
-  Result<uint64_t, nsresult> ReadU64()
+  mozilla::Result<uint64_t, nsresult> ReadU64()
   {
     auto ptr = Read(8);
     if (!ptr) {
@@ -146,7 +142,7 @@ public:
     return mozilla::BigEndian::readUint64(ptr);
   }
 
-  Result<int64_t, nsresult> Read64()
+  mozilla::Result<int64_t, nsresult> Read64()
   {
     auto ptr = Read(8);
     if (!ptr) {
@@ -182,79 +178,49 @@ public:
     return mPtr;
   }
 
-  uint8_t PeekU8() const
+  mozilla::Result<uint8_t, nsresult> PeekU8() const
   {
     auto ptr = Peek(1);
     if (!ptr) {
       NS_WARNING("Failed to peek data");
-      return 0;
+      return mozilla::Err(NS_ERROR_FAILURE);
     }
     return *ptr;
   }
 
-  uint16_t PeekU16() const
+  mozilla::Result<uint16_t, nsresult> PeekU16() const
   {
     auto ptr = Peek(2);
     if (!ptr) {
       NS_WARNING("Failed to peek data");
-      return 0;
+      return mozilla::Err(NS_ERROR_FAILURE);
     }
     return mozilla::BigEndian::readUint16(ptr);
   }
 
-  uint32_t PeekU24() const
+  mozilla::Result<uint32_t, nsresult> PeekU24() const
   {
     auto ptr = Peek(3);
     if (!ptr) {
       NS_WARNING("Failed to peek data");
-      return 0;
+      return mozilla::Err(NS_ERROR_FAILURE);
     }
     return ptr[0] << 16 | ptr[1] << 8 | ptr[2];
   }
 
-  uint32_t Peek24() const
+  mozilla::Result<int32_t, nsresult> Peek24() const
   {
-    return (uint32_t)PeekU24();
+    return PeekU24().map([] (uint32_t x) { return (int32_t)x; });
   }
 
-  uint32_t PeekU32() const
+  mozilla::Result<uint32_t, nsresult> PeekU32()
   {
     auto ptr = Peek(4);
     if (!ptr) {
       NS_WARNING("Failed to peek data");
-      return 0;
+      return mozilla::Err(NS_ERROR_FAILURE);
     }
     return mozilla::BigEndian::readUint32(ptr);
-  }
-
-  int32_t Peek32() const
-  {
-    auto ptr = Peek(4);
-    if (!ptr) {
-      NS_WARNING("Failed to peek data");
-      return 0;
-    }
-    return mozilla::BigEndian::readInt32(ptr);
-  }
-
-  uint64_t PeekU64() const
-  {
-    auto ptr = Peek(8);
-    if (!ptr) {
-      NS_WARNING("Failed to peek data");
-      return 0;
-    }
-    return mozilla::BigEndian::readUint64(ptr);
-  }
-
-  int64_t Peek64() const
-  {
-    auto ptr = Peek(8);
-    if (!ptr) {
-      NS_WARNING("Failed to peek data");
-      return 0;
-    }
-    return mozilla::BigEndian::readInt64(ptr);
   }
 
   const uint8_t* Peek(size_t aCount) const

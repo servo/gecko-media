@@ -4,7 +4,7 @@
 
 #include "mp4_demuxer/Adts.h"
 #include "mp4_demuxer/AnnexB.h"
-#include "mp4_demuxer/ByteReader.h"
+#include "mp4_demuxer/BufferReader.h"
 #include "mp4_demuxer/DecoderData.h"
 #include <media/stagefright/foundation/ABitReader.h>
 #include "media/stagefright/MetaData.h"
@@ -87,27 +87,27 @@ FindData(const MetaData* aMetaData, uint32_t aKey, mozilla::MediaByteBuffer* aDe
   return FindData(aMetaData, aKey, static_cast<nsTArray<uint8_t>*>(aDest));
 }
 
-bool
+mozilla::Result<mozilla::Ok, nsresult>
 CryptoFile::DoUpdate(const uint8_t* aData, size_t aLength)
 {
-  ByteReader reader(aData, aLength);
+  BufferReader reader(aData, aLength);
   while (reader.Remaining()) {
     PsshInfo psshInfo;
     if (!reader.ReadArray(psshInfo.uuid, 16)) {
-      return false;
+      return mozilla::Err(NS_ERROR_FAILURE);
     }
 
     if (!reader.CanReadType<uint32_t>()) {
-      return false;
+      return mozilla::Err(NS_ERROR_FAILURE);
     }
     auto length = reader.ReadType<uint32_t>();
 
     if (!reader.ReadArray(psshInfo.data, length)) {
-      return false;
+      return mozilla::Err(NS_ERROR_FAILURE);
     }
     pssh.AppendElement(psshInfo);
   }
-  return true;
+  return mozilla::Ok();
 }
 
 static void
@@ -209,23 +209,11 @@ MP4AudioInfo::Update(const mp4parse_track_info* track,
     mozilla::OpusDataDecoder::AppendCodecDelay(mCodecSpecificConfig,
         mozilla::FramesToUsecs(preskip, 48000).value());
   } else if (track->codec == mp4parse_codec_AAC) {
-#ifdef GECKO_MEDIA_CRATE
     mMimeType = NS_LITERAL_CSTRING("audio/mp4a-latm");
-#else
-    mMimeType = MEDIA_MIMETYPE_AUDIO_AAC;
-#endif
   } else if (track->codec == mp4parse_codec_FLAC) {
-#ifdef GECKO_MEDIA_CRATE
     mMimeType = NS_LITERAL_CSTRING("audio/flac");
-#else
-    mMimeType = MEDIA_MIMETYPE_AUDIO_FLAC;
-#endif
   } else if (track->codec == mp4parse_codec_MP3) {
-#ifdef GECKO_MEDIA_CRATE
     mMimeType = NS_LITERAL_CSTRING("audio/mpeg");
-#else
-    mMimeType = MEDIA_MIMETYPE_AUDIO_MPEG;
-#endif
   }
 
   mRate = audio->sample_rate;
@@ -258,23 +246,13 @@ MP4VideoInfo::Update(const mp4parse_track_info* track,
                      const mp4parse_track_video_info* video)
 {
   UpdateTrackProtectedInfo(*this, video->protected_data);
-
   if (track->codec == mp4parse_codec_AVC) {
-#ifdef GECKO_MEDIA_CRATE
     mMimeType = NS_LITERAL_CSTRING("video/avc");
-#else
-    mMimeType = MEDIA_MIMETYPE_VIDEO_AVC;
-#endif
   } else if (track->codec == mp4parse_codec_VP9) {
     mMimeType = NS_LITERAL_CSTRING("video/vp9");
   } else if (track->codec == mp4parse_codec_MP4V) {
-#ifdef GECKO_MEDIA_CRATE
-    mMimeType = "video/mp4v-es";
-#else
-    mMimeType = MEDIA_MIMETYPE_VIDEO_MPEG4;
-#endif
+    mMimeType = NS_LITERAL_CSTRING("video/mp4v-es");
   }
-
   mTrackId = track->track_id;
   mDuration = TimeUnit::FromMicroseconds(track->duration);
   mMediaTime = TimeUnit::FromMicroseconds(track->media_time);

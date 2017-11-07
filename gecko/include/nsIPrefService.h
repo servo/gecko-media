@@ -121,8 +121,7 @@ class NS_NO_VTABLE nsIPrefService : public nsISupports {
 #define NS_PREFSERVICE_RESET_TOPIC_ID "prefservice:before-reset"
 /**
  * Notification sent when after reading app-provided default
- * preferences, but before user profile override defaults or extension
- * defaults are loaded.
+ * preferences, but before user profile override defaults are loaded.
  */
 #define NS_PREFSERVICE_APPDEFAULTS_TOPIC_ID "prefservice:after-app-defaults"
 
