@@ -34,8 +34,8 @@
 // #include "ADTSDecoder.h"
 // #include "ADTSDemuxer.h"
 
-// #include "FlacDecoder.h"
-// #include "FlacDemuxer.h"
+#include "FlacDecoder.h"
+#include "FlacDemuxer.h"
 
 #include "nsPluginHost.h"
 #include "MediaPrefs.h"
@@ -121,9 +121,9 @@ CanHandleCodecsType(const MediaContainerType& aType,
 //   if (ADTSDecoder::IsSupportedType(aType)) {
 //     return CANPLAY_YES;
 //   }
-//   if (FlacDecoder::IsSupportedType(aType)) {
-//     return CANPLAY_YES;
-//   }
+  if (FlacDecoder::IsSupportedType(aType)) {
+    return CANPLAY_YES;
+  }
 
   return CANPLAY_MAYBE;
 }
@@ -177,9 +177,9 @@ CanHandleMediaType(const MediaContainerType& aType,
 //   if (ADTSDecoder::IsSupportedType(mimeType)) {
 //     return CANPLAY_MAYBE;
 //   }
-//   if (FlacDecoder::IsSupportedType(mimeType)) {
-//     return CANPLAY_MAYBE;
-//   }
+  if (FlacDecoder::IsSupportedType(mimeType)) {
+    return CANPLAY_MAYBE;
+  }
   return CANPLAY_NO;
 }
 
@@ -246,11 +246,10 @@ DecoderTraits::CreateReader(const MediaContainerType& aType,
 //   } else
   if (WaveDecoder::IsSupportedType(aType)) {
     decoderReader = new MediaFormatReader(aInit, new WAVDemuxer(resource));
-  }
-//   } else
-//   if (FlacDecoder::IsSupportedType(aType)) {
-//     decoderReader = new MediaFormatReader(aInit, new FlacDemuxer(resource));
-//   } else
+  } else
+  if (FlacDecoder::IsSupportedType(aType)) {
+    decoderReader = new MediaFormatReader(aInit, new FlacDemuxer(resource));
+  } else
   if (OggDecoder::IsSupportedType(aType)) {
     RefPtr<OggDemuxer> demuxer = new OggDemuxer(resource);
     decoderReader = new MediaFormatReader(aInit, demuxer);
@@ -272,7 +271,7 @@ DecoderTraits::IsSupportedType(const MediaContainerType& aType)
   typedef bool (*IsSupportedFunction)(const MediaContainerType& aType);
   static const IsSupportedFunction funcs[] = {
 //     &ADTSDecoder::IsSupportedType,
-//     &FlacDecoder::IsSupportedType,
+    &FlacDecoder::IsSupportedType,
     &MP3Decoder::IsSupportedType,
 #ifdef MOZ_FMP4
     &MP4Decoder::IsSupportedTypeWithoutDiagnostics,
@@ -313,7 +312,7 @@ bool DecoderTraits::IsSupportedInVideoDocument(const nsACString& aType)
 #endif
 //     MP3Decoder::IsSupportedType(*type) ||
 //     ADTSDecoder::IsSupportedType(*type) ||
-//     FlacDecoder::IsSupportedType(*type) ||
+    FlacDecoder::IsSupportedType(*type) ||
 // #ifdef MOZ_ANDROID_HLS_SUPPORT
 //     HLSDecoder::IsSupportedType(*type) ||
 // #endif

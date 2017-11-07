@@ -475,6 +475,9 @@ TestDecoderTraits()
          MediaContainerType(MEDIAMIMETYPE("audio/ogg")), nullptr) ==
          CANPLAY_MAYBE);
   assert(DecoderTraits::CanHandleContainerType(
+         MediaContainerType(MEDIAMIMETYPE("audio/flac")), nullptr) ==
+         CANPLAY_MAYBE);
+  assert(DecoderTraits::CanHandleContainerType(
            MediaContainerType(MEDIAMIMETYPE("audio/mp4")), nullptr) ==
          CANPLAY_MAYBE);
   assert(DecoderTraits::CanHandleContainerType(

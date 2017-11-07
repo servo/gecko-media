@@ -59,6 +59,8 @@
     "OggCodecStore.h": "dom/media/ogg/OggCodecStore.h",
     "OggDecoder.h": "dom/media/ogg/OggDecoder.h",
     "OggDemuxer.h": "dom/media/ogg/OggDemuxer.h",
+    "FlacDecoder.h": "dom/media/flac/FlacDecoder.h",
+    "FlacDemuxer.h": "dom/media/flac/FlacDemuxer.h",
     "FlacFrameParser.h": "dom/media/flac/FlacFrameParser.h",
     "PDMFactory.h": "dom/media/platforms/PDMFactory.h",
     "ReorderQueue.h": "dom/media/platforms/ReorderQueue.h",

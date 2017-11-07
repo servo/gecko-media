@@ -28,6 +28,8 @@
     "dom/media/ogg/OggDemuxer.cpp",
     "dom/media/ogg/OggCodecState.cpp",
     "dom/media/ogg/OggCodecStore.cpp",
+    "dom/media/flac/FlacDecoder.cpp",
+    "dom/media/flac/FlacDemuxer.cpp",
     "dom/media/flac/FlacFrameParser.cpp",
     "dom/media/XiphExtradata.cpp",
     "dom/media/platforms/agnostic/BlankDecoderModule.cpp",

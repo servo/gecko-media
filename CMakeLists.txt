@@ -200,6 +200,8 @@ add_library(gecko_core OBJECT
   gecko/src/dom/media/ogg/OggDemuxer.cpp
   gecko/src/dom/media/ogg/OggCodecState.cpp
   gecko/src/dom/media/ogg/OggCodecStore.cpp
+  gecko/src/dom/media/flac/FlacDecoder.cpp
+  gecko/src/dom/media/flac/FlacDemuxer.cpp
   gecko/src/dom/media/flac/FlacFrameParser.cpp
   gecko/src/dom/media/XiphExtradata.cpp
   gecko/src/dom/media/platforms/agnostic/BlankDecoderModule.cpp
