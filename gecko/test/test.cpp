@@ -479,6 +479,35 @@ TestDecoderTraits()
     MediaContainerType(MEDIAMIMETYPE("audio/wav")), nullptr) == CANPLAY_MAYBE);
 }
 
+class OwningBufferMediaResource : public BufferMediaResource
+{
+public:
+  static already_AddRefed<BufferMediaResource> Create(const char* aFilename)
+  {
+    FILE* f = fopen(aFilename, "rb");
+    fseek(f, 0, SEEK_END);
+    long fsize = ftell(f);
+    fseek(f, 0, SEEK_SET);
+    uint8_t* data = new uint8_t[fsize];
+    size_t x = fread(data, fsize, 1, f);
+    assert(x == 1);
+    fclose(f);
+    RefPtr<BufferMediaResource> resource =
+      new OwningBufferMediaResource(data, fsize);
+    return resource.forget();
+  }
+private:
+  OwningBufferMediaResource(const uint8_t* aBuffer, size_t aLength)
+    : BufferMediaResource(aBuffer, aLength)
+    , mBuffer(aBuffer)
+  {
+  }
+  ~OwningBufferMediaResource() {
+    delete[] mBuffer;
+  }
+  const uint8_t* mBuffer;
+};
+
 void
 TestGeckoDecoder()
 {
@@ -492,24 +521,15 @@ TestGeckoDecoder()
                                false, // mLooping
                                MediaContainerType(MEDIAMIMETYPE("audio/wav")));
   RefPtr<GeckoMediaDecoder> decoder = new GeckoMediaDecoder(decoderInit);
-  FILE* f = fopen("gecko/test/audiotest.wav", "rb");
-  fseek(f, 0, SEEK_END);
-  long fsize = ftell(f);
-  fseek(f, 0, SEEK_SET);
 
-  char* data = (char*) malloc(fsize + 1);
-  fread(data, fsize, 1, f);
-  fclose(f);
-  data[fsize] = 0;
-
-  RefPtr<BufferMediaResource> resource = new BufferMediaResource((uint8_t*)data, (uint32_t)fsize);
+  RefPtr<BufferMediaResource> resource =
+    OwningBufferMediaResource::Create("gecko/test/audiotest.wav");
   decoder->Load(resource);
 
   decoder->Play();
 
   SpinEventLoopUntil([decoder]() { return decoder->IsEnded(); });
   decoder->Shutdown();
-  free(data);
 }
 
 } // namespace mozilla
