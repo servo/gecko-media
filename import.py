@@ -9,10 +9,6 @@ from shutil import copy2
 from shutil import rmtree
 from os import listdir
 
-local_files = {
-    "DecoderData.cpp": "media/libstagefright/binding/",
-}
-
 with open(os.path.join("data", "header_files.json")) as f:
     header_files = json.load(f)
 
@@ -21,14 +17,6 @@ with open(os.path.join("data", "objdir_files.json")) as f:
 
 with open(os.path.join("data", "src_files.json")) as f:
     src_files = json.load(f)
-
-def copy_local_files():
-    for filename, dirname in local_files.items():
-        dst_dir = os.path.join("gecko", "src", dirname)
-        src = os.path.join("local", filename)
-        dst = os.path.join(dst_dir, filename)
-        ensure_dir_exists(dst)
-        copyfile(src, dst)
 
 def get_obj_dir_path(src_dir):
     if sys.platform == 'darwin':
@@ -192,7 +180,7 @@ def main(args):
 
     remove_previous_copy(src_dir, dst_dir)
     copy_files(src_dir, dst_dir)
-    copy_local_files()
+
     # Gecko's string classes only build in unified mode...
     write_unified_cpp_file(dst_dir + "src/xpcom/string")
     write_gecko_revision_file(src_dir)

@@ -2,7 +2,6 @@
     "dom/media/AudioConverter.cpp",
     "dom/media/AudioSegment.cpp",
     "dom/media/AudioStream.cpp",
-    "dom/media/CubebUtils.cpp",
     "dom/media/MediaContainerType.cpp",
     "dom/media/MediaInfo.cpp",
     "dom/media/MediaMIMETypes.cpp",
@@ -424,7 +423,6 @@
     "xpcom/threads/SynchronizedEventQueue.cpp",
     "xpcom/threads/SystemGroup.cpp",
     "xpcom/threads/TaskQueue.cpp",
-    "xpcom/threads/ThreadEventQueue.cpp",
     "xpcom/threads/ThreadEventTarget.cpp",
     "xpcom/threads/TimerThread.cpp"
 ]

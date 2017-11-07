@@ -17,7 +17,9 @@
 #include "mozilla/Atomics.h"
 #include "mozilla/Sprintf.h"
 #include "mozilla/UniquePtrExtensions.h"
+#include "nsClassHashtable.h"
 #include "nsDebug.h"
+#include "nsXULAppAPI.h"
 #include "NSPRLogModulesParser.h"
 
 #include "prenv.h"
@@ -168,6 +170,7 @@ class LogModuleManager
 public:
   LogModuleManager()
     : mModulesLock("logmodules")
+    , mModules(kInitialModuleCount)
     , mPrintEntryCount(0)
     , mOutFile(nullptr)
     , mToReleaseFile(nullptr)
@@ -350,6 +353,10 @@ public:
   {
     OffTheBooksMutexAutoLock guard(mModulesLock);
     LogModule* module = nullptr;
+    if (!mModules.Get(aName, &module)) {
+      module = new LogModule(aName, LogLevel::Disabled);
+      mModules.Put(aName, module);
+    }
 
     return module;
   }
@@ -361,6 +368,7 @@ public:
     char buff[kBuffSize];
 
     char* buffToWrite = buff;
+    SmprintfPointer allocatedBuff;
 
     va_list argsCopy;
     va_copy(argsCopy, aArgs);
@@ -375,6 +383,11 @@ public:
       strncpy(buff, aFmt, kBuffSize - 1);
       buff[kBuffSize - 1] = '\0';
       charsWritten = strlen(buff);
+    } else if (static_cast<size_t>(charsWritten) >= kBuffSize - 1) {
+      // We may have maxed out, allocate a buffer instead.
+      allocatedBuff = mozilla::Vsmprintf(aFmt, aArgs);
+      buffToWrite = allocatedBuff.get();
+      charsWritten = strlen(buffToWrite);
     }
 
     // Determine if a newline needs to be appended to the message.
@@ -401,12 +414,33 @@ public:
     //
     // Additionally we prefix the output with the abbreviated log level
     // and the module name.
-    const char *currentThreadName = "Unidentified Thread";
+    PRThread *currentThread = PR_GetCurrentThread();
+    const char *currentThreadName = (mMainThread == currentThread)
+      ? "Main Thread"
+      : PR_GetThreadName(currentThread);
 
-    fprintf(out,
-            "[%s]: %s/%s %s%s",
-            currentThreadName, ToLogStr(aLevel),
-            aName, buffToWrite, newline);
+    char noNameThread[40];
+    if (!currentThreadName) {
+      SprintfLiteral(noNameThread, "Unnamed thread %p", currentThread);
+      currentThreadName = noNameThread;
+    }
+
+    if (!mAddTimestamp) {
+      fprintf_stderr(out,
+                     "[%s]: %s/%s %s%s",
+                     currentThreadName, ToLogStr(aLevel),
+                     aName, buffToWrite, newline);
+    } else {
+      PRExplodedTime now;
+      PR_ExplodeTime(PR_Now(), PR_GMTParameters, &now);
+      fprintf_stderr(
+          out,
+          "%04d-%02d-%02d %02d:%02d:%02d.%06d UTC - [%s]: %s/%s %s%s",
+          now.tm_year, now.tm_month + 1, now.tm_mday,
+          now.tm_hour, now.tm_min, now.tm_sec, now.tm_usec,
+          currentThreadName, ToLogStr(aLevel),
+          aName, buffToWrite, newline);
+    }
 
     if (mIsSync) {
       fflush(out);
@@ -452,7 +486,7 @@ public:
 
 private:
   OffTheBooksMutex mModulesLock;
-  //nsClassHashtable<nsCharPtrHashKey, LogModule> mModules;
+  nsClassHashtable<nsCharPtrHashKey, LogModule> mModules;
 
   // Print() entry counter, actually reflects concurrent use of the current
   // output file.  ReleaseAcquire ensures that manipulation with mOutFile
@@ -473,6 +507,7 @@ private:
   // Just keeps the actual file path for further use.
   UniqueFreePtr<char[]> mOutFilePath;
 
+  PRThread *mMainThread;
   bool mSetFromEnv;
   Atomic<bool, Relaxed> mAddTimestamp;
   Atomic<bool, Relaxed> mIsSync;

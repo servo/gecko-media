@@ -132,6 +132,7 @@ add_library(gecko_core OBJECT
   gecko/glue/AgnosticDecoderModule.cpp
   gecko/glue/Benchmark.cpp
   gecko/glue/CooperativeThreadPool.cpp
+  gecko/glue/CubebUtils.cpp
   gecko/glue/DecoderTraits.cpp
   gecko/glue/FFmpegRuntimeLinker.cpp
   gecko/glue/GeckoMedia.cpp
@@ -163,6 +164,7 @@ add_library(gecko_core OBJECT
   gecko/glue/SchedulerGroup.cpp
   gecko/glue/Services.cpp
   gecko/glue/Telemetry.cpp
+  gecko/glue/ThreadEventQueue.cpp
   gecko/glue/ThreadAnnotation.cpp
   gecko/glue/VideoSegment.cpp
   gecko/glue/WebAudioUtils.cpp
@@ -170,7 +172,6 @@ add_library(gecko_core OBJECT
   gecko/src/dom/media/AudioConverter.cpp
   gecko/src/dom/media/AudioSegment.cpp
   gecko/src/dom/media/AudioStream.cpp
-  gecko/src/dom/media/CubebUtils.cpp
   gecko/src/dom/media/MediaContainerType.cpp
   gecko/src/dom/media/MediaInfo.cpp
   gecko/src/dom/media/MediaMIMETypes.cpp
@@ -248,7 +249,6 @@ add_library(gecko_core OBJECT
   gecko/src/xpcom/threads/SynchronizedEventQueue.cpp
   gecko/src/xpcom/threads/SystemGroup.cpp
   gecko/src/xpcom/threads/TaskQueue.cpp
-  gecko/src/xpcom/threads/ThreadEventQueue.cpp
   gecko/src/xpcom/threads/ThreadEventTarget.cpp
   gecko/src/xpcom/threads/TimerThread.cpp
   gecko/src/nsprpub/pr/src/io/priometh.c

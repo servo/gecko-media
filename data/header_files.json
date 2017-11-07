@@ -302,7 +302,6 @@
     "mozilla/media/libstagefright/binding/include/mp4_demuxer/Box.h": "media/libstagefright/binding/include/mp4_demuxer/Box.h",
     "mozilla/media/libstagefright/binding/include/mp4_demuxer/BufferStream.h": "media/libstagefright/binding/include/mp4_demuxer/BufferStream.h",
     "mozilla/media/libstagefright/binding/include/mp4_demuxer/BufferReader.h": "media/libstagefright/binding/include/mp4_demuxer/BufferReader.h",
-    "mozilla/media/libstagefright/binding/include/mp4_demuxer/ByteReader.h": "media/libstagefright/binding/include/mp4_demuxer/ByteReader.h",
     "mozilla/media/libstagefright/binding/include/mp4_demuxer/ByteWriter.h": "media/libstagefright/binding/include/mp4_demuxer/ByteWriter.h",
     "mozilla/media/libstagefright/binding/include/mp4_demuxer/DecoderData.h": "media/libstagefright/binding/include/mp4_demuxer/DecoderData.h",
     "mozilla/media/libstagefright/binding/include/mp4_demuxer/H264.h": "media/libstagefright/binding/include/mp4_demuxer/H264.h",
