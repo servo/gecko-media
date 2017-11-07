@@ -73,6 +73,8 @@ def remove_previous_copy(src_dir, dst_dir):
     rmtree(dst_dir + "src/")
 
 def write_gecko_revision_file(src_dir):
+    if not os.path.isdir(os.path.join(src_dir, ".hg")):
+        return
     result = subprocess.run(['hg', 'log', src_dir, '--limit', '1'], stdout=subprocess.PIPE)
     first_line = result.stdout.splitlines()[0]
     revision = re.match(b'changeset:\s+(.*)', first_line).group(1)
