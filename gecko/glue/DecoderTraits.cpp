@@ -25,8 +25,8 @@
 #endif
 #include "MediaFormatReader.h"
 
-// #include "MP3Decoder.h"
-// #include "MP3Demuxer.h"
+#include "MP3Decoder.h"
+#include "MP3Demuxer.h"
 
 #include "WaveDecoder.h"
 #include "WaveDemuxer.h"
@@ -115,9 +115,9 @@ CanHandleCodecsType(const MediaContainerType& aType,
     return CANPLAY_NO;
   }
 #endif
-//   if (MP3Decoder::IsSupportedType(aType)) {
-//     return CANPLAY_YES;
-//   }
+  if (MP3Decoder::IsSupportedType(aType)) {
+    return CANPLAY_YES;
+  }
 //   if (ADTSDecoder::IsSupportedType(aType)) {
 //     return CANPLAY_YES;
 //   }
@@ -171,9 +171,9 @@ CanHandleMediaType(const MediaContainerType& aType,
 //     return CANPLAY_MAYBE;
 //   }
 // #endif
-//   if (MP3Decoder::IsSupportedType(mimeType)) {
-//     return CANPLAY_MAYBE;
-//   }
+  if (MP3Decoder::IsSupportedType(mimeType)) {
+    return CANPLAY_MAYBE;
+  }
 //   if (ADTSDecoder::IsSupportedType(mimeType)) {
 //     return CANPLAY_MAYBE;
 //   }
@@ -238,9 +238,9 @@ DecoderTraits::CreateReader(const MediaContainerType& aType,
     decoderReader = new MediaFormatReader(aInit, new MP4Demuxer(resource));
   } else
 #endif
-//   if (MP3Decoder::IsSupportedType(aType)) {
-//     decoderReader = new MediaFormatReader(aInit, new MP3Demuxer(resource));
-//   } else
+  if (MP3Decoder::IsSupportedType(aType)) {
+    decoderReader = new MediaFormatReader(aInit, new MP3Demuxer(resource));
+  } else
 //   if (ADTSDecoder::IsSupportedType(aType)) {
 //     decoderReader = new MediaFormatReader(aInit, new ADTSDemuxer(resource));
 //   } else
@@ -272,7 +272,7 @@ DecoderTraits::IsSupportedType(const MediaContainerType& aType)
   static const IsSupportedFunction funcs[] = {
 //     &ADTSDecoder::IsSupportedType,
 //     &FlacDecoder::IsSupportedType,
-//     &MP3Decoder::IsSupportedType,
+    &MP3Decoder::IsSupportedType,
 #ifdef MOZ_FMP4
     &MP4Decoder::IsSupportedTypeWithoutDiagnostics,
 #endif

@@ -191,6 +191,10 @@ add_library(gecko_core OBJECT
   gecko/src/dom/media/mediasink/AudioSinkWrapper.cpp
   gecko/src/dom/media/mediasink/DecodedStream.cpp
   gecko/src/dom/media/mediasink/OutputStreamManager.cpp
+  gecko/src/dom/media/mp3/MP3Decoder.cpp
+  gecko/src/dom/media/mp3/MP3Demuxer.cpp
+  gecko/src/dom/media/mp3/MP3FrameParser.cpp
+  gecko/src/dom/media/ogg/OpusParser.cpp
   gecko/src/dom/media/ogg/OpusParser.cpp
   gecko/src/dom/media/platforms/agnostic/BlankDecoderModule.cpp
   gecko/src/dom/media/platforms/agnostic/DummyMediaDataDecoder.cpp
