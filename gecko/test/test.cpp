@@ -528,7 +528,8 @@ TestGeckoDecoder()
 
   decoder->Play();
 
-  SpinEventLoopUntil([decoder]() { return decoder->IsEnded(); });
+  SpinEventLoopUntil([decoder, &owner]() { return decoder->IsEnded() || owner.HasError(); });
+  MOZ_ASSERT(!owner.HasError());
   decoder->Shutdown();
 }
 

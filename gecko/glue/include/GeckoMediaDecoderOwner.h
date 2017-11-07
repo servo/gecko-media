@@ -69,7 +69,10 @@ public:
   // resource has a decode error during metadata loading or decoding.
   // The decoder owner should call Shutdown() on the decoder and drop the
   // reference to the decoder to prevent further calls into the decoder.
-  virtual void DecodeError(const MediaResult& aError) override { }
+  virtual void DecodeError(const MediaResult& aError) override
+  {
+    mHasError = true;
+  }
 
   // Called by the decoder object, on the main thread, when the
   // resource has a decode issue during metadata loading or decoding, but can
@@ -77,7 +80,7 @@ public:
   virtual void DecodeWarning(const MediaResult& aError) override { }
 
   // Return true if media element error attribute is not null.
-  virtual bool HasError() const override { return false; }
+  virtual bool HasError() const override { return mHasError; }
 
   // Called by the video decoder object, on the main thread, when the
   // resource load has been cancelled.
@@ -188,9 +191,10 @@ public:
    * Servo only methods go here. Please provide default implementations so they
    * can build in Gecko without any modification.
    */
+private:
+  bool mHasError = false;
 };
 
 } // namespace mozilla
 
 #endif
-
