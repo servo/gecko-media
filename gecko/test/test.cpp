@@ -12,6 +12,8 @@
 #include "GeckoMediaDecoderOwner.h"
 #include "ImageContainer.h"
 #include "MediaData.h"
+#include "MediaDecoder.h"
+#include "MediaStreamGraph.h"
 #include "PlatformDecoderModule.h"
 #include "VideoUtils.h"
 #include "gecko_media_prefs.h"
@@ -29,8 +31,6 @@
 #include "nsTArray.h"
 #include "nsThreadManager.h"
 #include "nsThreadUtils.h"
-#include "MediaStreamGraph.h"
-#include "MediaDecoder.h"
 
 #define SIMPLE_STRING "I'm a simple ASCII string"
 #define UTF8_STRING                                                            \
@@ -472,11 +472,14 @@ void
 TestDecoderTraits()
 {
   assert(DecoderTraits::CanHandleContainerType(
-    MediaContainerType(MEDIAMIMETYPE("audio/mp4")), nullptr) == CANPLAY_MAYBE);
+           MediaContainerType(MEDIAMIMETYPE("audio/mp4")), nullptr) ==
+         CANPLAY_MAYBE);
   assert(DecoderTraits::CanHandleContainerType(
-    MediaContainerType(MEDIAMIMETYPE("video/mp4")), nullptr) == CANPLAY_MAYBE);
+           MediaContainerType(MEDIAMIMETYPE("video/mp4")), nullptr) ==
+         CANPLAY_MAYBE);
   assert(DecoderTraits::CanHandleContainerType(
-    MediaContainerType(MEDIAMIMETYPE("audio/wav")), nullptr) == CANPLAY_MAYBE);
+           MediaContainerType(MEDIAMIMETYPE("audio/wav")), nullptr) ==
+         CANPLAY_MAYBE);
 }
 
 class OwningBufferMediaResource : public BufferMediaResource
@@ -514,8 +517,8 @@ TestGeckoDecoder()
   GeckoMediaDecoderOwner owner;
   MediaDecoderInit decoderInit(&owner,
                                0.05,  // volume
-                               true, // mPreservesPitch
-                               1.0, // mPlaybackRate
+                               true,  // mPreservesPitch
+                               1.0,   // mPlaybackRate
                                false, // mMinimizePreroll
                                false, // mHasSuspendTaint
                                false, // mLooping

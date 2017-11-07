@@ -7,8 +7,8 @@
 #define GeckoMediaDecoderOwner_h_
 
 #include "MediaDecoderOwner.h"
-#include "mozilla/UniquePtr.h"
 #include "MediaInfo.h"
+#include "mozilla/UniquePtr.h"
 
 namespace mozilla {
 
@@ -26,16 +26,19 @@ class HTMLMediaElement;
 class GeckoMediaDecoderOwner : public MediaDecoderOwner
 {
 public:
-  GeckoMediaDecoderOwner() { }
+  GeckoMediaDecoderOwner() {}
 
   // Called by the media decoder to indicate that the download is progressing.
-  virtual void DownloadProgressed() override { }
+  virtual void DownloadProgressed() override {}
 
   // Dispatch an asynchronous event to the decoder owner
-  virtual nsresult DispatchAsyncEvent(const nsAString& aName) override { return NS_OK; };
+  virtual nsresult DispatchAsyncEvent(const nsAString& aName) override
+  {
+    return NS_OK;
+  };
 
   // Triggers a recomputation of readyState.
-  virtual void UpdateReadyState() override { }
+  virtual void UpdateReadyState() override {}
 
   /**
    * Fires a timeupdate event. If aPeriodic is true, the event will only
@@ -43,7 +46,7 @@ public:
    * last 250ms, as required by the spec when the current time is periodically
    * increasing during playback.
    */
-  virtual void FireTimeUpdate(bool aPeriodic) override { }
+  virtual void FireTimeUpdate(bool aPeriodic) override {}
 
   // Return true if decoding should be paused
   virtual bool GetPaused() override { return false; }
@@ -53,17 +56,19 @@ public:
   // etc.
   // Must take ownership of MetadataTags aTags argument.
   virtual void MetadataLoaded(const MediaInfo* aInfo,
-                              UniquePtr<const MetadataTags> aTags) override { }
+                              UniquePtr<const MetadataTags> aTags) override
+  {
+  }
 
   // Called by the decoder object, on the main thread,
   // when it has read the first frame of the video or audio.
-  virtual void FirstFrameLoaded() override { }
+  virtual void FirstFrameLoaded() override {}
 
   // Called by the decoder object, on the main thread,
   // when the resource has a network error during loading.
   // The decoder owner should call Shutdown() on the decoder and drop the
   // reference to the decoder to prevent further calls into the decoder.
-  virtual void NetworkError() override { }
+  virtual void NetworkError() override {}
 
   // Called by the decoder object, on the main thread, when the
   // resource has a decode error during metadata loading or decoding.
@@ -77,41 +82,43 @@ public:
   // Called by the decoder object, on the main thread, when the
   // resource has a decode issue during metadata loading or decoding, but can
   // continue decoding.
-  virtual void DecodeWarning(const MediaResult& aError) override { }
+  virtual void DecodeWarning(const MediaResult& aError) override {}
 
   // Return true if media element error attribute is not null.
   virtual bool HasError() const override { return mHasError; }
 
   // Called by the video decoder object, on the main thread, when the
   // resource load has been cancelled.
-  virtual void LoadAborted() override { }
+  virtual void LoadAborted() override {}
 
   // Called by the video decoder object, on the main thread,
   // when the video playback has ended.
-  virtual void PlaybackEnded() override { }
+  virtual void PlaybackEnded() override {}
 
   // Called by the video decoder object, on the main thread,
   // when the resource has started seeking.
-  virtual void SeekStarted() override { }
+  virtual void SeekStarted() override {}
 
   // Called by the video decoder object, on the main thread,
   // when the resource has completed seeking.
-  virtual void SeekCompleted() override { }
+  virtual void SeekCompleted() override {}
 
   // Called by the media stream, on the main thread, when the download
   // has been suspended by the cache or because the element itself
   // asked the decoder to suspend the download.
-  virtual void DownloadSuspended() override { }
+  virtual void DownloadSuspended() override {}
 
   // Called by the media decoder to indicate whether the media cache has
   // suspended the channel.
-  virtual void NotifySuspendedByCache(bool aSuspendedByCache) override { }
+  virtual void NotifySuspendedByCache(bool aSuspendedByCache) override {}
 
-  // called to notify that the principal of the decoder's media resource has changed.
-  virtual void NotifyDecoderPrincipalChanged() override { }
+  // called to notify that the principal of the decoder's media resource has
+  // changed.
+  virtual void NotifyDecoderPrincipalChanged() override {}
 
   // The status of the next frame which might be available from the decoder
-  enum NextFrameStatus {
+  enum NextFrameStatus
+  {
     // The next frame of audio/video is available
     NEXT_FRAME_AVAILABLE,
     // The next frame of audio/video is unavailable because the decoder
@@ -132,32 +139,34 @@ public:
   virtual bool IsHidden() const override { return false; }
 
   // Called by media decoder when the audible state changed
-  virtual void SetAudibleState(bool aAudible) override { }
+  virtual void SetAudibleState(bool aAudible) override {}
 
   // Notified by the decoder that XPCOM shutdown has begun.
   // The decoder owner should call Shutdown() on the decoder and drop the
   // reference to the decoder to prevent further calls into the decoder.
-  virtual void NotifyXPCOMShutdown() override { }
+  virtual void NotifyXPCOMShutdown() override {}
 
   // Dispatches a "encrypted" event to the HTMLMediaElement, with the
   // provided init data. Actual dispatch may be delayed until HAVE_METADATA.
   // Main thread only.
   virtual void DispatchEncrypted(const nsTArray<uint8_t>& aInitData,
-                                 const nsAString& aInitDataType) override { }
+                                 const nsAString& aInitDataType) override
+  {
+  }
 
   // Called by the media decoder to create audio/video tracks and add to its
   // owner's track list.
-  virtual void ConstructMediaTracks(const MediaInfo* aInfo) override { }
+  virtual void ConstructMediaTracks(const MediaInfo* aInfo) override {}
 
   // Called by the media decoder to removes all audio/video tracks from its
   // owner's track list.
-  virtual void RemoveMediaTracks() override { }
+  virtual void RemoveMediaTracks() override {}
 
   // Called by the media decoder to notify the owner to resolve a seek promise.
-  virtual void AsyncResolveSeekDOMPromiseIfExists() override { }
+  virtual void AsyncResolveSeekDOMPromiseIfExists() override {}
 
   // Called by the media decoder to notify the owner to reject a seek promise.
-  virtual void AsyncRejectSeekDOMPromiseIfExists() override { }
+  virtual void AsyncRejectSeekDOMPromiseIfExists() override {}
 
   // Notified by the decoder that a decryption key is required before emitting
   // further output.
@@ -168,7 +177,10 @@ public:
    * implementations so they can compile in Servo without modification.
    */
   // Return an abstract thread on which to run main thread runnables.
-  virtual AbstractThread* AbstractMainThread() const { return AbstractThread::MainThread(); }
+  virtual AbstractThread* AbstractMainThread() const
+  {
+    return AbstractThread::MainThread();
+  }
 
   // Get the HTMLMediaElement object if the decoder is being used from an
   // HTML media element, and null otherwise.
