@@ -191,7 +191,19 @@ add_library(gecko_core OBJECT
   gecko/src/dom/media/mediasink/AudioSinkWrapper.cpp
   gecko/src/dom/media/mediasink/DecodedStream.cpp
   gecko/src/dom/media/mediasink/OutputStreamManager.cpp
+  gecko/src/dom/media/mp3/MP3Decoder.cpp
+  gecko/src/dom/media/mp3/MP3Demuxer.cpp
+  gecko/src/dom/media/mp3/MP3FrameParser.cpp
   gecko/src/dom/media/ogg/OpusParser.cpp
+  gecko/src/dom/media/ogg/OpusParser.cpp
+  gecko/src/dom/media/ogg/OggDecoder.cpp
+  gecko/src/dom/media/ogg/OggDemuxer.cpp
+  gecko/src/dom/media/ogg/OggCodecState.cpp
+  gecko/src/dom/media/ogg/OggCodecStore.cpp
+  gecko/src/dom/media/flac/FlacDecoder.cpp
+  gecko/src/dom/media/flac/FlacDemuxer.cpp
+  gecko/src/dom/media/flac/FlacFrameParser.cpp
+  gecko/src/dom/media/XiphExtradata.cpp
   gecko/src/dom/media/platforms/agnostic/BlankDecoderModule.cpp
   gecko/src/dom/media/platforms/agnostic/DummyMediaDataDecoder.cpp
   gecko/src/dom/media/platforms/agnostic/NullDecoderModule.cpp
@@ -253,6 +265,7 @@ add_library(gecko_core OBJECT
   gecko/src/xpcom/threads/TaskQueue.cpp
   gecko/src/xpcom/threads/ThreadEventTarget.cpp
   gecko/src/xpcom/threads/TimerThread.cpp
+  gecko/src/nsprpub/lib/libc/src/strcase.c
   gecko/src/nsprpub/pr/src/io/priometh.c
   gecko/src/nsprpub/pr/src/io/prfdcach.c
   gecko/src/nsprpub/pr/src/io/prlayer.c
@@ -329,6 +342,7 @@ target_include_directories(gecko_core PRIVATE
     gecko/include/mozilla/double-conversion
     gecko/include/mozilla/media/libvorbis/include
     gecko/include/mozilla/media/libogg/include
+    gecko/include/mozilla/media/libtheora/include
     gecko/include/mozilla/media/libstagefright/
     gecko/include/mozilla/media/libstagefright/binding/include
     gecko/include/mozilla/media/libstagefright/frameworks/av/include
@@ -681,6 +695,81 @@ target_include_directories(vorbis PRIVATE
   gecko/include/mozilla/media/libogg/include/
 )
 
+############
+# libtheora
+############
+set(theora_srcs
+  gecko/src/media/libtheora/lib/apiwrapper.c
+  gecko/src/media/libtheora/lib/bitpack.c
+  gecko/src/media/libtheora/lib/decapiwrapper.c
+  gecko/src/media/libtheora/lib/decinfo.c
+  gecko/src/media/libtheora/lib/decode.c
+  gecko/src/media/libtheora/lib/dequant.c
+  gecko/src/media/libtheora/lib/fragment.c
+  gecko/src/media/libtheora/lib/huffdec.c
+  gecko/src/media/libtheora/lib/idct.c
+  gecko/src/media/libtheora/lib/info.c
+  gecko/src/media/libtheora/lib/internal.c
+  gecko/src/media/libtheora/lib/quant.c
+  gecko/src/media/libtheora/lib/state.c
+)
+
+add_library(theora OBJECT ${theora_srcs})
+
+target_compile_definitions(theora PRIVATE
+  THEORA_DISABLE_ENCODE=
+)
+
+if(X86 OR X86_64)
+  # TODO: add mmx x86_vc files for Windows target.
+  if (X86)
+    target_compile_definitions(theora PRIVATE
+      OC_X86_ASM=
+    )
+  endif()
+  if (X86_64)
+    target_compile_definitions(theora PRIVATE
+      OC_X86_64_ASM=
+    )
+  endif()
+
+  target_sources(theora PRIVATE
+    gecko/src/media/libtheora/lib/x86/x86state.c
+    gecko/src/media/libtheora/lib/x86/mmxfrag.c
+    gecko/src/media/libtheora/lib/x86/sse2idct.c
+    gecko/src/media/libtheora/lib/x86/x86cpu.c
+    gecko/src/media/libtheora/lib/x86/mmxstate.c
+    gecko/src/media/libtheora/lib/x86/mmxidct.c
+    )
+endif()
+
+if (ARM)
+  target_sources(theora PRIVATE
+    gecko/src/media/libtheora/lib/arm/armstate.c
+    gecko/src/media/libtheora/lib/arm/armcpu.c
+  )
+  target_compile_definitions(theora PRIVATE
+    OC_ARM_ASM=
+    OC_ARM_ASM_EDSP=
+    OC_ARM_ASM_MEDIA=
+    OC_ARM_ASM_NEON=
+    )
+  if (ANDROID)
+    target_compile_definitions(theora PRIVATE
+      __linux__=
+    )
+    # TODO: add arm*-gnu.s to target_sources.
+  endif()
+endif()
+
+target_include_directories(theora PRIVATE
+  gecko/include/mozilla/media/libvorbis/lib
+  gecko/include/mozilla/media/libvorbis/include
+  gecko/include/mozilla/media/libogg/include/
+  gecko/include/mozilla/media/libtheora/lib
+  gecko/include/mozilla/media/libtheora/lib/x86
+  gecko/include/mozilla/media/libtheora/include
+)
 
 
 
@@ -959,6 +1048,7 @@ target_include_directories(tests PRIVATE
     gecko/include/mozilla/double-conversion
     gecko/include/mozilla/media/libvorbis/include
     gecko/include/mozilla/media/libogg/include
+    gecko/include/mozilla/media/libtheora/include
     gecko/include/mozilla/media/libstagefright/
     gecko/include/mozilla/media/libstagefright/binding/include
     gecko/include/mozilla/media/libstagefright/frameworks/av/include
@@ -988,6 +1078,7 @@ add_library(gecko_media_cmake STATIC
   $<TARGET_OBJECTS:gecko_core>
   $<TARGET_OBJECTS:opus>
   $<TARGET_OBJECTS:vorbis>
+  $<TARGET_OBJECTS:theora>
   $<TARGET_OBJECTS:stagefright>
   $<TARGET_OBJECTS:soundtouch>
   $<TARGET_OBJECTS:speex_resampler>

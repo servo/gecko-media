@@ -8,7 +8,7 @@
 #include "OpusDecoder.h"
 // #include "TheoraDecoder.h"
 // #include "VPXDecoder.h"
-// #include "VorbisDecoder.h"
+#include "VorbisDecoder.h"
 #include "WAVDecoder.h"
 #include "mozilla/Logging.h"
 
@@ -29,7 +29,7 @@ AgnosticDecoderModule::SupportsMimeType(
     AOMDecoder::IsAV1(aMimeType) ||
 #endif
     OpusDataDecoder::IsOpus(aMimeType) ||
-    // VorbisDataDecoder::IsVorbis(aMimeType) ||
+    VorbisDataDecoder::IsVorbis(aMimeType) ||
     WaveDataDecoder::IsWave(aMimeType);//  ||
     // TheoraDecoder::IsTheora(aMimeType);
   MOZ_LOG(sPDMLog, LogLevel::Debug, ("Agnostic decoder %s requested type",
@@ -63,9 +63,9 @@ AgnosticDecoderModule::CreateAudioDecoder(const CreateDecoderParams& aParams)
   RefPtr<MediaDataDecoder> m;
 
   const TrackInfo& config = aParams.mConfig;
-  // if (VorbisDataDecoder::IsVorbis(config.mMimeType)) {
-  //   m = new VorbisDataDecoder(aParams);
-  // } else
+  if (VorbisDataDecoder::IsVorbis(config.mMimeType)) {
+    m = new VorbisDataDecoder(aParams);
+  } else
   if (OpusDataDecoder::IsOpus(config.mMimeType)) {
     m = new OpusDataDecoder(aParams);
   } else if (WaveDataDecoder::IsWave(config.mMimeType)) {

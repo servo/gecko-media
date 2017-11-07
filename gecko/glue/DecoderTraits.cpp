@@ -10,8 +10,8 @@
 #include "mozilla/Preferences.h"
 #include "mozilla/Telemetry.h"
 
-// #include "OggDecoder.h"
-// #include "OggDemuxer.h"
+#include "OggDecoder.h"
+#include "OggDemuxer.h"
 
 // #include "WebMDecoder.h"
 // #include "WebMDemuxer.h"
@@ -25,8 +25,8 @@
 #endif
 #include "MediaFormatReader.h"
 
-// #include "MP3Decoder.h"
-// #include "MP3Demuxer.h"
+#include "MP3Decoder.h"
+#include "MP3Demuxer.h"
 
 #include "WaveDecoder.h"
 #include "WaveDemuxer.h"
@@ -34,8 +34,8 @@
 // #include "ADTSDecoder.h"
 // #include "ADTSDemuxer.h"
 
-// #include "FlacDecoder.h"
-// #include "FlacDemuxer.h"
+#include "FlacDecoder.h"
+#include "FlacDemuxer.h"
 
 #include "nsPluginHost.h"
 #include "MediaPrefs.h"
@@ -78,14 +78,14 @@ CanHandleCodecsType(const MediaContainerType& aType,
   // Container type with the MIME type, no codecs.
   const MediaContainerType mimeType(aType.Type());
 
-//   if (OggDecoder::IsSupportedType(mimeType)) {
-//     if (OggDecoder::IsSupportedType(aType)) {
-//       return CANPLAY_YES;
-//     }
-//     // We can only reach this position if a particular codec was requested,
-//     // ogg is supported and working: the codec must be invalid.
-//     return CANPLAY_NO;
-//   }
+  if (OggDecoder::IsSupportedType(mimeType)) {
+    if (OggDecoder::IsSupportedType(aType)) {
+      return CANPLAY_YES;
+    }
+    // We can only reach this position if a particular codec was requested,
+    // ogg is supported and working: the codec must be invalid.
+    return CANPLAY_NO;
+  }
   if (WaveDecoder::IsSupportedType(MediaContainerType(mimeType))) {
     if (WaveDecoder::IsSupportedType(aType)) {
       return CANPLAY_YES;
@@ -115,15 +115,15 @@ CanHandleCodecsType(const MediaContainerType& aType,
     return CANPLAY_NO;
   }
 #endif
-//   if (MP3Decoder::IsSupportedType(aType)) {
-//     return CANPLAY_YES;
-//   }
+  if (MP3Decoder::IsSupportedType(aType)) {
+    return CANPLAY_YES;
+  }
 //   if (ADTSDecoder::IsSupportedType(aType)) {
 //     return CANPLAY_YES;
 //   }
-//   if (FlacDecoder::IsSupportedType(aType)) {
-//     return CANPLAY_YES;
-//   }
+  if (FlacDecoder::IsSupportedType(aType)) {
+    return CANPLAY_YES;
+  }
 
   return CANPLAY_MAYBE;
 }
@@ -155,9 +155,9 @@ CanHandleMediaType(const MediaContainerType& aType,
   // Container type with just the MIME type/subtype, no codecs.
   const MediaContainerType mimeType(aType.Type());
 
-//   if (OggDecoder::IsSupportedType(mimeType)) {
-//     return CANPLAY_MAYBE;
-//   }
+  if (OggDecoder::IsSupportedType(mimeType)) {
+    return CANPLAY_MAYBE;
+  }
   if (WaveDecoder::IsSupportedType(mimeType)) {
     return CANPLAY_MAYBE;
   }
@@ -171,15 +171,15 @@ CanHandleMediaType(const MediaContainerType& aType,
 //     return CANPLAY_MAYBE;
 //   }
 // #endif
-//   if (MP3Decoder::IsSupportedType(mimeType)) {
-//     return CANPLAY_MAYBE;
-//   }
+  if (MP3Decoder::IsSupportedType(mimeType)) {
+    return CANPLAY_MAYBE;
+  }
 //   if (ADTSDecoder::IsSupportedType(mimeType)) {
 //     return CANPLAY_MAYBE;
 //   }
-//   if (FlacDecoder::IsSupportedType(mimeType)) {
-//     return CANPLAY_MAYBE;
-//   }
+  if (FlacDecoder::IsSupportedType(mimeType)) {
+    return CANPLAY_MAYBE;
+  }
   return CANPLAY_NO;
 }
 
@@ -238,24 +238,24 @@ DecoderTraits::CreateReader(const MediaContainerType& aType,
     decoderReader = new MediaFormatReader(aInit, new MP4Demuxer(resource));
   } else
 #endif
-//   if (MP3Decoder::IsSupportedType(aType)) {
-//     decoderReader = new MediaFormatReader(aInit, new MP3Demuxer(resource));
-//   } else
+  if (MP3Decoder::IsSupportedType(aType)) {
+    decoderReader = new MediaFormatReader(aInit, new MP3Demuxer(resource));
+  } else
 //   if (ADTSDecoder::IsSupportedType(aType)) {
 //     decoderReader = new MediaFormatReader(aInit, new ADTSDemuxer(resource));
 //   } else
   if (WaveDecoder::IsSupportedType(aType)) {
     decoderReader = new MediaFormatReader(aInit, new WAVDemuxer(resource));
+  } else
+  if (FlacDecoder::IsSupportedType(aType)) {
+    decoderReader = new MediaFormatReader(aInit, new FlacDemuxer(resource));
+  } else
+  if (OggDecoder::IsSupportedType(aType)) {
+    RefPtr<OggDemuxer> demuxer = new OggDemuxer(resource);
+    decoderReader = new MediaFormatReader(aInit, demuxer);
+    demuxer->SetChainingEvents(&decoderReader->TimedMetadataProducer(),
+                               &decoderReader->MediaNotSeekableProducer());
   }
-//   } else
-//   if (FlacDecoder::IsSupportedType(aType)) {
-//     decoderReader = new MediaFormatReader(aInit, new FlacDemuxer(resource));
-//   } else
-//   if (OggDecoder::IsSupportedType(aType)) {
-//     RefPtr<OggDemuxer> demuxer = new OggDemuxer(resource);
-//     decoderReader = new MediaFormatReader(aInit, demuxer);
-//     demuxer->SetChainingEvents(&decoderReader->TimedMetadataProducer(),
-//                                &decoderReader->MediaNotSeekableProducer());
 //   } else
 //   if (WebMDecoder::IsSupportedType(aType)) {
 //     decoderReader = new MediaFormatReader(aInit, new WebMDemuxer(resource));
@@ -271,12 +271,12 @@ DecoderTraits::IsSupportedType(const MediaContainerType& aType)
   typedef bool (*IsSupportedFunction)(const MediaContainerType& aType);
   static const IsSupportedFunction funcs[] = {
 //     &ADTSDecoder::IsSupportedType,
-//     &FlacDecoder::IsSupportedType,
-//     &MP3Decoder::IsSupportedType,
+    &FlacDecoder::IsSupportedType,
+    &MP3Decoder::IsSupportedType,
 #ifdef MOZ_FMP4
     &MP4Decoder::IsSupportedTypeWithoutDiagnostics,
 #endif
-//     &OggDecoder::IsSupportedType,
+    &OggDecoder::IsSupportedType,
     &WaveDecoder::IsSupportedType,
 //     &WebMDecoder::IsSupportedType,
   };
@@ -305,14 +305,14 @@ bool DecoderTraits::IsSupportedInVideoDocument(const nsACString& aType)
   }
 
   return
-//     OggDecoder::IsSupportedType(*type) ||
+    OggDecoder::IsSupportedType(*type) ||
 //     WebMDecoder::IsSupportedType(*type) ||
 #ifdef MOZ_FMP4
     MP4Decoder::IsSupportedType(*type, /* DecoderDoctorDiagnostics* */ nullptr) ||
 #endif
 //     MP3Decoder::IsSupportedType(*type) ||
 //     ADTSDecoder::IsSupportedType(*type) ||
-//     FlacDecoder::IsSupportedType(*type) ||
+    FlacDecoder::IsSupportedType(*type) ||
 // #ifdef MOZ_ANDROID_HLS_SUPPORT
 //     HLSDecoder::IsSupportedType(*type) ||
 // #endif
