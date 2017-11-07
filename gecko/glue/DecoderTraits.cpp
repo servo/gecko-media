@@ -10,8 +10,8 @@
 #include "mozilla/Preferences.h"
 #include "mozilla/Telemetry.h"
 
-// #include "OggDecoder.h"
-// #include "OggDemuxer.h"
+#include "OggDecoder.h"
+#include "OggDemuxer.h"
 
 // #include "WebMDecoder.h"
 // #include "WebMDemuxer.h"
@@ -78,14 +78,14 @@ CanHandleCodecsType(const MediaContainerType& aType,
   // Container type with the MIME type, no codecs.
   const MediaContainerType mimeType(aType.Type());
 
-//   if (OggDecoder::IsSupportedType(mimeType)) {
-//     if (OggDecoder::IsSupportedType(aType)) {
-//       return CANPLAY_YES;
-//     }
-//     // We can only reach this position if a particular codec was requested,
-//     // ogg is supported and working: the codec must be invalid.
-//     return CANPLAY_NO;
-//   }
+  if (OggDecoder::IsSupportedType(mimeType)) {
+    if (OggDecoder::IsSupportedType(aType)) {
+      return CANPLAY_YES;
+    }
+    // We can only reach this position if a particular codec was requested,
+    // ogg is supported and working: the codec must be invalid.
+    return CANPLAY_NO;
+  }
   if (WaveDecoder::IsSupportedType(MediaContainerType(mimeType))) {
     if (WaveDecoder::IsSupportedType(aType)) {
       return CANPLAY_YES;
@@ -155,9 +155,9 @@ CanHandleMediaType(const MediaContainerType& aType,
   // Container type with just the MIME type/subtype, no codecs.
   const MediaContainerType mimeType(aType.Type());
 
-//   if (OggDecoder::IsSupportedType(mimeType)) {
-//     return CANPLAY_MAYBE;
-//   }
+  if (OggDecoder::IsSupportedType(mimeType)) {
+    return CANPLAY_MAYBE;
+  }
   if (WaveDecoder::IsSupportedType(mimeType)) {
     return CANPLAY_MAYBE;
   }
@@ -251,11 +251,12 @@ DecoderTraits::CreateReader(const MediaContainerType& aType,
 //   if (FlacDecoder::IsSupportedType(aType)) {
 //     decoderReader = new MediaFormatReader(aInit, new FlacDemuxer(resource));
 //   } else
-//   if (OggDecoder::IsSupportedType(aType)) {
-//     RefPtr<OggDemuxer> demuxer = new OggDemuxer(resource);
-//     decoderReader = new MediaFormatReader(aInit, demuxer);
-//     demuxer->SetChainingEvents(&decoderReader->TimedMetadataProducer(),
-//                                &decoderReader->MediaNotSeekableProducer());
+  if (OggDecoder::IsSupportedType(aType)) {
+    RefPtr<OggDemuxer> demuxer = new OggDemuxer(resource);
+    decoderReader = new MediaFormatReader(aInit, demuxer);
+    demuxer->SetChainingEvents(&decoderReader->TimedMetadataProducer(),
+                               &decoderReader->MediaNotSeekableProducer());
+  }
 //   } else
 //   if (WebMDecoder::IsSupportedType(aType)) {
 //     decoderReader = new MediaFormatReader(aInit, new WebMDemuxer(resource));
@@ -276,7 +277,7 @@ DecoderTraits::IsSupportedType(const MediaContainerType& aType)
 #ifdef MOZ_FMP4
     &MP4Decoder::IsSupportedTypeWithoutDiagnostics,
 #endif
-//     &OggDecoder::IsSupportedType,
+    &OggDecoder::IsSupportedType,
     &WaveDecoder::IsSupportedType,
 //     &WebMDecoder::IsSupportedType,
   };
@@ -305,7 +306,7 @@ bool DecoderTraits::IsSupportedInVideoDocument(const nsACString& aType)
   }
 
   return
-//     OggDecoder::IsSupportedType(*type) ||
+    OggDecoder::IsSupportedType(*type) ||
 //     WebMDecoder::IsSupportedType(*type) ||
 #ifdef MOZ_FMP4
     MP4Decoder::IsSupportedType(*type, /* DecoderDoctorDiagnostics* */ nullptr) ||
