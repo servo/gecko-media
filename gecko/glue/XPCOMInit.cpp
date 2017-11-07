@@ -13,6 +13,7 @@
 #include "nsThreadPool.h"
 #include "nsTimerImpl.h"
 #include "nsXPCOMCIDInternal.h"
+#include "AsyncShutdown.h"
 
 #include "mozilla/ClearOnShutdown.h"
 #include "mozilla/Module.h"

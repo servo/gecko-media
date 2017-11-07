@@ -128,6 +128,7 @@ target_include_directories(ogg PRIVATE gecko/include/mozilla/media/libogg/includ
 ############
 
 add_library(gecko_core OBJECT
+  gecko/glue/AsyncShutdown.cpp
   gecko/glue/AbstractThread.cpp
   gecko/glue/AgnosticDecoderModule.cpp
   gecko/glue/Benchmark.cpp

@@ -11,6 +11,7 @@
 #include "nsObserverService.h"
 #include "nsIStringBundle.h"
 #include "nsStringBundleService.h"
+#include "AsyncShutdown.h"
 #include "nsXPCOMPrivate.h"
 
 #ifndef GECKO_MEDIA_CRATE
