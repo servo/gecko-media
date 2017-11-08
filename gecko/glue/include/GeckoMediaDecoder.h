@@ -50,7 +50,7 @@ private:
   bool CanPlayThroughImpl() override;
   bool IsLiveStream() override final { return !mEnded; }
 
-  bool mEnded;
+  bool mEnded = false;
   bool mOwnerPaused = false;
 };
 

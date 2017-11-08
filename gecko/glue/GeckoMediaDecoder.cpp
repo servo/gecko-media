@@ -34,7 +34,6 @@ namespace mozilla {
 
 GeckoMediaDecoder::GeckoMediaDecoder(MediaDecoderInit& aInit)
   : MediaDecoder(aInit)
-  , mEnded(false)
 {
   mExplicitDuration.emplace(UnspecifiedNaN<double>());
 }
