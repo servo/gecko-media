@@ -52,9 +52,9 @@ GeckoMedia_QueueRustRunnable(RustRunnable aRunnable);
 
 struct RustVecU8Object
 {
-  const uint8_t* mData;
+  uint8_t* mData;
   size_t mLength;
-  void (*mFree)(const uint8_t* mData, size_t aLength);
+  void (*mFree)(uint8_t* mData, size_t aLength);
 };
 
 struct PlayerCallbackObject

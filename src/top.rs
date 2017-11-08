@@ -8,6 +8,7 @@ use std::ffi::CString;
 use std::mem;
 use std::ops::Drop;
 use std::os::raw::c_void;
+use std::slice;
 use std::sync::Mutex;
 use std::sync::atomic::{AtomicUsize, Ordering, ATOMIC_USIZE_INIT};
 use std::sync::mpsc::{self, Sender};
@@ -243,13 +244,16 @@ fn thread_observer_object(sender: Sender<GeckoMediaMsg>) -> ThreadObserverObject
     }
 }
 
-fn to_ffi_vec(v: Vec<u8>) -> RustVecU8Object {
-    unsafe extern "C" fn free(ptr: *const u8, len: usize) {
-        drop(Vec::from_raw_parts(ptr as *mut u8, len, len));
+fn to_ffi_vec(bytes: Vec<u8>) -> RustVecU8Object {
+    unsafe extern "C" fn free(ptr: *mut u8, len: usize) {
+        let ptr = slice::from_raw_parts_mut(ptr, len) as *mut [u8];
+        drop(Box::from_raw(ptr));
     }
-    let data = v.as_ptr();
-    let len = v.len();
-    mem::forget(v);
+    let mut bytes = bytes.into_boxed_slice();
+    let data = bytes.as_mut_ptr();
+    let len = bytes.len();
+    mem::forget(bytes);
+
     RustVecU8Object {
         mData: data,
         mLength: len,
