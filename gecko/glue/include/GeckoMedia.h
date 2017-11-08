@@ -82,4 +82,7 @@ GeckoMedia_Player_Pause(size_t aId);
 void
 GeckoMedia_Player_Shutdown(size_t aId);
 
+void
+GeckoMedia_Player_SetVolume(size_t aId, double volume);
+
 #endif // GeckoMedia_h_

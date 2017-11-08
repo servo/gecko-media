@@ -55,6 +55,11 @@ impl Player {
             GeckoMedia_Player_Shutdown(self.id);
         });
     }
+    pub fn set_volume(&self, volume: f64) {
+        self.gecko_media.queue_task(move || unsafe {
+            GeckoMedia_Player_SetVolume(self.id, volume);
+        });
+    }
 }
 
 impl GeckoMedia {

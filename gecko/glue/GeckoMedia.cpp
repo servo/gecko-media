@@ -277,3 +277,13 @@ GeckoMedia_Player_Shutdown(size_t aId)
     }
   }
 }
+
+void
+GeckoMedia_Player_SetVolume(size_t aId, double volume)
+{
+  Player* player = GetPlayer(aId);
+  if (!player) {
+    return;
+  }
+  player->mDecoder->SetVolume(volume);
+}
