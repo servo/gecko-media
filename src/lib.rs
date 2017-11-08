@@ -68,6 +68,10 @@ mod tests {
                 Ended,
                 AsyncEvent(CString),
                 MetadataLoaded,
+                LoadedData,
+                TimeUpdate(f64),
+                SeekStarted,
+                SeekComplete,
             }
             let (sender, receiver) = mpsc::channel();
             struct Sink {
@@ -85,6 +89,18 @@ mod tests {
                 }
                 fn metadata_loaded(&self) {
                     self.sender.send(Status::MetadataLoaded).unwrap();
+                }
+                fn loaded_data(&self) {
+                    self.sender.send(Status::LoadedData).unwrap();
+                }
+                fn time_update(&self, time: f64) {
+                    self.sender.send(Status::TimeUpdate(time)).unwrap();
+                }
+                fn seek_started(&self) {
+                    self.sender.send(Status::SeekStarted).unwrap();
+                }
+                fn seek_completed(&self) {
+                    self.sender.send(Status::SeekComplete).unwrap();
                 }
             }
             let sink = Box::new(Sink { sender: sender });

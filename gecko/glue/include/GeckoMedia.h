@@ -64,6 +64,10 @@ struct PlayerCallbackObject
   void (*mDecodeError)(void*);
   void (*mAsyncEvent)(void*, const int8_t*);
   void (*mMetadataLoaded)(void*);
+  void (*mLoadedData)(void*);
+  void (*mSeekStarted)(void*);
+  void (*mSeekCompleted)(void*);
+  void (*mTimeUpdate)(void*, double);
   void (*mFree)(void*);
 };
 

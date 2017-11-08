@@ -29,6 +29,10 @@ pub trait PlayerEventSink {
     fn decode_error(&self);
     fn async_event(&self, name: &str);
     fn metadata_loaded(&self);
+    fn loaded_data(&self);
+    fn time_update(&self, time: f64);
+    fn seek_started(&self);
+    fn seek_completed(&self);
 }
 
 impl Player {
@@ -175,12 +179,32 @@ impl GeckoMedia {
             let wrapper = &*(ptr as *mut Wrapper);
             wrapper.sink.metadata_loaded();
         }
+        unsafe extern "C" fn loaded_data(ptr: *mut c_void) {
+            let wrapper = &*(ptr as *mut Wrapper);
+            wrapper.sink.loaded_data();
+        }
+        unsafe extern "C" fn seek_started(ptr: *mut c_void) {
+            let wrapper = &*(ptr as *mut Wrapper);
+            wrapper.sink.seek_started();
+        }
+        unsafe extern "C" fn seek_completed(ptr: *mut c_void) {
+            let wrapper = &*(ptr as *mut Wrapper);
+            wrapper.sink.seek_completed();
+        }
+        unsafe extern "C" fn time_update(ptr: *mut c_void, time: f64) {
+            let wrapper = &*(ptr as *mut Wrapper);
+            wrapper.sink.time_update(time);
+        }
         PlayerCallbackObject {
             mContext: Box::into_raw(Box::new(Wrapper { sink: sink })) as *mut c_void,
             mPlaybackEnded: Some(playback_ended),
             mDecodeError: Some(decode_error),
             mAsyncEvent: Some(async_event),
             mMetadataLoaded: Some(metadata_loaded),
+            mLoadedData: Some(loaded_data),
+            mSeekStarted: Some(seek_started),
+            mSeekCompleted: Some(seek_completed),
+            mTimeUpdate: Some(time_update),
             mFree: Some(free),
         }
     }

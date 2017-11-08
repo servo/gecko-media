@@ -45,6 +45,10 @@ GeckoMediaDecoderOwner::UpdateReadyState()
 void
 GeckoMediaDecoderOwner::FireTimeUpdate(bool aPeriodic)
 {
+  if (mCallback.mContext && mCallback.mTimeUpdate) {
+    double time = mDecoder->GetCurrentTime();
+    (*mCallback.mTimeUpdate)(mCallback.mContext, time);
+  }
 }
 
 bool
@@ -66,6 +70,9 @@ GeckoMediaDecoderOwner::MetadataLoaded(const MediaInfo* aInfo,
 void
 GeckoMediaDecoderOwner::FirstFrameLoaded()
 {
+  if (mCallback.mContext && mCallback.mLoadedData) {
+    (*mCallback.mLoadedData)(mCallback.mContext);
+  }
 }
 
 void
@@ -109,11 +116,17 @@ GeckoMediaDecoderOwner::PlaybackEnded()
 void
 GeckoMediaDecoderOwner::SeekStarted()
 {
+  if (mCallback.mContext && mCallback.mSeekStarted) {
+    (*mCallback.mSeekStarted)(mCallback.mContext);
+  }
 }
 
 void
 GeckoMediaDecoderOwner::SeekCompleted()
 {
+  if (mCallback.mContext && mCallback.mSeekCompleted) {
+    (*mCallback.mSeekCompleted)(mCallback.mContext);
+  }
 }
 
 void

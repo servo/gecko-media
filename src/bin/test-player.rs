@@ -41,14 +41,22 @@ fn main() {
             fn playback_ended(&self) {
                 self.sender.send(Status::Ended).unwrap();
             }
-            fn async_event(&self, name: &str) {
-                self.sender.send(Status::AsyncEvent(CString::new(name).unwrap())).unwrap();
-            }
             fn decode_error(&self) {
                 self.sender.send(Status::Error).unwrap();
             }
+            fn async_event(&self, name: &str) {
+                self.sender.send(Status::AsyncEvent(CString::new(name).unwrap())).unwrap();
+            }
             fn metadata_loaded(&self) {
                 self.sender.send(Status::MetadataLoaded).unwrap();
+            }
+            fn loaded_data(&self) {
+            }
+            fn time_update(&self, _time: f64) {
+            }
+            fn seek_started(&self) {
+            }
+            fn seek_completed(&self) {
             }
         }
         let sink = Box::new(Sink { sender: sender });
