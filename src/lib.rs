@@ -40,6 +40,15 @@ mod tests {
     fn test_can_play_type() {
         let gecko_media = GeckoMedia::get().unwrap();
         assert_eq!(gecko_media.can_play_type("bogus/bogus"), CanPlayType::No);
+        assert_eq!(gecko_media.can_play_type("audio/mp4; codecs=\"bogus\""), CanPlayType::No);
+        assert_eq!(gecko_media.can_play_type("audio/wav"), CanPlayType::Maybe);
+        assert_eq!(gecko_media.can_play_type("audio/mp3"), CanPlayType::Maybe);
+        assert_eq!(gecko_media.can_play_type("audio/mp4"), CanPlayType::Maybe);
+        assert_eq!(gecko_media.can_play_type("audio/flac"), CanPlayType::Maybe);
+        assert_eq!(gecko_media.can_play_type("audio/ogg"), CanPlayType::Maybe);
+        assert_eq!(gecko_media.can_play_type("audio/ogg; codecs=\"vorbis\""), CanPlayType::Probably);
+        assert_eq!(gecko_media.can_play_type("video/mp4"), CanPlayType::Maybe);
+
     }
 
     #[test]

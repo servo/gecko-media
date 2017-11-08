@@ -7,6 +7,7 @@
 #include "GeckoMedia.h"
 
 #include "AsyncShutdown.h"
+#include "DecoderTraits.h"
 #include "GeckoMediaDecoder.h"
 #include "GeckoMediaDecoderOwner.h"
 #include "MediaContainerType.h"
@@ -128,7 +129,20 @@ GeckoMedia_Shutdown()
 CanPlayTypeResult
 GeckoMedia_CanPlayType(const char* aMimeType)
 {
-  return CanPlayTypeResult::No;
+  auto containerType = MakeMediaContainerType(aMimeType);
+  if (containerType.isNothing()) {
+    return CanPlayTypeResult::No;
+  }
+
+  auto canPlay = DecoderTraits::CanHandleContainerType(containerType.value(), nullptr);
+  CanPlayTypeResult result = CanPlayTypeResult::No;
+
+  if (canPlay == CANPLAY_MAYBE) {
+    result = CanPlayTypeResult::Maybe;
+  } else if (canPlay == CANPLAY_YES) {
+    result = CanPlayTypeResult::Probably;
+  }
+  return result;
 }
 
 void
