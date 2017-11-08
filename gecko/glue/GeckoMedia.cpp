@@ -7,14 +7,21 @@
 #include "GeckoMedia.h"
 
 #include "AsyncShutdown.h"
+#include "GeckoMediaDecoder.h"
+#include "GeckoMediaDecoderOwner.h"
+#include "MediaContainerType.h"
 #include "MediaPrefs.h"
+#include "UniquePtr.h"
 #include "mozilla/Logging.h"
 #include "mozilla/Preferences.h"
 #include "mozilla/Services.h"
 #include "mozilla/SharedThreadPool.h"
 #include "nsIObserverService.h"
+#include "nsTArray.h"
 #include "nsThreadManager.h"
 #include "nsThreadUtils.h"
+
+using namespace mozilla;
 
 class IndirectThreadObserver final : public nsIThreadObserver
 {
@@ -140,4 +147,119 @@ GeckoMedia_QueueRustRunnable(RustRunnable aRunnable)
     });
   auto rv = NS_DispatchToMainThread(task.forget());
   MOZ_ASSERT(NS_SUCCEEDED(rv));
+}
+
+class RustVecU8BufferMediaResource : public BufferMediaResource
+{
+public:
+  RustVecU8BufferMediaResource(RustVecU8Object aVec)
+    : BufferMediaResource(aVec.mData, aVec.mLength)
+    , mRustVecU8(aVec)
+  {
+  }
+
+private:
+  ~RustVecU8BufferMediaResource()
+  {
+    (*mRustVecU8.mFree)(mRustVecU8.mData, mRustVecU8.mLength);
+  }
+  RustVecU8Object mRustVecU8;
+};
+
+struct Player
+{
+  Player(size_t aId, PlayerCallbackObject aCallback)
+    : mDecoderOwner(MakeUnique<GeckoMediaDecoderOwner>(aCallback))
+    , mId(aId)
+  {
+  }
+  RefPtr<GeckoMediaDecoder> mDecoder;
+  UniquePtr<GeckoMediaDecoderOwner> mDecoderOwner;
+  const size_t mId;
+};
+
+static nsTArray<Player> sPlayers;
+
+static Player*
+GetPlayer(size_t aId)
+{
+  for (Player& player : sPlayers) {
+    if (player.mId == aId) {
+      return &player;
+    }
+  }
+  return nullptr;
+}
+
+void
+GeckoMedia_Player_Create(size_t aId, PlayerCallbackObject aCallback)
+{
+  Player* player = sPlayers.AppendElement(Player(aId, aCallback));
+  MOZ_ASSERT(GetPlayer(aId) == player);
+}
+
+void
+GeckoMedia_Player_LoadBlob(size_t aId,
+                           RustVecU8Object aMediaData,
+                           const char* aMimeType)
+{
+  mozilla::Maybe<MediaContainerType> mime = MakeMediaContainerType(aMimeType);
+  if (!mime) {
+    return;
+  }
+
+  Player* player = GetPlayer(aId);
+  if (!player) {
+    return;
+  }
+
+  MediaDecoderInit decoderInit(player->mDecoderOwner.get(),
+                               0.001, // volume
+                               true,  // mPreservesPitch
+                               1.0,   // mPlaybackRate
+                               false, // mMinimizePreroll
+                               false, // mHasSuspendTaint
+                               false, // mLooping
+                               mime.value());
+  player->mDecoder = new GeckoMediaDecoder(decoderInit);
+
+  RefPtr<BufferMediaResource> resource =
+    new RustVecU8BufferMediaResource(aMediaData);
+  player->mDecoder->Load(resource);
+}
+
+void
+GeckoMedia_Player_Play(size_t aId)
+{
+  Player* player = GetPlayer(aId);
+  if (!player) {
+    return;
+  }
+  player->mDecoder->Play();
+}
+
+void
+GeckoMedia_Player_Pause(size_t aId)
+{
+  Player* player = GetPlayer(aId);
+  if (!player) {
+    return;
+  }
+  player->mDecoder->Pause();
+}
+
+void
+GeckoMedia_Player_Shutdown(size_t aId)
+{
+  Player* player = GetPlayer(aId);
+  if (!player) {
+    return;
+  }
+  player->mDecoder->Shutdown();
+  for (size_t i = 0; i < sPlayers.Length(); i++) {
+    if (player[i].mId == aId) {
+      sPlayers.RemoveElementAt(i);
+      break;
+    }
+  }
 }
