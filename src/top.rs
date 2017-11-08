@@ -4,6 +4,7 @@
 
 use CanPlayType;
 use bindings::*;
+use std::ffi::CStr;
 use std::ffi::CString;
 use std::mem;
 use std::ops::Drop;
@@ -26,6 +27,8 @@ pub struct Player {
 pub trait PlayerEventSink {
     fn playback_ended(&self);
     fn decode_error(&self);
+    fn async_event(&self, name: &str);
+    fn metadata_loaded(&self);
 }
 
 impl Player {
@@ -59,6 +62,9 @@ impl Player {
         self.gecko_media.queue_task(move || unsafe {
             GeckoMedia_Player_SetVolume(self.id, volume);
         });
+    }
+    pub fn get_duration(&self) -> f64 {
+        self.gecko_media.get_duration(self.id)
     }
 }
 
@@ -99,6 +105,14 @@ impl GeckoMedia {
         } else {
             CanPlayType::No
         }
+    }
+
+    pub fn get_duration(&self, player_id: usize) -> f64 {
+        let (sender, receiver) = mpsc::channel();
+        self.sender
+            .send(GeckoMediaMsg::DurationQuery(player_id, sender))
+            .unwrap();
+        receiver.recv().unwrap()
     }
 
     pub fn queue_task<F>(&self, f: F)
@@ -152,10 +166,21 @@ impl GeckoMedia {
             let wrapper = &*(ptr as *mut Wrapper);
             wrapper.sink.playback_ended();
         }
+        unsafe extern "C" fn async_event(ptr: *mut c_void, name: *const i8) {
+            let wrapper = &*(ptr as *mut Wrapper);
+            let c_str: &CStr = CStr::from_ptr(name);
+            wrapper.sink.async_event(c_str.to_str().unwrap());
+        }
+        unsafe extern "C" fn metadata_loaded(ptr: *mut c_void) {
+            let wrapper = &*(ptr as *mut Wrapper);
+            wrapper.sink.metadata_loaded();
+        }
         PlayerCallbackObject {
             mContext: Box::into_raw(Box::new(Wrapper { sink: sink })) as *mut c_void,
             mPlaybackEnded: Some(playback_ended),
             mDecodeError: Some(decode_error),
+            mAsyncEvent: Some(async_event),
+            mMetadataLoaded: Some(metadata_loaded),
             mFree: Some(free),
         }
     }
@@ -178,6 +203,7 @@ enum GeckoMediaMsg {
     #[cfg(test)]
     Test,
     CallProcessGeckoEvents,
+    DurationQuery(usize, Sender<f64>),
 }
 
 static OUTSTANDING_HANDLES: AtomicUsize = ATOMIC_USIZE_INIT;
@@ -213,6 +239,11 @@ lazy_static! {
                         // event queue.
                         unsafe {
                             GeckoMedia_ProcessEvents();
+                        }
+                    },
+                    GeckoMediaMsg::DurationQuery(player_id, sender) => {
+                        unsafe {
+                            sender.send(GeckoMedia_Player_GetDuration(player_id)).unwrap();
                         }
                     },
                     #[cfg(test)]

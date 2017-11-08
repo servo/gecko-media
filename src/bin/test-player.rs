@@ -6,6 +6,7 @@ extern crate gecko_media;
 
 use gecko_media::{GeckoMedia, PlayerEventSink};
 use std::env;
+use std::ffi::CString;
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
@@ -29,6 +30,8 @@ fn main() {
         enum Status {
             Error,
             Ended,
+            AsyncEvent(CString),
+            MetadataLoaded,
         }
         let (sender, receiver) = mpsc::channel();
         struct Sink {
@@ -38,8 +41,14 @@ fn main() {
             fn playback_ended(&self) {
                 self.sender.send(Status::Ended).unwrap();
             }
+            fn async_event(&self, name: &str) {
+                self.sender.send(Status::AsyncEvent(CString::new(name).unwrap())).unwrap();
+            }
             fn decode_error(&self) {
                 self.sender.send(Status::Error).unwrap();
+            }
+            fn metadata_loaded(&self) {
+                self.sender.send(Status::MetadataLoaded).unwrap();
             }
         }
         let sink = Box::new(Sink { sender: sender });
@@ -65,6 +74,17 @@ fn main() {
             let ok = match receiver.recv().unwrap() {
                 Status::Ended => true,
                 Status::Error => false,
+                Status::AsyncEvent(name) => {
+                    println!("Event received: {:?}", name);
+                    // if name. == "durationchange" {
+                    //     println!("Duration: {:?}", player.get_duration());
+                    // }
+                    true
+                },
+                Status::MetadataLoaded => {
+                    println!("duration: {:?}", player.get_duration());
+                    true
+                }
             };
             assert!(ok);
         } else {

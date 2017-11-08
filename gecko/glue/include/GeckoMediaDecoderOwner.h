@@ -10,6 +10,7 @@
 #include "MediaDecoderOwner.h"
 #include "MediaInfo.h"
 #include "mozilla/UniquePtr.h"
+#include "nsAString.h"
 
 namespace mozilla {
 
@@ -47,6 +48,11 @@ public:
   // Dispatch an asynchronous event to the decoder owner
   virtual nsresult DispatchAsyncEvent(const nsAString& aName) override
   {
+    nsAutoCString dst;
+    CopyUTF16toUTF8(aName, dst);
+    if (mCallback.mContext && mCallback.mAsyncEvent) {
+      (*mCallback.mAsyncEvent)(mCallback.mContext, (const int8_t*) dst.get());
+    }
     return NS_OK;
   };
 
@@ -71,6 +77,10 @@ public:
   virtual void MetadataLoaded(const MediaInfo* aInfo,
                               UniquePtr<const MetadataTags> aTags) override
   {
+    // FIXME: serialize aInfo and aTags somehow to callback.
+    if (mCallback.mContext && mCallback.mMetadataLoaded) {
+      (*mCallback.mMetadataLoaded)(mCallback.mContext);
+    }
   }
 
   // Called by the decoder object, on the main thread,

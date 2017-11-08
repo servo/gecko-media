@@ -62,6 +62,8 @@ struct PlayerCallbackObject
   void* mContext;
   void (*mPlaybackEnded)(void*);
   void (*mDecodeError)(void*);
+  void (*mAsyncEvent)(void*, const int8_t*);
+  void (*mMetadataLoaded)(void*);
   void (*mFree)(void*);
 };
 
@@ -84,5 +86,8 @@ GeckoMedia_Player_Shutdown(size_t aId);
 
 void
 GeckoMedia_Player_SetVolume(size_t aId, double volume);
+
+double
+GeckoMedia_Player_GetDuration(size_t aId);
 
 #endif // GeckoMedia_h_
