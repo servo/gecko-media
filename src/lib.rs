@@ -109,6 +109,28 @@ mod tests {
         (player, receiver)
     }
 
+    fn test_basic_playback()
+    {
+        let (player, receiver) = create_test_player("gecko/test/audiotest.wav", "audio/wav");
+        player.play();
+        let ok;
+        loop {
+            match receiver.recv().unwrap() {
+                Status::Ended => {
+                    ok = true;
+                    break;
+                }
+                Status::Error => {
+                    ok = false;
+                    break;
+                }
+                _ => {}
+            };
+        }
+        assert!(ok);
+        player.shutdown();
+    }
+
     #[test]
     fn run_tests() {
         GeckoMedia::get().unwrap();
@@ -119,28 +141,7 @@ mod tests {
             move || sender.send(()).unwrap(),
         );
         receiver.recv().unwrap();
-
-        {
-            let (player, receiver) = create_test_player("gecko/test/audiotest.wav", "audio/wav");
-            player.play();
-            let ok;
-            loop {
-                match receiver.recv().unwrap() {
-                    Status::Ended => {
-                        ok = true;
-                        break;
-                    }
-                    Status::Error => {
-                        ok = false;
-                        break;
-                    }
-                    _ => {}
-                };
-            }
-            assert!(ok);
-            player.shutdown();
-        }
-
+        test_basic_playback();
         GeckoMedia::shutdown().unwrap();
     }
 }
