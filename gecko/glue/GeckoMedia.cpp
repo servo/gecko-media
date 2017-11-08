@@ -6,15 +6,15 @@
 
 #include "GeckoMedia.h"
 
+#include "AsyncShutdown.h"
 #include "MediaPrefs.h"
 #include "mozilla/Logging.h"
 #include "mozilla/Preferences.h"
+#include "mozilla/Services.h"
 #include "mozilla/SharedThreadPool.h"
+#include "nsIObserverService.h"
 #include "nsThreadManager.h"
 #include "nsThreadUtils.h"
-#include "nsIObserverService.h"
-#include "mozilla/Services.h"
-#include "AsyncShutdown.h"
 
 class IndirectThreadObserver final : public nsIThreadObserver
 {
@@ -22,7 +22,10 @@ public:
   NS_DECL_THREADSAFE_ISUPPORTS
 
   IndirectThreadObserver(ThreadObserverObject aObject)
-      : nsIThreadObserver(), mObject(aObject) {}
+    : nsIThreadObserver()
+    , mObject(aObject)
+  {
+  }
 
   NS_IMETHOD OnDispatchedEvent(void) override
   {
@@ -43,10 +46,7 @@ public:
 private:
   ThreadObserverObject mObject;
 
-  ~IndirectThreadObserver()
-  {
-    (mObject.mVtable->mFree)(mObject.mData);
-  }
+  ~IndirectThreadObserver() { (mObject.mVtable->mFree)(mObject.mData); }
 };
 NS_IMPL_ISUPPORTS(IndirectThreadObserver, nsIThreadObserver)
 
@@ -95,12 +95,14 @@ GeckoMedia_Shutdown()
 {
   MOZ_ASSERT(NS_IsMainThread());
 
-  RefPtr<AsyncShutdownService> asyncShutdownService = AsyncShutdownService::Get();
+  RefPtr<AsyncShutdownService> asyncShutdownService =
+    AsyncShutdownService::Get();
   asyncShutdownService->BeginAsyncShutdown();
 
   // Broadcast a shutdown notification to all threads.
   // This causes thread pools to shutdown.
-  nsCOMPtr<nsIObserverService> obsService = mozilla::services::GetObserverService();
+  nsCOMPtr<nsIObserverService> obsService =
+    mozilla::services::GetObserverService();
   MOZ_ASSERT(obsService);
   obsService->NotifyObservers(nullptr, "xpcom-shutdown-threads", nullptr);
 
@@ -130,10 +132,12 @@ GeckoMedia_ProcessEvents()
 }
 
 void
-GeckoMedia_QueueRustRunnable(RustRunnable aRunnable) {
-  RefPtr<mozilla::Runnable> task = NS_NewRunnableFunction(
-      "RustRunnableDispatcher",
-      [aRunnable]() { (aRunnable.mFunction)(aRunnable.mData); });
+GeckoMedia_QueueRustRunnable(RustRunnable aRunnable)
+{
+  RefPtr<mozilla::Runnable> task =
+    NS_NewRunnableFunction("RustRunnableDispatcher", [aRunnable]() {
+      (aRunnable.mFunction)(aRunnable.mData);
+    });
   auto rv = NS_DispatchToMainThread(task.forget());
   MOZ_ASSERT(NS_SUCCEEDED(rv));
 }
