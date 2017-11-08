@@ -13,6 +13,8 @@ use walkdir::WalkDir;
 fn compile_bindings() {
     let bindings = bindgen::Builder::default()
         .header("gecko/glue/include/wrapper.hpp")
+        .rustified_enum("CanPlayTypeResult")
+        .rustfmt_bindings(false)
         .generate()
         .expect("Unable to generate bindings");
 
