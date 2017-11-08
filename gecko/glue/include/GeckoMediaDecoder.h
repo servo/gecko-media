@@ -10,6 +10,7 @@
 #include "BufferMediaResource.h"
 #include "MediaDecoder.h"
 #include "mozilla/RefPtr.h"
+#include "TimeUnits.h"
 
 namespace mozilla {
 
@@ -29,6 +30,8 @@ public:
   bool IsTransportSeekable() override { return true; }
 
   void AddSizeOfResources(ResourceSizes* aSizes) override;
+
+  virtual double GetDuration() override;
 
 protected:
   RefPtr<BufferMediaResource> mResource;

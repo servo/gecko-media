@@ -32,6 +32,7 @@ pub use top::PlayerEventSink;
 
 #[cfg(test)]
 mod tests {
+    use std::ffi::CString;
     use std::fs::File;
     use std::io::prelude::*;
     use std::sync::mpsc;
@@ -65,6 +66,8 @@ mod tests {
             enum Status {
                 Error,
                 Ended,
+                AsyncEvent(CString),
+                MetadataLoaded,
             }
             let (sender, receiver) = mpsc::channel();
             struct Sink {
@@ -76,6 +79,12 @@ mod tests {
                 }
                 fn decode_error(&self) {
                     self.sender.send(Status::Error).unwrap();
+                }
+                fn async_event(&self, name: &str) {
+                    self.sender.send(Status::AsyncEvent(CString::new(name).unwrap())).unwrap();
+                }
+                fn metadata_loaded(&self) {
+                    self.sender.send(Status::MetadataLoaded).unwrap();
                 }
             }
             let sink = Box::new(Sink { sender: sender });
@@ -91,6 +100,8 @@ mod tests {
             let ok = match receiver.recv().unwrap() {
                 Status::Ended => true,
                 Status::Error => false,
+                Status::AsyncEvent(_name) => true,
+                Status::MetadataLoaded => true
             };
             assert!(ok);
             player.shutdown();

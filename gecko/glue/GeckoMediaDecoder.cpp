@@ -101,6 +101,16 @@ GeckoMediaDecoder::CanPlayThroughImpl()
   return true;
 }
 
+double
+GeckoMediaDecoder::GetDuration()
+{
+  if (mInfo && mInfo->mMetadataDuration.isSome()) {
+    return mInfo->mMetadataDuration.value().ToSeconds();
+  } else {
+    return MediaDecoder::GetDuration();
+  }
+}
+
 TimeInterval
 GeckoMediaDecoder::ClampIntervalToEnd(const TimeInterval& aInterval)
 {
