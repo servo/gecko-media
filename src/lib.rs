@@ -97,12 +97,20 @@ mod tests {
             player.load_blob(bytes, "audio/wav").unwrap();
             player.play();
 
-            let ok = match receiver.recv().unwrap() {
-                Status::Ended => true,
-                Status::Error => false,
-                Status::AsyncEvent(_name) => true,
-                Status::MetadataLoaded => true
-            };
+            let ok;
+            loop {
+                match receiver.recv().unwrap() {
+                    Status::Ended => {
+                        ok = true;
+                        break;
+                    }
+                    Status::Error => {
+                        ok = false;
+                        break;
+                    }
+                    _ => {}
+                };
+            }
             assert!(ok);
             player.shutdown();
         }
