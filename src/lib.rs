@@ -32,10 +32,10 @@ pub use top::PlayerEventSink;
 
 #[cfg(test)]
 mod tests {
-    use std::sync::mpsc;
-    use {CanPlayType, GeckoMedia, PlayerEventSink};
     use std::fs::File;
     use std::io::prelude::*;
+    use std::sync::mpsc;
+    use {CanPlayType, GeckoMedia, PlayerEventSink};
 
     fn test_can_play_type() {
         let gecko_media = GeckoMedia::get().unwrap();
