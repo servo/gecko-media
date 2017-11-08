@@ -1,6 +1,7 @@
 
 #undef MOZ_GECKO_PROFILER
 #undef MOZ_MEMORY
+#undef MOZ_GLUE_IN_PROGRAM
 
 // This depends on the media/audioipc "prototype".
 // TODO: import media/audioipc?
