@@ -42,29 +42,34 @@ impl Player {
             Ok(mime_type) => mime_type,
             _ => return Err(()),
         };
+        let player_id = self.id;
         self.gecko_media.queue_task(move || unsafe {
-            GeckoMedia_Player_LoadBlob(self.id, media_data, mime_type.as_ptr());
+            GeckoMedia_Player_LoadBlob(player_id, media_data, mime_type.as_ptr());
         });
         Ok(())
     }
     pub fn play(&self) {
+        let player_id = self.id;
         self.gecko_media.queue_task(move || unsafe {
-            GeckoMedia_Player_Play(self.id);
+            GeckoMedia_Player_Play(player_id);
         });
     }
     pub fn pause(&self) {
+        let player_id = self.id;
         self.gecko_media.queue_task(move || unsafe {
-            GeckoMedia_Player_Pause(self.id);
+            GeckoMedia_Player_Pause(player_id);
         });
     }
     pub fn shutdown(&self) {
+        let player_id = self.id;
         self.gecko_media.queue_task(move || unsafe {
-            GeckoMedia_Player_Shutdown(self.id);
+            GeckoMedia_Player_Shutdown(player_id);
         });
     }
     pub fn set_volume(&self, volume: f64) {
+        let player_id = self.id;
         self.gecko_media.queue_task(move || unsafe {
-            GeckoMedia_Player_SetVolume(self.id, volume);
+            GeckoMedia_Player_SetVolume(player_id, volume);
         });
     }
     pub fn get_duration(&self) -> f64 {
