@@ -72,22 +72,24 @@ fn main() {
             player.load_blob(bytes, mime).unwrap();
             player.play();
             player.set_volume(1.0);
-            let ok = match receiver.recv().unwrap() {
-                Status::Ended => true,
-                Status::Error => false,
-                Status::AsyncEvent(name) => {
-                    println!("Event received: {:?}", name);
-                    // if name. == "durationchange" {
-                    //     println!("Duration: {:?}", player.get_duration());
-                    // }
-                    true
-                },
-                Status::MetadataLoaded => {
-                    println!("duration: {:?}", player.get_duration());
-                    true
-                }
-            };
-            assert!(ok);
+            loop {
+                match receiver.recv().unwrap() {
+                    Status::Ended => {
+                        println!("Ended");
+                        break;
+                    }
+                    Status::Error => {
+                        println!("Error");
+                        break;
+                    }
+                    Status::AsyncEvent(name) => {
+                        println!("Event received: {:?}", name);
+                    },
+                    Status::MetadataLoaded => {
+                        println!("MetadataLoaded; duration: {:?}", player.get_duration());
+                    },
+                };
+            }
         } else {
             panic!("Unknown file type. Currently supported: wav, mp3, m4a, flac and ogg/vorbis files.")
         }
