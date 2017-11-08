@@ -9,13 +9,14 @@
 
 struct ThreadObserverVtable
 {
-  void (*mOnDispatchedEvent)(void *aData);
-  void (*mFree)(void *aData);
+  void (*mOnDispatchedEvent)(void* aData);
+  void (*mFree)(void* aData);
 };
 
-struct ThreadObserverObject {
-  void *mData;
-  const ThreadObserverVtable *mVtable;
+struct ThreadObserverObject
+{
+  void* mData;
+  const ThreadObserverVtable* mVtable;
 };
 
 bool
@@ -39,8 +40,8 @@ GeckoMedia_ProcessEvents();
 
 struct RustRunnable
 {
-  void *mData;
-  void (*mFunction)(void *aData);
+  void* mData;
+  void (*mFunction)(void* aData);
 };
 
 void
