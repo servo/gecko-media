@@ -6,6 +6,7 @@ authors = ["Chris Pearce <cpearce@mozilla.com>", "Philippe Normand <philn@igalia
 
 [lib]
 doctest = false
+name = "gecko_media"
 
 [target.'cfg(unix)'.dependencies]
 cubeb-pulse = { git = "https://github.com/djg/cubeb-pulse-rs", branch = "dev", features = ["pulse-dlopen"]}
@@ -27,3 +28,6 @@ encoding_c = "0.8.0"
 default = ["audio-sample-type-f32"]
 audio-sample-type-s16 = []
 audio-sample-type-f32 = []
+
+[[bin]]
+name = "test-player"
