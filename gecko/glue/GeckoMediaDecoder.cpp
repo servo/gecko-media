@@ -6,20 +6,27 @@
 #include "GeckoMediaDecoder.h"
 
 #include "DecoderTraits.h"
-#include "mozilla/Logging.h"
 #include "MediaDecoderStateMachine.h"
 #include "MediaShutdownManager.h"
 #include "VideoUtils.h"
+#include "mozilla/Logging.h"
 #include <algorithm>
 
-mozilla::LogModule* GetGeckoMediaLog()
+mozilla::LogModule*
+GetGeckoMediaLog()
 {
   static mozilla::LazyLogModule sLogModule("GeckoMedia");
   return sLogModule;
 }
 
-#define GECKO_DEBUG(arg, ...) MOZ_LOG(GetGeckoMediaLog(), mozilla::LogLevel::Debug, ("GeckoMediaDecoder(%p)::%s: " arg, this, __func__, ##__VA_ARGS__))
-#define GECKO_DEBUGV(arg, ...) MOZ_LOG(GetGeckoMediaLog(), mozilla::LogLevel::Verbose, ("GeckoMediaDecoder(%p)::%s: " arg, this, __func__, ##__VA_ARGS__))
+#define GECKO_DEBUG(arg, ...)                                                  \
+  MOZ_LOG(GetGeckoMediaLog(),                                                  \
+          mozilla::LogLevel::Debug,                                            \
+          ("GeckoMediaDecoder(%p)::%s: " arg, this, __func__, ##__VA_ARGS__))
+#define GECKO_DEBUGV(arg, ...)                                                 \
+  MOZ_LOG(GetGeckoMediaLog(),                                                  \
+          mozilla::LogLevel::Verbose,                                          \
+          ("GeckoMediaDecoder(%p)::%s: " arg, this, __func__, ##__VA_ARGS__))
 
 using namespace mozilla::media;
 
@@ -121,9 +128,8 @@ GeckoMediaDecoder::ClampIntervalToEnd(const TimeInterval& aInterval)
   if (duration < aInterval.mStart) {
     return aInterval;
   }
-  return TimeInterval(aInterval.mStart,
-                      std::min(aInterval.mEnd, duration),
-                      aInterval.mFuzz);
+  return TimeInterval(
+    aInterval.mStart, std::min(aInterval.mEnd, duration), aInterval.mFuzz);
 }
 
 already_AddRefed<nsIPrincipal>
