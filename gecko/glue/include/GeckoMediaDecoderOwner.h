@@ -6,6 +6,7 @@
 #ifndef GeckoMediaDecoderOwner_h_
 #define GeckoMediaDecoderOwner_h_
 
+#include "GeckoMedia.h"
 #include "MediaDecoderOwner.h"
 #include "MediaInfo.h"
 #include "mozilla/UniquePtr.h"
@@ -27,6 +28,18 @@ class GeckoMediaDecoderOwner : public MediaDecoderOwner
 {
 public:
   GeckoMediaDecoderOwner() {}
+
+  GeckoMediaDecoderOwner(PlayerCallbackObject aCallback)
+    : mCallback(aCallback)
+  {
+  }
+
+  ~GeckoMediaDecoderOwner()
+  {
+    if (mCallback.mContext && mCallback.mFree) {
+      (*mCallback.mFree)(mCallback.mContext);
+    }
+  }
 
   // Called by the media decoder to indicate that the download is progressing.
   virtual void DownloadProgressed() override {}
@@ -77,6 +90,9 @@ public:
   virtual void DecodeError(const MediaResult& aError) override
   {
     mHasError = true;
+    if (mCallback.mContext && mCallback.mDecodeError) {
+      (*mCallback.mDecodeError)(mCallback.mContext);
+    }
   }
 
   // Called by the decoder object, on the main thread, when the
@@ -93,7 +109,12 @@ public:
 
   // Called by the video decoder object, on the main thread,
   // when the video playback has ended.
-  virtual void PlaybackEnded() override {}
+  virtual void PlaybackEnded() override
+  {
+    if (mCallback.mContext && mCallback.mPlaybackEnded) {
+      (*mCallback.mPlaybackEnded)(mCallback.mContext);
+    }
+  }
 
   // Called by the video decoder object, on the main thread,
   // when the resource has started seeking.
@@ -205,6 +226,7 @@ public:
    */
 private:
   bool mHasError = false;
+  PlayerCallbackObject mCallback = { 0 };
 };
 
 } // namespace mozilla

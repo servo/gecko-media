@@ -18,6 +18,7 @@
 #include "mozilla/ClearOnShutdown.h"
 #include "mozilla/Module.h"
 #include "mozilla/ModuleUtils.h"
+#include "mozilla/SystemGroup.h"
 
 bool gXPCOMThreadsShutDown = false;
 bool gXPCOMShuttingDown = false;
@@ -103,6 +104,9 @@ NS_InitMinimalXPCOM()
     NS_RELEASE(nsComponentManagerImpl::gComponentManager);
     return rv;
   }
+
+  // Init the SystemGroup for dispatching main thread runnables.
+  SystemGroup::InitStatic();
 
   // Set up the timer globals/timer thread.
   rv = nsTimerImpl::Startup();

@@ -5,8 +5,10 @@
 use CanPlayType;
 use bindings::*;
 use std::ffi::CString;
+use std::mem;
 use std::ops::Drop;
 use std::os::raw::c_void;
+use std::slice;
 use std::sync::Mutex;
 use std::sync::atomic::{AtomicUsize, Ordering, ATOMIC_USIZE_INIT};
 use std::sync::mpsc::{self, Sender};
@@ -14,6 +16,45 @@ use std::thread::Builder;
 
 pub struct GeckoMedia {
     sender: Sender<GeckoMediaMsg>,
+}
+
+pub struct Player {
+    gecko_media: GeckoMedia,
+    id: usize,
+}
+
+pub trait PlayerEventSink {
+    fn playback_ended(&self);
+    fn decode_error(&self);
+}
+
+impl Player {
+    pub fn load_blob(&self, media_data: Vec<u8>, mime_type: &str) -> Result<(), ()> {
+        let media_data = to_ffi_vec(media_data);
+        let mime_type = match CString::new(mime_type.as_bytes()) {
+            Ok(mime_type) => mime_type,
+            _ => return Err(()),
+        };
+        self.gecko_media.queue_task(move || unsafe {
+            GeckoMedia_Player_LoadBlob(self.id, media_data, mime_type.as_ptr());
+        });
+        Ok(())
+    }
+    pub fn play(&self) {
+        self.gecko_media.queue_task(move || unsafe {
+            GeckoMedia_Player_Play(self.id);
+        });
+    }
+    pub fn pause(&self) {
+        self.gecko_media.queue_task(move || unsafe {
+            GeckoMedia_Player_Pause(self.id);
+        });
+    }
+    pub fn shutdown(&self) {
+        self.gecko_media.queue_task(move || unsafe {
+            GeckoMedia_Player_Shutdown(self.id);
+        });
+    }
 }
 
 impl GeckoMedia {
@@ -59,7 +100,7 @@ impl GeckoMedia {
     where
         F: FnOnce(),
     {
-        unsafe extern fn call<F>(ptr: *mut c_void)
+        unsafe extern "C" fn call<F>(ptr: *mut c_void)
         where
             F: FnOnce(),
         {
@@ -72,6 +113,46 @@ impl GeckoMedia {
         };
 
         unsafe { GeckoMedia_QueueRustRunnable(runnable) }
+    }
+
+    pub fn create_player(&self, sink: Box<PlayerEventSink>) -> Result<Player, ()> {
+        let handle = GeckoMedia::get()?;
+        let id = NEXT_PLAYER_ID.fetch_add(1, Ordering::SeqCst);
+
+        let callback = self.to_ffi_callback(sink);
+        self.queue_task(move || unsafe {
+            GeckoMedia_Player_Create(id, callback);
+        });
+
+        Ok(Player {
+            gecko_media: handle,
+            id,
+        })
+    }
+
+    fn to_ffi_callback(&self, sink: Box<PlayerEventSink>) -> PlayerCallbackObject {
+        // Can't cast from *c_void to a Trait, so wrap in a concrete type
+        // when we pass into C++ code.
+        struct Wrapper {
+            sink: Box<PlayerEventSink>,
+        }
+        unsafe extern "C" fn free(ptr: *mut c_void) {
+            drop(Box::from_raw(ptr as *mut Wrapper));
+        }
+        unsafe extern "C" fn decode_error(ptr: *mut c_void) {
+            let wrapper = &*(ptr as *mut Wrapper);
+            wrapper.sink.decode_error();
+        }
+        unsafe extern "C" fn playback_ended(ptr: *mut c_void) {
+            let wrapper = &*(ptr as *mut Wrapper);
+            wrapper.sink.playback_ended();
+        }
+        PlayerCallbackObject {
+            mContext: Box::into_raw(Box::new(Wrapper { sink: sink })) as *mut c_void,
+            mPlaybackEnded: Some(playback_ended),
+            mDecodeError: Some(decode_error),
+            mFree: Some(free),
+        }
     }
 
     #[cfg(test)]
@@ -95,6 +176,7 @@ enum GeckoMediaMsg {
 }
 
 static OUTSTANDING_HANDLES: AtomicUsize = ATOMIC_USIZE_INIT;
+static NEXT_PLAYER_ID: AtomicUsize = ATOMIC_USIZE_INIT;
 
 lazy_static! {
     static ref SENDER: Mutex<Option<Sender<GeckoMediaMsg>>> = {
@@ -142,12 +224,12 @@ lazy_static! {
 }
 
 fn thread_observer_object(sender: Sender<GeckoMediaMsg>) -> ThreadObserverObject {
-    unsafe extern fn on_dispatched_event(ptr: *mut c_void) {
+    unsafe extern "C" fn on_dispatched_event(ptr: *mut c_void) {
         let sender = &*(ptr as *const Sender<GeckoMediaMsg>);
         sender.send(GeckoMediaMsg::CallProcessGeckoEvents).unwrap();
     }
 
-    unsafe extern fn free(ptr: *mut c_void) {
+    unsafe extern "C" fn free(ptr: *mut c_void) {
         drop(Box::from_raw(ptr as *mut Sender<GeckoMediaMsg>));
     }
 
@@ -159,5 +241,22 @@ fn thread_observer_object(sender: Sender<GeckoMediaMsg>) -> ThreadObserverObject
     ThreadObserverObject {
         mData: Box::into_raw(Box::new(sender)) as *mut c_void,
         mVtable: &VTABLE,
+    }
+}
+
+fn to_ffi_vec(bytes: Vec<u8>) -> RustVecU8Object {
+    unsafe extern "C" fn free(ptr: *mut u8, len: usize) {
+        let ptr = slice::from_raw_parts_mut(ptr, len) as *mut [u8];
+        drop(Box::from_raw(ptr));
+    }
+    let mut bytes = bytes.into_boxed_slice();
+    let data = bytes.as_mut_ptr();
+    let len = bytes.len();
+    mem::forget(bytes);
+
+    RustVecU8Object {
+        mData: data,
+        mLength: len,
+        mFree: Some(free),
     }
 }

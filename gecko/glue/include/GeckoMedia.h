@@ -7,15 +7,19 @@
 #ifndef GeckoMedia_h_
 #define GeckoMedia_h_
 
+#include <stddef.h>
+#include <stdint.h>
+
 struct ThreadObserverVtable
 {
-  void (*mOnDispatchedEvent)(void *aData);
-  void (*mFree)(void *aData);
+  void (*mOnDispatchedEvent)(void* aData);
+  void (*mFree)(void* aData);
 };
 
-struct ThreadObserverObject {
-  void *mData;
-  const ThreadObserverVtable *mVtable;
+struct ThreadObserverObject
+{
+  void* mData;
+  const ThreadObserverVtable* mVtable;
 };
 
 bool
@@ -39,11 +43,43 @@ GeckoMedia_ProcessEvents();
 
 struct RustRunnable
 {
-  void *mData;
-  void (*mFunction)(void *aData);
+  void* mData;
+  void (*mFunction)(void* aData);
 };
 
 void
 GeckoMedia_QueueRustRunnable(RustRunnable aRunnable);
+
+struct RustVecU8Object
+{
+  uint8_t* mData;
+  size_t mLength;
+  void (*mFree)(uint8_t* mData, size_t aLength);
+};
+
+struct PlayerCallbackObject
+{
+  void* mContext;
+  void (*mPlaybackEnded)(void*);
+  void (*mDecodeError)(void*);
+  void (*mFree)(void*);
+};
+
+void
+GeckoMedia_Player_Create(size_t aId, PlayerCallbackObject aCallback);
+
+void
+GeckoMedia_Player_LoadBlob(size_t aId,
+                           RustVecU8Object aMediaData,
+                           const char* aMimeType);
+
+void
+GeckoMedia_Player_Play(size_t aId);
+
+void
+GeckoMedia_Player_Pause(size_t aId);
+
+void
+GeckoMedia_Player_Shutdown(size_t aId);
 
 #endif // GeckoMedia_h_

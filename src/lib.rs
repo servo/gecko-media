@@ -27,11 +27,15 @@ pub mod bindings {
 #[doc(inline)]
 pub use bindings::CanPlayTypeResult as CanPlayType;
 pub use top::GeckoMedia;
+pub use top::Player;
+pub use top::PlayerEventSink;
 
 #[cfg(test)]
 mod tests {
+    use std::fs::File;
+    use std::io::prelude::*;
     use std::sync::mpsc;
-    use {CanPlayType, GeckoMedia};
+    use {CanPlayType, GeckoMedia, PlayerEventSink};
 
     fn test_can_play_type() {
         let gecko_media = GeckoMedia::get().unwrap();
@@ -44,8 +48,45 @@ mod tests {
         test_can_play_type();
         GeckoMedia::get().unwrap().test();
         let (sender, receiver) = mpsc::channel();
-        GeckoMedia::get().unwrap().queue_task(move || sender.send(()).unwrap());
+        GeckoMedia::get().unwrap().queue_task(
+            move || sender.send(()).unwrap(),
+        );
         receiver.recv().unwrap();
+        {
+            enum Status {
+                Error,
+                Ended,
+            }
+            let (sender, receiver) = mpsc::channel();
+            struct Sink {
+                sender: mpsc::Sender<Status>,
+            }
+            impl PlayerEventSink for Sink {
+                fn playback_ended(&self) {
+                    self.sender.send(Status::Ended).unwrap();
+                }
+                fn decode_error(&self) {
+                    self.sender.send(Status::Error).unwrap();
+                }
+            }
+            let sink = Box::new(Sink { sender: sender });
+
+            let g = GeckoMedia::get().unwrap();
+            let player = g.create_player(sink).unwrap();
+            let mut file = File::open("gecko/test/audiotest.wav").unwrap();
+            let mut bytes = vec![];
+            file.read_to_end(&mut bytes).unwrap();
+            player.load_blob(bytes, "audio/wav").unwrap();
+            player.play();
+
+            let ok = match receiver.recv().unwrap() {
+                Status::Ended => true,
+                Status::Error => false,
+            };
+            assert!(ok);
+            player.shutdown();
+        }
+
         GeckoMedia::shutdown().unwrap();
     }
 }

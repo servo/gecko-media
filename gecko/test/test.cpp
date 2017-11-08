@@ -525,7 +525,7 @@ TestGeckoDecoder()
 {
   GeckoMediaDecoderOwner owner;
   MediaDecoderInit decoderInit(&owner,
-                               0.05,  // volume
+                               0.001,  // volume
                                true,  // mPreservesPitch
                                1.0,   // mPlaybackRate
                                false, // mMinimizePreroll
