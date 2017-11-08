@@ -236,7 +236,7 @@ GeckoMedia_Player_LoadBlob(size_t aId,
                                false, // mLooping
                                mime.value());
   player->mDecoder = new GeckoMediaDecoder(decoderInit);
-
+  player->mDecoderOwner->SetDecoder(player->mDecoder);
   RefPtr<BufferMediaResource> resource =
     new RustVecU8BufferMediaResource(aMediaData);
   player->mDecoder->Load(resource);

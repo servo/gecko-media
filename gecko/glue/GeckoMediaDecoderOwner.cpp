@@ -50,7 +50,7 @@ GeckoMediaDecoderOwner::FireTimeUpdate(bool aPeriodic)
 bool
 GeckoMediaDecoderOwner::GetPaused()
 {
-  return false;
+  return mDecoder && mDecoder->IsOwnerPaused();
 }
 
 void
@@ -206,6 +206,12 @@ already_AddRefed<GMPCrashHelper>
 GeckoMediaDecoderOwner::CreateGMPCrashHelper()
 {
   return nullptr;
+}
+
+void
+GeckoMediaDecoderOwner::SetDecoder(GeckoMediaDecoder* aDecoder)
+{
+  mDecoder = aDecoder;
 }
 
 } // namespace mozilla

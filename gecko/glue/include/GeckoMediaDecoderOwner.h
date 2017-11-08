@@ -7,6 +7,7 @@
 #define GeckoMediaDecoderOwner_h_
 
 #include "GeckoMedia.h"
+#include "GeckoMediaDecoder.h"
 #include "MediaDecoderOwner.h"
 #include "MediaInfo.h"
 #include "mozilla/UniquePtr.h"
@@ -187,13 +188,12 @@ public:
   // Called by the media decoder to create a GMPCrashHelper.
   already_AddRefed<GMPCrashHelper> CreateGMPCrashHelper() override;
 
-  /*
-   * Servo only methods go here. Please provide default implementations so they
-   * can build in Gecko without any modification.
-   */
+  void SetDecoder(GeckoMediaDecoder* aDecoder);
+
 private:
   bool mHasError = false;
   PlayerCallbackObject mCallback = { 0 };
+  RefPtr<GeckoMediaDecoder> mDecoder;
 };
 
 } // namespace mozilla

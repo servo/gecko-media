@@ -118,6 +118,26 @@ GeckoMediaDecoder::GetDuration()
   }
 }
 
+void
+GeckoMediaDecoder::Pause()
+{
+  mOwnerPaused = true;
+  MediaDecoder::Pause();
+}
+
+nsresult
+GeckoMediaDecoder::Play()
+{
+  mOwnerPaused = false;
+  return MediaDecoder::Play();
+}
+
+bool
+GeckoMediaDecoder::IsOwnerPaused() const
+{
+  return mOwnerPaused;
+}
+
 TimeInterval
 GeckoMediaDecoder::ClampIntervalToEnd(const TimeInterval& aInterval)
 {
