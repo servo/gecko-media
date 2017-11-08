@@ -65,6 +65,7 @@ fn main() {
             Some("mp3") => "audio/mp3",
             Some("flac") => "audio/flac",
             Some("ogg") => "audio/ogg; codecs=\"vorbis\"",
+            Some("m4a") => "audio/mp4",
             _ => "",
         };
         if mime != "" {
@@ -88,7 +89,7 @@ fn main() {
             };
             assert!(ok);
         } else {
-            panic!("Unknown file type. Currently supported: wav, mp3, flac and ogg/vorbis files.")
+            panic!("Unknown file type. Currently supported: wav, mp3, m4a, flac and ogg/vorbis files.")
         }
         player.shutdown();
     }
