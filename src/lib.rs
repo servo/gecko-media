@@ -36,20 +36,77 @@ mod tests {
     use std::fs::File;
     use std::io::prelude::*;
     use std::sync::mpsc;
-    use {CanPlayType, GeckoMedia, PlayerEventSink};
+    use {CanPlayType, GeckoMedia, PlayerEventSink, Player};
 
     fn test_can_play_type() {
         let gecko_media = GeckoMedia::get().unwrap();
         assert_eq!(gecko_media.can_play_type("bogus/bogus"), CanPlayType::No);
-        assert_eq!(gecko_media.can_play_type("audio/mp4; codecs=\"bogus\""), CanPlayType::No);
+        assert_eq!(
+            gecko_media.can_play_type("audio/mp4; codecs=\"bogus\""),
+            CanPlayType::No
+        );
         assert_eq!(gecko_media.can_play_type("audio/wav"), CanPlayType::Maybe);
         assert_eq!(gecko_media.can_play_type("audio/mp3"), CanPlayType::Maybe);
         assert_eq!(gecko_media.can_play_type("audio/mp4"), CanPlayType::Maybe);
         assert_eq!(gecko_media.can_play_type("audio/flac"), CanPlayType::Maybe);
         assert_eq!(gecko_media.can_play_type("audio/ogg"), CanPlayType::Maybe);
-        assert_eq!(gecko_media.can_play_type("audio/ogg; codecs=\"vorbis\""), CanPlayType::Probably);
+        assert_eq!(
+            gecko_media.can_play_type("audio/ogg; codecs=\"vorbis\""),
+            CanPlayType::Probably
+        );
         assert_eq!(gecko_media.can_play_type("video/mp4"), CanPlayType::Maybe);
+    }
 
+    enum Status {
+        Error,
+        Ended,
+        AsyncEvent(CString),
+        MetadataLoaded,
+        LoadedData,
+        TimeUpdate(f64),
+        SeekStarted,
+        SeekComplete,
+    }
+    fn create_test_player(path: &str, mime: &str) -> (Player, mpsc::Receiver<Status>) {
+        let (sender, receiver) = mpsc::channel();
+        struct Sink {
+            sender: mpsc::Sender<Status>,
+        }
+        impl PlayerEventSink for Sink {
+            fn playback_ended(&self) {
+                self.sender.send(Status::Ended).unwrap();
+            }
+            fn decode_error(&self) {
+                self.sender.send(Status::Error).unwrap();
+            }
+            fn async_event(&self, name: &str) {
+                self.sender
+                    .send(Status::AsyncEvent(CString::new(name).unwrap()))
+                    .unwrap();
+            }
+            fn metadata_loaded(&self) {
+                self.sender.send(Status::MetadataLoaded).unwrap();
+            }
+            fn loaded_data(&self) {
+                self.sender.send(Status::LoadedData).unwrap();
+            }
+            fn time_update(&self, time: f64) {
+                self.sender.send(Status::TimeUpdate(time)).unwrap();
+            }
+            fn seek_started(&self) {
+                self.sender.send(Status::SeekStarted).unwrap();
+            }
+            fn seek_completed(&self) {
+                self.sender.send(Status::SeekComplete).unwrap();
+            }
+        }
+        let sink = Box::new(Sink { sender: sender });
+        let player = GeckoMedia::get().unwrap().create_player(sink).unwrap();
+        let mut file = File::open(path).unwrap();
+        let mut bytes = vec![];
+        file.read_to_end(&mut bytes).unwrap();
+        player.load_blob(bytes, mime).unwrap();
+        (player, receiver)
     }
 
     #[test]
@@ -62,57 +119,10 @@ mod tests {
             move || sender.send(()).unwrap(),
         );
         receiver.recv().unwrap();
+
         {
-            enum Status {
-                Error,
-                Ended,
-                AsyncEvent(CString),
-                MetadataLoaded,
-                LoadedData,
-                TimeUpdate(f64),
-                SeekStarted,
-                SeekComplete,
-            }
-            let (sender, receiver) = mpsc::channel();
-            struct Sink {
-                sender: mpsc::Sender<Status>,
-            }
-            impl PlayerEventSink for Sink {
-                fn playback_ended(&self) {
-                    self.sender.send(Status::Ended).unwrap();
-                }
-                fn decode_error(&self) {
-                    self.sender.send(Status::Error).unwrap();
-                }
-                fn async_event(&self, name: &str) {
-                    self.sender.send(Status::AsyncEvent(CString::new(name).unwrap())).unwrap();
-                }
-                fn metadata_loaded(&self) {
-                    self.sender.send(Status::MetadataLoaded).unwrap();
-                }
-                fn loaded_data(&self) {
-                    self.sender.send(Status::LoadedData).unwrap();
-                }
-                fn time_update(&self, time: f64) {
-                    self.sender.send(Status::TimeUpdate(time)).unwrap();
-                }
-                fn seek_started(&self) {
-                    self.sender.send(Status::SeekStarted).unwrap();
-                }
-                fn seek_completed(&self) {
-                    self.sender.send(Status::SeekComplete).unwrap();
-                }
-            }
-            let sink = Box::new(Sink { sender: sender });
-
-            let g = GeckoMedia::get().unwrap();
-            let player = g.create_player(sink).unwrap();
-            let mut file = File::open("gecko/test/audiotest.wav").unwrap();
-            let mut bytes = vec![];
-            file.read_to_end(&mut bytes).unwrap();
-            player.load_blob(bytes, "audio/wav").unwrap();
+            let (player, receiver) = create_test_player("gecko/test/audiotest.wav", "audio/wav");
             player.play();
-
             let ok;
             loop {
                 match receiver.recv().unwrap() {
