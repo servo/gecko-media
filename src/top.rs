@@ -15,60 +15,110 @@ use std::sync::atomic::{AtomicUsize, Ordering, ATOMIC_USIZE_INIT};
 use std::sync::mpsc::{self, Sender};
 use std::thread::Builder;
 
+/// Represents the main connection to the media playback system.
 pub struct GeckoMedia {
     sender: Sender<GeckoMediaMsg>,
 }
 
+/// Plays a media resource.
 pub struct Player {
     gecko_media: GeckoMedia,
     id: usize,
 }
 
+/// Holds useful metadata extracted from a media resource during loading.
+pub struct Metadata {
+    /// Duration of the media in seconds, as described either by metadata
+    /// in the container, or an estimate if no better inforation exists.
+    pub duration: f64,
+}
+
+/// Users of Player pass in an implementation of this trait when creating
+/// Player objects. When events happen in the Player, users will receive
+/// callbacks upon the trait implementation, notifying them of the event.
 pub trait PlayerEventSink {
+    /// Called when playback has reached the end of media. Playback can
+    /// be resumed from the start of media by calling Player::Play, or by
+    /// seeking.
     fn playback_ended(&self);
+    /// Called if playback has encountered a fatal error. The Player can
+    /// no longer function, and should be dropped.
     fn decode_error(&self);
+    /// Called when the HTML simple event corresponding to `name` should
+    /// be fired at the HTMLMediaElement.
     fn async_event(&self, name: &str);
-    fn metadata_loaded(&self);
+    /// Called when initial metadata has been loaded.
+    fn metadata_loaded(&self, metadata: Metadata);
+    /// Called if the duration has changed. This could happen if the Player's
+    /// estimate of the duration becomes more accurate, or if playing a live
+    /// or unbounded stream. Note this can be called after metadata_loaded()
+    /// reports the initial duration.
+    fn duration_changed(&self, duration: f64);
+    /// Called when the initial video frame and audio sample have been loaded.
+    fn loaded_data(&self);
+    /// Called when the current playback positions changes, reporting the
+    /// current playback position in seconds. This is called whenever the
+    /// playback position changes due to significant events (such as seeking)
+    /// or roughly once per frame while play media. The value reported here
+    /// is HTMLMediaElement.currentTime.
+    fn time_update(&self, time: f64);
+    /// Called when the Player has started to seek.
+    fn seek_started(&self);
+    /// Called when the Player has stopped seeking.
+    fn seek_completed(&self);
 }
 
 impl Player {
-    pub fn load_blob(&self, media_data: Vec<u8>, mime_type: &str) -> Result<(), ()> {
-        let media_data = to_ffi_vec(media_data);
-        let mime_type = match CString::new(mime_type.as_bytes()) {
-            Ok(mime_type) => mime_type,
-            _ => return Err(()),
-        };
-        self.gecko_media.queue_task(move || unsafe {
-            GeckoMedia_Player_LoadBlob(self.id, media_data, mime_type.as_ptr());
-        });
-        Ok(())
-    }
+    /// Starts playback of the media resource. While playing,
+    /// PlayerEventSink::time_update() will be called once per frame,
+    /// or every 40 milliseconds if there is no video.
+    /// PlayerEventSink::playback_ended() will be called when playback
+    /// reaches the end of the resource.
     pub fn play(&self) {
+        let player_id = self.id;
         self.gecko_media.queue_task(move || unsafe {
-            GeckoMedia_Player_Play(self.id);
+            GeckoMedia_Player_Play(player_id);
         });
     }
+    /// Pauses playback of the media resource.
     pub fn pause(&self) {
+        let player_id = self.id;
         self.gecko_media.queue_task(move || unsafe {
-            GeckoMedia_Player_Pause(self.id);
+            GeckoMedia_Player_Pause(player_id);
         });
     }
-    pub fn shutdown(&self) {
+    /// Seeks the media resource to a time offset from the beginning of the
+    /// resource in seconds. Calls PlayerEventSink::seek_started when the
+    /// playback engine begins seeking, and PlayerEventSink::seek_completed
+    /// when the seek completes. A PlayerEventSink::time_update() will be
+    /// called just before seek_completed() with the current time after
+    /// the seek.
+    pub fn seek(&self, time_offset_seconds: f64) {
+        let player_id = self.id;
         self.gecko_media.queue_task(move || unsafe {
-            GeckoMedia_Player_Shutdown(self.id);
+            GeckoMedia_Player_Seek(player_id, time_offset_seconds);
         });
     }
+    // Changes the volume. Volume is in the range [0, 1.0].
     pub fn set_volume(&self, volume: f64) {
+        let player_id = self.id;
         self.gecko_media.queue_task(move || unsafe {
-            GeckoMedia_Player_SetVolume(self.id, volume);
+            GeckoMedia_Player_SetVolume(player_id, volume);
         });
     }
-    pub fn get_duration(&self) -> f64 {
-        self.gecko_media.get_duration(self.id)
+}
+
+impl Drop for Player {
+    fn drop(&mut self) {
+        let player_id = self.id;
+        self.gecko_media.queue_task(move || unsafe {
+            GeckoMedia_Player_Shutdown(player_id);
+        });
     }
 }
 
 impl GeckoMedia {
+    /// Retrieves a handle to the media system.
     pub fn get() -> Result<Self, ()> {
         OUTSTANDING_HANDLES.fetch_add(1, Ordering::SeqCst);
         let sender = SENDER.lock().unwrap();
@@ -81,6 +131,9 @@ impl GeckoMedia {
         }
     }
 
+    /// Shuts down the media playback system. Call this when you're
+    /// finished playing media. Returns Err() if any GeckoMedia or Player
+    /// objects remain undropped.
     pub fn shutdown() -> Result<(), ()> {
         let mut sender = SENDER.lock().unwrap();
         if OUTSTANDING_HANDLES.load(Ordering::SeqCst) > 0 {
@@ -95,6 +148,7 @@ impl GeckoMedia {
         Ok(())
     }
 
+    /// Reports whether GeckoMedia can play a specified MIME type.
     pub fn can_play_type(&self, mime_type: &str) -> CanPlayType {
         if let Ok(mime_type) = CString::new(mime_type.as_bytes()) {
             let (sender, receiver) = mpsc::channel();
@@ -105,14 +159,6 @@ impl GeckoMedia {
         } else {
             CanPlayType::No
         }
-    }
-
-    pub fn get_duration(&self, player_id: usize) -> f64 {
-        let (sender, receiver) = mpsc::channel();
-        self.sender
-            .send(GeckoMediaMsg::DurationQuery(player_id, sender))
-            .unwrap();
-        receiver.recv().unwrap()
     }
 
     pub fn queue_task<F>(&self, f: F)
@@ -134,13 +180,23 @@ impl GeckoMedia {
         unsafe { GeckoMedia_QueueRustRunnable(runnable) }
     }
 
-    pub fn create_player(&self, sink: Box<PlayerEventSink>) -> Result<Player, ()> {
+    /// Creates a Player to play the media file stored in bytes.
+    pub fn create_blob_player(
+        &self,
+        media_data: Vec<u8>,
+        mime_type: &str,
+        sink: Box<PlayerEventSink>,
+    ) -> Result<Player, ()> {
         let handle = GeckoMedia::get()?;
         let id = NEXT_PLAYER_ID.fetch_add(1, Ordering::SeqCst);
-
         let callback = self.to_ffi_callback(sink);
+        let media_data = to_ffi_vec(media_data);
+        let mime_type = match CString::new(mime_type.as_bytes()) {
+            Ok(mime_type) => mime_type,
+            _ => return Err(()),
+        };
         self.queue_task(move || unsafe {
-            GeckoMedia_Player_Create(id, callback);
+            GeckoMedia_Player_CreateBlobPlayer(id, media_data, mime_type.as_ptr(), callback);
         });
 
         Ok(Player {
@@ -171,16 +227,43 @@ impl GeckoMedia {
             let c_str: &CStr = CStr::from_ptr(name);
             wrapper.sink.async_event(c_str.to_str().unwrap());
         }
-        unsafe extern "C" fn metadata_loaded(ptr: *mut c_void) {
+        unsafe extern "C" fn metadata_loaded(ptr: *mut c_void, metadata: GeckoMediaMetadata) {
             let wrapper = &*(ptr as *mut Wrapper);
-            wrapper.sink.metadata_loaded();
+            wrapper.sink.metadata_loaded(
+                Metadata { duration: metadata.mDuration },
+            );
+        }
+        unsafe extern "C" fn duration_changed(ptr: *mut c_void, duration: f64) {
+            let wrapper = &*(ptr as *mut Wrapper);
+            wrapper.sink.duration_changed(duration);
+        }
+        unsafe extern "C" fn loaded_data(ptr: *mut c_void) {
+            let wrapper = &*(ptr as *mut Wrapper);
+            wrapper.sink.loaded_data();
+        }
+        unsafe extern "C" fn seek_started(ptr: *mut c_void) {
+            let wrapper = &*(ptr as *mut Wrapper);
+            wrapper.sink.seek_started();
+        }
+        unsafe extern "C" fn seek_completed(ptr: *mut c_void) {
+            let wrapper = &*(ptr as *mut Wrapper);
+            wrapper.sink.seek_completed();
+        }
+        unsafe extern "C" fn time_update(ptr: *mut c_void, time: f64) {
+            let wrapper = &*(ptr as *mut Wrapper);
+            wrapper.sink.time_update(time);
         }
         PlayerCallbackObject {
             mContext: Box::into_raw(Box::new(Wrapper { sink: sink })) as *mut c_void,
             mPlaybackEnded: Some(playback_ended),
             mDecodeError: Some(decode_error),
+            mDurationChanged: Some(duration_changed),
             mAsyncEvent: Some(async_event),
             mMetadataLoaded: Some(metadata_loaded),
+            mLoadedData: Some(loaded_data),
+            mSeekStarted: Some(seek_started),
+            mSeekCompleted: Some(seek_completed),
+            mTimeUpdate: Some(time_update),
             mFree: Some(free),
         }
     }
@@ -203,7 +286,6 @@ enum GeckoMediaMsg {
     #[cfg(test)]
     Test,
     CallProcessGeckoEvents,
-    DurationQuery(usize, Sender<f64>),
 }
 
 static OUTSTANDING_HANDLES: AtomicUsize = ATOMIC_USIZE_INIT;
@@ -239,11 +321,6 @@ lazy_static! {
                         // event queue.
                         unsafe {
                             GeckoMedia_ProcessEvents();
-                        }
-                    },
-                    GeckoMediaMsg::DurationQuery(player_id, sender) => {
-                        unsafe {
-                            sender.send(GeckoMedia_Player_GetDuration(player_id)).unwrap();
                         }
                     },
                     #[cfg(test)]

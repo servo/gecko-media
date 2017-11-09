@@ -4,7 +4,7 @@
 
 extern crate gecko_media;
 
-use gecko_media::{GeckoMedia, PlayerEventSink};
+use gecko_media::{GeckoMedia, Metadata, PlayerEventSink};
 use std::env;
 use std::ffi::CString;
 use std::fs::File;
@@ -22,16 +22,16 @@ fn main() {
 
     GeckoMedia::get().unwrap();
     let (sender, receiver) = mpsc::channel();
-    GeckoMedia::get()
-        .unwrap()
-        .queue_task(move || sender.send(()).unwrap());
+    GeckoMedia::get().unwrap().queue_task(
+        move || sender.send(()).unwrap(),
+    );
     receiver.recv().unwrap();
     {
         enum Status {
             Error,
             Ended,
             AsyncEvent(CString),
-            MetadataLoaded,
+            MetadataLoaded(Metadata),
         }
         let (sender, receiver) = mpsc::channel();
         struct Sink {
@@ -41,20 +41,25 @@ fn main() {
             fn playback_ended(&self) {
                 self.sender.send(Status::Ended).unwrap();
             }
-            fn async_event(&self, name: &str) {
-                self.sender.send(Status::AsyncEvent(CString::new(name).unwrap())).unwrap();
-            }
             fn decode_error(&self) {
                 self.sender.send(Status::Error).unwrap();
             }
-            fn metadata_loaded(&self) {
-                self.sender.send(Status::MetadataLoaded).unwrap();
+            fn async_event(&self, name: &str) {
+                self.sender
+                    .send(Status::AsyncEvent(CString::new(name).unwrap()))
+                    .unwrap();
             }
+            fn metadata_loaded(&self, metadata: Metadata) {
+                self.sender.send(Status::MetadataLoaded(metadata)).unwrap();
+            }
+            fn duration_changed(&self, _duration: f64) {}
+            fn loaded_data(&self) {}
+            fn time_update(&self, _time: f64) {}
+            fn seek_started(&self) {}
+            fn seek_completed(&self) {}
         }
         let sink = Box::new(Sink { sender: sender });
 
-        let g = GeckoMedia::get().unwrap();
-        let player = g.create_player(sink).unwrap();
         let mut file = File::open(filename).unwrap();
         let mut bytes = vec![];
         file.read_to_end(&mut bytes).unwrap();
@@ -65,32 +70,39 @@ fn main() {
             Some("mp3") => "audio/mp3",
             Some("flac") => "audio/flac",
             Some("ogg") => "audio/ogg; codecs=\"vorbis\"",
+            Some("m4a") => "audio/mp4",
             _ => "",
         };
         if mime != "" {
-            player.load_blob(bytes, mime).unwrap();
+            let player = GeckoMedia::get()
+                .unwrap()
+                .create_blob_player(bytes, mime, sink)
+                .unwrap();
             player.play();
             player.set_volume(1.0);
-            let ok = match receiver.recv().unwrap() {
-                Status::Ended => true,
-                Status::Error => false,
-                Status::AsyncEvent(name) => {
-                    println!("Event received: {:?}", name);
-                    // if name. == "durationchange" {
-                    //     println!("Duration: {:?}", player.get_duration());
-                    // }
-                    true
-                },
-                Status::MetadataLoaded => {
-                    println!("duration: {:?}", player.get_duration());
-                    true
-                }
-            };
-            assert!(ok);
+            loop {
+                match receiver.recv().unwrap() {
+                    Status::Ended => {
+                        println!("Ended");
+                        break;
+                    }
+                    Status::Error => {
+                        println!("Error");
+                        break;
+                    }
+                    Status::AsyncEvent(name) => {
+                        println!("Event received: {:?}", name);
+                    }
+                    Status::MetadataLoaded(metadata) => {
+                        println!("MetadataLoaded; duration: {:?}", metadata.duration);
+                    }
+                };
+            }
         } else {
-            panic!("Unknown file type. Currently supported: wav, mp3, flac and ogg/vorbis files.")
+            panic!(
+                "Unknown file type. Currently supported: wav, mp3, m4a, flac and ogg/vorbis files."
+            )
         }
-        player.shutdown();
     }
 
     GeckoMedia::shutdown().unwrap();

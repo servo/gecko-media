@@ -33,6 +33,12 @@ public:
 
   virtual double GetDuration() override;
 
+  void Pause() override;
+
+  nsresult Play() override;
+
+  bool IsOwnerPaused() const;
+
 protected:
   RefPtr<BufferMediaResource> mResource;
 
@@ -44,7 +50,8 @@ private:
   bool CanPlayThroughImpl() override;
   bool IsLiveStream() override final { return !mEnded; }
 
-  bool mEnded;
+  bool mEnded = false;
+  bool mOwnerPaused = false;
 };
 
 } // namespace mozilla

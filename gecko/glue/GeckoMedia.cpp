@@ -206,29 +206,21 @@ GetPlayer(size_t aId)
 }
 
 void
-GeckoMedia_Player_Create(size_t aId, PlayerCallbackObject aCallback)
-{
-  Player* player = sPlayers.AppendElement(Player(aId, aCallback));
-  MOZ_ASSERT(GetPlayer(aId) == player);
-}
-
-void
-GeckoMedia_Player_LoadBlob(size_t aId,
-                           RustVecU8Object aMediaData,
-                           const char* aMimeType)
+GeckoMedia_Player_CreateBlobPlayer(size_t aId,
+                                   RustVecU8Object aMediaData,
+                                   const char* aMimeType,
+                                   PlayerCallbackObject aCallback)
 {
   mozilla::Maybe<MediaContainerType> mime = MakeMediaContainerType(aMimeType);
   if (!mime) {
     return;
   }
 
-  Player* player = GetPlayer(aId);
-  if (!player) {
-    return;
-  }
+  Player* player = sPlayers.AppendElement(Player(aId, aCallback));
+  MOZ_ASSERT(GetPlayer(aId) == player);
 
   MediaDecoderInit decoderInit(player->mDecoderOwner.get(),
-                               0.001, // volume
+                               1.0,   // volume
                                true,  // mPreservesPitch
                                1.0,   // mPlaybackRate
                                false, // mMinimizePreroll
@@ -236,7 +228,7 @@ GeckoMedia_Player_LoadBlob(size_t aId,
                                false, // mLooping
                                mime.value());
   player->mDecoder = new GeckoMediaDecoder(decoderInit);
-
+  player->mDecoderOwner->SetDecoder(player->mDecoder);
   RefPtr<BufferMediaResource> resource =
     new RustVecU8BufferMediaResource(aMediaData);
   player->mDecoder->Load(resource);
@@ -263,6 +255,17 @@ GeckoMedia_Player_Pause(size_t aId)
 }
 
 void
+GeckoMedia_Player_Seek(size_t aId, double aTimeOffsetSeconds)
+{
+  Player* player = GetPlayer(aId);
+  if (!player) {
+    return;
+  }
+  MOZ_ASSERT(player->mDecoder);
+  player->mDecoder->Seek(aTimeOffsetSeconds, SeekTarget::Accurate);
+}
+
+void
 GeckoMedia_Player_Shutdown(size_t aId)
 {
   Player* player = GetPlayer(aId);
@@ -286,14 +289,4 @@ GeckoMedia_Player_SetVolume(size_t aId, double volume)
     return;
   }
   player->mDecoder->SetVolume(volume);
-}
-
-double
-GeckoMedia_Player_GetDuration(size_t aId)
-{
-  Player* player = GetPlayer(aId);
-  if (!player) {
-    return 0.0;
-  }
-  return player->mDecoder->GetDuration();
 }
