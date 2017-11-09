@@ -15,15 +15,18 @@ use std::sync::atomic::{AtomicUsize, Ordering, ATOMIC_USIZE_INIT};
 use std::sync::mpsc::{self, Sender};
 use std::thread::Builder;
 
+/// Represents the main connection to the media playback system.
 pub struct GeckoMedia {
     sender: Sender<GeckoMediaMsg>,
 }
 
+/// Plays a media resource.
 pub struct Player {
     gecko_media: GeckoMedia,
     id: usize,
 }
 
+/// Holds useful metadata extracted from a media resource during loading.
 pub struct Metadata {
     /// Duration of the media in seconds, as described either by metadata
     /// in the container, or an estimate if no better inforation exists.
@@ -66,24 +69,37 @@ pub trait PlayerEventSink {
 }
 
 impl Player {
+    /// Starts playback of the media resource. While playing,
+    /// PlayerEventSink::time_update() will be called once per frame,
+    /// or every 40 milliseconds if there is no video.
+    /// PlayerEventSink::playback_ended() will be called when playback
+    /// reaches the end of the resource.
     pub fn play(&self) {
         let player_id = self.id;
         self.gecko_media.queue_task(move || unsafe {
             GeckoMedia_Player_Play(player_id);
         });
     }
+    /// Pauses playback of the media resource.
     pub fn pause(&self) {
         let player_id = self.id;
         self.gecko_media.queue_task(move || unsafe {
             GeckoMedia_Player_Pause(player_id);
         });
     }
+    /// Seeks the media resource to a time offset from the beginning of the
+    /// resource in seconds. Calls PlayerEventSink::seek_started when the
+    /// playback engine begins seeking, and PlayerEventSink::seek_completed
+    /// when the seek completes. A PlayerEventSink::time_update() will be
+    /// called just before seek_completed() with the current time after
+    /// the seek.
     pub fn seek(&self, time_offset_seconds: f64) {
         let player_id = self.id;
         self.gecko_media.queue_task(move || unsafe {
             GeckoMedia_Player_Seek(player_id, time_offset_seconds);
         });
     }
+    // Changes the volume. Volume is in the range [0, 1.0].
     pub fn set_volume(&self, volume: f64) {
         let player_id = self.id;
         self.gecko_media.queue_task(move || unsafe {
@@ -102,6 +118,7 @@ impl Drop for Player {
 }
 
 impl GeckoMedia {
+    /// Retrieves a handle to the media system.
     pub fn get() -> Result<Self, ()> {
         OUTSTANDING_HANDLES.fetch_add(1, Ordering::SeqCst);
         let sender = SENDER.lock().unwrap();
@@ -114,6 +131,9 @@ impl GeckoMedia {
         }
     }
 
+    /// Shuts down the media playback system. Call this when you're
+    /// finished playing media. Returns Err() if any GeckoMedia or Player
+    /// objects remain undropped.
     pub fn shutdown() -> Result<(), ()> {
         let mut sender = SENDER.lock().unwrap();
         if OUTSTANDING_HANDLES.load(Ordering::SeqCst) > 0 {
@@ -128,6 +148,7 @@ impl GeckoMedia {
         Ok(())
     }
 
+    /// Reports whether GeckoMedia can play a specified MIME type.
     pub fn can_play_type(&self, mime_type: &str) -> CanPlayType {
         if let Ok(mime_type) = CString::new(mime_type.as_bytes()) {
             let (sender, receiver) = mpsc::channel();
@@ -159,6 +180,7 @@ impl GeckoMedia {
         unsafe { GeckoMedia_QueueRustRunnable(runnable) }
     }
 
+    /// Creates a Player to play the media file stored in bytes.
     pub fn create_blob_player(
         &self,
         media_data: Vec<u8>,
