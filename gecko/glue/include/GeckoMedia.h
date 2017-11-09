@@ -91,6 +91,9 @@ void
 GeckoMedia_Player_Pause(size_t aId);
 
 void
+GeckoMedia_Player_Seek(size_t aId, double aTimeOffsetSeconds);
+
+void
 GeckoMedia_Player_Shutdown(size_t aId);
 
 void

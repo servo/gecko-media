@@ -114,8 +114,7 @@ mod tests {
         (player, receiver)
     }
 
-    fn test_basic_playback()
-    {
+    fn test_basic_playback() {
         let (player, receiver) = create_test_player("gecko/test/audiotest.wav", "audio/wav");
         player.play();
         let ok;
@@ -136,6 +135,63 @@ mod tests {
         player.shutdown();
     }
 
+    fn test_seeking() {
+        let (player, receiver) = create_test_player("gecko/test/audiotest.wav", "audio/wav");
+        let mut duration = 0.0;
+        let mut current_time = 0.0;
+        let mut reached_metadata_loaded = false;
+        let mut reached_loaded_data = false;
+        let mut reached_seek_started = false;
+        let mut reached_seek_complete = false;
+        let mut reached_ended = false;
+        let mut reached_error = false;
+        loop {
+            match receiver.recv().unwrap() {
+                Status::MetadataLoaded(metadata) => {
+                    reached_metadata_loaded = true;
+                    duration = metadata.duration;
+                    assert!(duration > 0.0);
+                }
+                Status::LoadedData => {
+                    reached_loaded_data = true;
+                    assert!(reached_metadata_loaded);
+                    player.seek(duration / 2.0);
+                }
+                Status::TimeUpdate(time) => {
+                    current_time = time;
+                }
+                Status::SeekStarted => {
+                    reached_seek_started = true;
+                }
+                Status::SeekComplete => {
+                    reached_seek_complete = true;
+                    assert!(reached_seek_started);
+                    // The current time should have updated to approximately
+                    // the seek target of (duration / 2.0).
+                    let delta = (current_time - duration / 2.0).abs();
+                    assert!(delta < 0.0001);
+                    player.play();
+                }
+                Status::Ended => {
+                    reached_ended = true;
+                    break;
+                }
+                Status::Error => {
+                    reached_error = true;
+                    break;
+                }
+                _ => {}
+            };
+        }
+        assert!(reached_metadata_loaded);
+        assert!(reached_loaded_data);
+        assert!(reached_seek_started);
+        assert!(reached_seek_complete);
+        assert!(reached_ended);
+        assert!(!reached_error);
+        player.shutdown();
+    }
+
     #[test]
     fn run_tests() {
         GeckoMedia::get().unwrap();
@@ -147,6 +203,7 @@ mod tests {
         );
         receiver.recv().unwrap();
         test_basic_playback();
+        test_seeking();
         GeckoMedia::shutdown().unwrap();
     }
 }

@@ -263,6 +263,17 @@ GeckoMedia_Player_Pause(size_t aId)
 }
 
 void
+GeckoMedia_Player_Seek(size_t aId, double aTimeOffsetSeconds)
+{
+  Player* player = GetPlayer(aId);
+  if (!player) {
+    return;
+  }
+  MOZ_ASSERT(player->mDecoder);
+  player->mDecoder->Seek(aTimeOffsetSeconds, SeekTarget::Accurate);
+}
+
+void
 GeckoMedia_Player_Shutdown(size_t aId)
 {
   Player* player = GetPlayer(aId);

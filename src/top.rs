@@ -90,6 +90,12 @@ impl Player {
             GeckoMedia_Player_Pause(player_id);
         });
     }
+    pub fn seek(&self, time_offset_seconds: f64) {
+        let player_id = self.id;
+        self.gecko_media.queue_task(move || unsafe {
+            GeckoMedia_Player_Seek(player_id, time_offset_seconds);
+        });
+    }
     pub fn shutdown(&self) {
         let player_id = self.id;
         self.gecko_media.queue_task(move || unsafe {
