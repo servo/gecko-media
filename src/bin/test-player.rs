@@ -102,7 +102,6 @@ fn main() {
                 "Unknown file type. Currently supported: wav, mp3, m4a, flac and ogg/vorbis files."
             )
         }
-        player.shutdown();
     }
 
     GeckoMedia::shutdown().unwrap();

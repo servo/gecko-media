@@ -132,7 +132,6 @@ mod tests {
             };
         }
         assert!(ok);
-        player.shutdown();
     }
 
     fn test_seeking() {
@@ -189,7 +188,6 @@ mod tests {
         assert!(reached_seek_complete);
         assert!(reached_ended);
         assert!(!reached_error);
-        player.shutdown();
     }
 
     #[test]
