@@ -31,6 +31,12 @@ GeckoMediaDecoderOwner::DispatchAsyncEvent(const nsAString& aName)
 {
   nsAutoCString dst;
   CopyUTF16toUTF8(aName, dst);
+  if (dst.EqualsLiteral("durationchange")) {
+    if (mCallback.mContext && mCallback.mDurationChanged) {
+      (*mCallback.mDurationChanged)(mCallback.mContext, mDecoder->GetDuration());
+      return NS_OK;
+    }
+  }
   if (mCallback.mContext && mCallback.mAsyncEvent) {
     (*mCallback.mAsyncEvent)(mCallback.mContext, (const int8_t*)dst.get());
   }
@@ -63,7 +69,9 @@ GeckoMediaDecoderOwner::MetadataLoaded(const MediaInfo* aInfo,
 {
   // FIXME: serialize aInfo and aTags somehow to callback.
   if (mCallback.mContext && mCallback.mMetadataLoaded) {
-    (*mCallback.mMetadataLoaded)(mCallback.mContext);
+    GeckoMediaMetadata metadata = { 0 };
+    metadata.mDuration = mDecoder->GetDuration();
+    (*mCallback.mMetadataLoaded)(mCallback.mContext, metadata);
   }
 }
 

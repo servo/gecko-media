@@ -287,13 +287,3 @@ GeckoMedia_Player_SetVolume(size_t aId, double volume)
   }
   player->mDecoder->SetVolume(volume);
 }
-
-double
-GeckoMedia_Player_GetDuration(size_t aId)
-{
-  Player* player = GetPlayer(aId);
-  if (!player) {
-    return 0.0;
-  }
-  return player->mDecoder->GetDuration();
-}

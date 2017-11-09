@@ -29,6 +29,7 @@ pub use bindings::CanPlayTypeResult as CanPlayType;
 pub use top::GeckoMedia;
 pub use top::Player;
 pub use top::PlayerEventSink;
+pub use top::Metadata;
 
 #[cfg(test)]
 mod tests {
@@ -36,7 +37,7 @@ mod tests {
     use std::fs::File;
     use std::io::prelude::*;
     use std::sync::mpsc;
-    use {CanPlayType, GeckoMedia, PlayerEventSink, Player};
+    use {CanPlayType, GeckoMedia, Metadata, PlayerEventSink, Player};
 
     fn test_can_play_type() {
         let gecko_media = GeckoMedia::get().unwrap();
@@ -61,7 +62,8 @@ mod tests {
         Error,
         Ended,
         AsyncEvent(CString),
-        MetadataLoaded,
+        MetadataLoaded(Metadata),
+        DurationChanged(f64),
         LoadedData,
         TimeUpdate(f64),
         SeekStarted,
@@ -84,8 +86,11 @@ mod tests {
                     .send(Status::AsyncEvent(CString::new(name).unwrap()))
                     .unwrap();
             }
-            fn metadata_loaded(&self) {
-                self.sender.send(Status::MetadataLoaded).unwrap();
+            fn metadata_loaded(&self, metadata: Metadata) {
+                self.sender.send(Status::MetadataLoaded(metadata)).unwrap();
+            }
+            fn duration_changed(&self, duration: f64) {
+                self.sender.send(Status::DurationChanged(duration)).unwrap();
             }
             fn loaded_data(&self) {
                 self.sender.send(Status::LoadedData).unwrap();

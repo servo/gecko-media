@@ -4,7 +4,7 @@
 
 extern crate gecko_media;
 
-use gecko_media::{GeckoMedia, PlayerEventSink};
+use gecko_media::{GeckoMedia, Metadata, PlayerEventSink};
 use std::env;
 use std::ffi::CString;
 use std::fs::File;
@@ -22,16 +22,16 @@ fn main() {
 
     GeckoMedia::get().unwrap();
     let (sender, receiver) = mpsc::channel();
-    GeckoMedia::get()
-        .unwrap()
-        .queue_task(move || sender.send(()).unwrap());
+    GeckoMedia::get().unwrap().queue_task(
+        move || sender.send(()).unwrap(),
+    );
     receiver.recv().unwrap();
     {
         enum Status {
             Error,
             Ended,
             AsyncEvent(CString),
-            MetadataLoaded,
+            MetadataLoaded(Metadata),
         }
         let (sender, receiver) = mpsc::channel();
         struct Sink {
@@ -45,19 +45,18 @@ fn main() {
                 self.sender.send(Status::Error).unwrap();
             }
             fn async_event(&self, name: &str) {
-                self.sender.send(Status::AsyncEvent(CString::new(name).unwrap())).unwrap();
+                self.sender
+                    .send(Status::AsyncEvent(CString::new(name).unwrap()))
+                    .unwrap();
             }
-            fn metadata_loaded(&self) {
-                self.sender.send(Status::MetadataLoaded).unwrap();
+            fn metadata_loaded(&self, metadata: Metadata) {
+                self.sender.send(Status::MetadataLoaded(metadata)).unwrap();
             }
-            fn loaded_data(&self) {
-            }
-            fn time_update(&self, _time: f64) {
-            }
-            fn seek_started(&self) {
-            }
-            fn seek_completed(&self) {
-            }
+            fn duration_changed(&self, _duration: f64) {}
+            fn loaded_data(&self) {}
+            fn time_update(&self, _time: f64) {}
+            fn seek_started(&self) {}
+            fn seek_completed(&self) {}
         }
         let sink = Box::new(Sink { sender: sender });
 
@@ -92,14 +91,16 @@ fn main() {
                     }
                     Status::AsyncEvent(name) => {
                         println!("Event received: {:?}", name);
-                    },
-                    Status::MetadataLoaded => {
-                        println!("MetadataLoaded; duration: {:?}", player.get_duration());
-                    },
+                    }
+                    Status::MetadataLoaded(metadata) => {
+                        println!("MetadataLoaded; duration: {:?}", metadata.duration);
+                    }
                 };
             }
         } else {
-            panic!("Unknown file type. Currently supported: wav, mp3, m4a, flac and ogg/vorbis files.")
+            panic!(
+                "Unknown file type. Currently supported: wav, mp3, m4a, flac and ogg/vorbis files."
+            )
         }
         player.shutdown();
     }

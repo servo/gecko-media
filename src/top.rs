@@ -24,6 +24,12 @@ pub struct Player {
     id: usize,
 }
 
+pub struct Metadata {
+    /// Duration of the media in seconds, as described either by metadata
+    /// in the container, or an estimate if no better inforation exists.
+    pub duration: f64,
+}
+
 /// Users of Player pass in an implementation of this trait when creating
 /// Player objects. When events happen in the Player, users will receive
 /// callbacks upon the trait implementation, notifying them of the event.
@@ -39,7 +45,12 @@ pub trait PlayerEventSink {
     /// be fired at the HTMLMediaElement.
     fn async_event(&self, name: &str);
     /// Called when initial metadata has been loaded.
-    fn metadata_loaded(&self);
+    fn metadata_loaded(&self, metadata: Metadata);
+    /// Called if the duration has changed. This could happen if the Player's
+    /// estimate of the duration becomes more accurate, or if playing a live
+    /// or unbounded stream. Note this can be called after metadata_loaded()
+    /// reports the initial duration.
+    fn duration_changed(&self, duration: f64);
     /// Called when the initial video frame and audio sample have been loaded.
     fn loaded_data(&self);
     /// Called when the current playback positions changes, reporting the
@@ -91,9 +102,6 @@ impl Player {
             GeckoMedia_Player_SetVolume(player_id, volume);
         });
     }
-    pub fn get_duration(&self) -> f64 {
-        self.gecko_media.get_duration(self.id)
-    }
 }
 
 impl GeckoMedia {
@@ -133,14 +141,6 @@ impl GeckoMedia {
         } else {
             CanPlayType::No
         }
-    }
-
-    pub fn get_duration(&self, player_id: usize) -> f64 {
-        let (sender, receiver) = mpsc::channel();
-        self.sender
-            .send(GeckoMediaMsg::DurationQuery(player_id, sender))
-            .unwrap();
-        receiver.recv().unwrap()
     }
 
     pub fn queue_task<F>(&self, f: F)
@@ -199,9 +199,15 @@ impl GeckoMedia {
             let c_str: &CStr = CStr::from_ptr(name);
             wrapper.sink.async_event(c_str.to_str().unwrap());
         }
-        unsafe extern "C" fn metadata_loaded(ptr: *mut c_void) {
+        unsafe extern "C" fn metadata_loaded(ptr: *mut c_void, metadata: GeckoMediaMetadata) {
             let wrapper = &*(ptr as *mut Wrapper);
-            wrapper.sink.metadata_loaded();
+            wrapper.sink.metadata_loaded(
+                Metadata { duration: metadata.mDuration },
+            );
+        }
+        unsafe extern "C" fn duration_changed(ptr: *mut c_void, duration: f64) {
+            let wrapper = &*(ptr as *mut Wrapper);
+            wrapper.sink.duration_changed(duration);
         }
         unsafe extern "C" fn loaded_data(ptr: *mut c_void) {
             let wrapper = &*(ptr as *mut Wrapper);
@@ -223,6 +229,7 @@ impl GeckoMedia {
             mContext: Box::into_raw(Box::new(Wrapper { sink: sink })) as *mut c_void,
             mPlaybackEnded: Some(playback_ended),
             mDecodeError: Some(decode_error),
+            mDurationChanged: Some(duration_changed),
             mAsyncEvent: Some(async_event),
             mMetadataLoaded: Some(metadata_loaded),
             mLoadedData: Some(loaded_data),
@@ -251,7 +258,6 @@ enum GeckoMediaMsg {
     #[cfg(test)]
     Test,
     CallProcessGeckoEvents,
-    DurationQuery(usize, Sender<f64>),
 }
 
 static OUTSTANDING_HANDLES: AtomicUsize = ATOMIC_USIZE_INIT;
@@ -287,11 +293,6 @@ lazy_static! {
                         // event queue.
                         unsafe {
                             GeckoMedia_ProcessEvents();
-                        }
-                    },
-                    GeckoMediaMsg::DurationQuery(player_id, sender) => {
-                        unsafe {
-                            sender.send(GeckoMedia_Player_GetDuration(player_id)).unwrap();
                         }
                     },
                     #[cfg(test)]
