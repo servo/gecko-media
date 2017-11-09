@@ -228,7 +228,7 @@ GeckoMedia_Player_LoadBlob(size_t aId,
   }
 
   MediaDecoderInit decoderInit(player->mDecoderOwner.get(),
-                               0.001, // volume
+                               1.0,   // volume
                                true,  // mPreservesPitch
                                1.0,   // mPlaybackRate
                                false, // mMinimizePreroll

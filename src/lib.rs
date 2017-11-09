@@ -111,6 +111,7 @@ mod tests {
         let mut bytes = vec![];
         file.read_to_end(&mut bytes).unwrap();
         player.load_blob(bytes, mime).unwrap();
+        player.set_volume(0.001);
         (player, receiver)
     }
 
