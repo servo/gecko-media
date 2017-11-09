@@ -24,14 +24,33 @@ pub struct Player {
     id: usize,
 }
 
+/// Users of Player pass in an implementation of this trait when creating
+/// Player objects. When events happen in the Player, users will receive
+/// callbacks upon the trait implementation, notifying them of the event.
 pub trait PlayerEventSink {
+    /// Called when playback has reached the end of media. Playback can
+    /// be resumed from the start of media by calling Player::Play, or by
+    /// seeking.
     fn playback_ended(&self);
+    /// Called if playback has encountered a fatal error. The Player can
+    /// no longer function, and should be dropped.
     fn decode_error(&self);
+    /// Called when the HTML simple event corresponding to `name` should
+    /// be fired at the HTMLMediaElement.
     fn async_event(&self, name: &str);
+    /// Called when initial metadata has been loaded.
     fn metadata_loaded(&self);
+    /// Called when the initial video frame and audio sample have been loaded.
     fn loaded_data(&self);
+    /// Called when the current playback positions changes, reporting the
+    /// current playback position in seconds. This is called whenever the
+    /// playback position changes due to significant events (such as seeking)
+    /// or roughly once per frame while play media. The value reported here
+    /// is HTMLMediaElement.currentTime.
     fn time_update(&self, time: f64);
+    /// Called when the Player has started to seek.
     fn seek_started(&self);
+    /// Called when the Player has stopped seeking.
     fn seek_completed(&self);
 }
 
