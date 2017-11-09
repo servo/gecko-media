@@ -77,12 +77,10 @@ struct PlayerCallbackObject
 };
 
 void
-GeckoMedia_Player_Create(size_t aId, PlayerCallbackObject aCallback);
-
-void
-GeckoMedia_Player_LoadBlob(size_t aId,
-                           RustVecU8Object aMediaData,
-                           const char* aMimeType);
+GeckoMedia_Player_CreateBlobPlayer(size_t aId,
+                                   RustVecU8Object aMediaData,
+                                   const char* aMimeType,
+                                   PlayerCallbackObject aCallback);
 
 void
 GeckoMedia_Player_Play(size_t aId);

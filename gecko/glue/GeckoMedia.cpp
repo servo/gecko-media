@@ -206,26 +206,18 @@ GetPlayer(size_t aId)
 }
 
 void
-GeckoMedia_Player_Create(size_t aId, PlayerCallbackObject aCallback)
-{
-  Player* player = sPlayers.AppendElement(Player(aId, aCallback));
-  MOZ_ASSERT(GetPlayer(aId) == player);
-}
-
-void
-GeckoMedia_Player_LoadBlob(size_t aId,
-                           RustVecU8Object aMediaData,
-                           const char* aMimeType)
+GeckoMedia_Player_CreateBlobPlayer(size_t aId,
+                                   RustVecU8Object aMediaData,
+                                   const char* aMimeType,
+                                   PlayerCallbackObject aCallback)
 {
   mozilla::Maybe<MediaContainerType> mime = MakeMediaContainerType(aMimeType);
   if (!mime) {
     return;
   }
 
-  Player* player = GetPlayer(aId);
-  if (!player) {
-    return;
-  }
+  Player* player = sPlayers.AppendElement(Player(aId, aCallback));
+  MOZ_ASSERT(GetPlayer(aId) == player);
 
   MediaDecoderInit decoderInit(player->mDecoderOwner.get(),
                                1.0,   // volume

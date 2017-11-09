@@ -60,8 +60,6 @@ fn main() {
         }
         let sink = Box::new(Sink { sender: sender });
 
-        let g = GeckoMedia::get().unwrap();
-        let player = g.create_player(sink).unwrap();
         let mut file = File::open(filename).unwrap();
         let mut bytes = vec![];
         file.read_to_end(&mut bytes).unwrap();
@@ -76,7 +74,10 @@ fn main() {
             _ => "",
         };
         if mime != "" {
-            player.load_blob(bytes, mime).unwrap();
+            let player = GeckoMedia::get()
+                .unwrap()
+                .create_blob_player(bytes, mime, sink)
+                .unwrap();
             player.play();
             player.set_volume(1.0);
             loop {

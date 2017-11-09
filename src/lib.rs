@@ -106,11 +106,13 @@ mod tests {
             }
         }
         let sink = Box::new(Sink { sender: sender });
-        let player = GeckoMedia::get().unwrap().create_player(sink).unwrap();
         let mut file = File::open(path).unwrap();
         let mut bytes = vec![];
         file.read_to_end(&mut bytes).unwrap();
-        player.load_blob(bytes, mime).unwrap();
+        let player = GeckoMedia::get()
+            .unwrap()
+            .create_blob_player(bytes, mime, sink)
+            .unwrap();
         player.set_volume(0.001);
         (player, receiver)
     }

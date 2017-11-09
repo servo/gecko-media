@@ -66,18 +66,6 @@ pub trait PlayerEventSink {
 }
 
 impl Player {
-    pub fn load_blob(&self, media_data: Vec<u8>, mime_type: &str) -> Result<(), ()> {
-        let media_data = to_ffi_vec(media_data);
-        let mime_type = match CString::new(mime_type.as_bytes()) {
-            Ok(mime_type) => mime_type,
-            _ => return Err(()),
-        };
-        let player_id = self.id;
-        self.gecko_media.queue_task(move || unsafe {
-            GeckoMedia_Player_LoadBlob(player_id, media_data, mime_type.as_ptr());
-        });
-        Ok(())
-    }
     pub fn play(&self) {
         let player_id = self.id;
         self.gecko_media.queue_task(move || unsafe {
@@ -171,13 +159,22 @@ impl GeckoMedia {
         unsafe { GeckoMedia_QueueRustRunnable(runnable) }
     }
 
-    pub fn create_player(&self, sink: Box<PlayerEventSink>) -> Result<Player, ()> {
+    pub fn create_blob_player(
+        &self,
+        media_data: Vec<u8>,
+        mime_type: &str,
+        sink: Box<PlayerEventSink>,
+    ) -> Result<Player, ()> {
         let handle = GeckoMedia::get()?;
         let id = NEXT_PLAYER_ID.fetch_add(1, Ordering::SeqCst);
-
         let callback = self.to_ffi_callback(sink);
+        let media_data = to_ffi_vec(media_data);
+        let mime_type = match CString::new(mime_type.as_bytes()) {
+            Ok(mime_type) => mime_type,
+            _ => return Err(()),
+        };
         self.queue_task(move || unsafe {
-            GeckoMedia_Player_Create(id, callback);
+            GeckoMedia_Player_CreateBlobPlayer(id, media_data, mime_type.as_ptr(), callback);
         });
 
         Ok(Player {
