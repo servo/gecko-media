@@ -11,3 +11,9 @@
 #undef MOZ_AV1
 
 #undef MOZ_WEBRTC
+
+#define TimeStamp GeckoMedia_TimeStamp
+#define HashBytes GeckoMedia_HashBytes
+#define BaseTimeDurationPlatformUtils GeckoMedia_BaseTimeDurationPlatformUtils
+#define Unused GeckoMedia_Unused
+#define detail GeckoMedia_detail
