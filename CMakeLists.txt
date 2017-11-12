@@ -126,7 +126,6 @@ target_include_directories(ogg PRIVATE gecko/include/mozilla/media/libogg/includ
 
 add_library(gecko_core OBJECT
   gecko/glue/AsyncShutdown.cpp
-  gecko/glue/AbstractThread.cpp
   gecko/glue/AgnosticDecoderModule.cpp
   gecko/glue/Benchmark.cpp
   gecko/glue/CooperativeThreadPool.cpp
@@ -247,6 +246,7 @@ add_library(gecko_core OBJECT
   gecko/src/xpcom/string/nsReadableUtilsSSE2.cpp
   gecko/src/xpcom/string/nsUTF8UtilsSSE2.cpp
   gecko/src/xpcom/string/unified.cpp
+  gecko/src/xpcom/threads/AbstractThread.cpp
   gecko/src/xpcom/threads/BlockingResourceBase.cpp
   gecko/src/xpcom/threads/EventQueue.cpp
   gecko/src/xpcom/threads/nsILabelableRunnable.cpp

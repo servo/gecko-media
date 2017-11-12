@@ -16,7 +16,7 @@
 #include "mozilla/Unused.h"
 
 #include "nsThreadUtils.h"
-//#include "nsContentUtils.h"
+#include "nsContentUtils.h"
 #include "nsServiceManagerUtils.h"
 
 
@@ -89,15 +89,7 @@ public:
         NewRunnableMethod("EventTargetWrapper::FireTailDispatcher",
                           this,
                           &EventTargetWrapper::FireTailDispatcher);
-      // nsContentUtils::RunInStableState(event.forget());
-      // RunInStableState ensures no JS contexts are running at the
-      // time when this runnable runs. Inside GeckoMedia, we don't
-      // run JS on the main thread, we let Servo run JS on its own
-      // script thread, so we can just dispatch the task to the current
-      // thread. Note: we can't just run it, as FireTailDispatcher()
-      // clears mTailDispatcher which would make the ref() call below
-      // fail.
-      NS_DispatchToCurrentThread(event.forget());
+      nsContentUtils::RunInStableState(event.forget());
     }
 
     return mTailDispatcher.ref();
