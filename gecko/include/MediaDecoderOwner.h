@@ -8,6 +8,10 @@
 
 #include "mozilla/UniquePtr.h"
 #include "MediaInfo.h"
+#include "MediaSegment.h"
+#include "nsSize.h"
+
+class nsIDocument;
 
 namespace mozilla {
 
@@ -28,7 +32,7 @@ public:
   virtual void DownloadProgressed() = 0;
 
   // Dispatch an asynchronous event to the decoder owner
-  virtual nsresult DispatchAsyncEvent(const nsAString& aName) = 0;
+  virtual void DispatchAsyncEvent(const nsAString& aName) = 0;
 
   // Triggers a recomputation of readyState.
   virtual void UpdateReadyState() = 0;
@@ -118,12 +122,6 @@ public:
     NEXT_FRAME_UNINITIALIZED
   };
 
-  // Check if the decoder owner is active.
-  virtual bool IsActive() const = 0;
-
-  // Check if the decoder owner is hidden.
-  virtual bool IsHidden() const = 0;
-
   // Called by media decoder when the audible state changed
   virtual void SetAudibleState(bool aAudible) = 0;
 
@@ -172,13 +170,26 @@ public:
   virtual VideoFrameContainer* GetVideoFrameContainer() { return nullptr; }
 
   // Return the decoder owner's owner document.
-  // virtual nsIDocument* GetDocument() const { return nullptr; }
+  virtual nsIDocument* GetDocument() const { return nullptr; }
 
   // Called by the media decoder to create a GMPCrashHelper.
   virtual already_AddRefed<GMPCrashHelper> CreateGMPCrashHelper()
   {
     return nullptr;
   }
+
+  // Called by the frame container to notify the layout engine that the
+  // size of the image has changed, or the video needs to be be repainted
+  // for some other reason.
+  virtual void Invalidate(bool aImageSizeChanged,
+                          Maybe<nsIntSize>& aNewIntrinsicSize,
+                          bool aForceInvalidate) {}
+
+  // Called after the MediaStream we're playing rendered a frame to aContainer
+  // with a different principalHandle than the previous frame.
+  virtual void PrincipalHandleChangedForVideoFrameContainer(
+    VideoFrameContainer* aContainer,
+    const PrincipalHandle& aNewPrincipalHandle) {}
 
   /*
    * Servo only methods go here. Please provide default implementations so they

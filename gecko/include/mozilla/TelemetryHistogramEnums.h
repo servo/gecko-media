@@ -792,6 +792,7 @@ enum HistogramID : uint32_t {
   FX_PREFERENCES_OPENED_VIA,
   FX_PAGE_ACTION_ADDED,
   FX_PAGE_ACTION_REMOVED,
+  FX_PAGE_ACTION_MANAGED,
   FX_PAGE_ACTION_URLBAR_USED,
   FX_PAGE_ACTION_PANEL_USED,
   INPUT_EVENT_RESPONSE_MS,
@@ -1036,6 +1037,8 @@ enum HistogramID : uint32_t {
   DEVTOOLS_INSPECTOR_NEW_ROOT_TO_RELOAD_DELAY_MS,
   DEVTOOLS_DEBUGGER_DISPLAY_SOURCE_LOCAL_MS,
   DEVTOOLS_DEBUGGER_DISPLAY_SOURCE_REMOTE_MS,
+  DEVTOOLS_ABOUT_DEVTOOLS_OPENED_KEY,
+  DEVTOOLS_ABOUT_DEVTOOLS_OPENED_REASON,
   MEDIA_RUST_MP4PARSE_SUCCESS,
   MEDIA_RUST_MP4PARSE_ERROR_CODE,
   MEDIA_RUST_MP4PARSE_TRACK_MATCH_AUDIO,
@@ -1044,7 +1047,6 @@ enum HistogramID : uint32_t {
   MEDIA_OGG_LOADED_IS_CHAINED,
   MEDIA_HLS_CANPLAY_REQUESTED,
   MEDIA_HLS_DECODER_SUCCESS,
-  MEDIA_DECODING_PROCESS_CRASH,
   MEDIA_ANDROID_VIDEO_TUNNELING_SUPPORT,
   MEDIA_EME_SECURE_CONTEXT,
   VIDEO_CHROMIUM_CDM_MAX_SHMEMS,
@@ -1394,7 +1396,6 @@ enum HistogramID : uint32_t {
   STUMBLER_OBSERVATIONS_PER_DAY,
   STUMBLER_TIME_BETWEEN_RECEIVED_LOCATIONS_SEC,
   DATA_STORAGE_ENTRIES,
-  VIDEO_EME_PLAY_SUCCESS,
   VIDEO_PLAY_TIME_MS,
   VIDEO_HIDDEN_PLAY_TIME_MS,
   VIDEO_HIDDEN_PLAY_TIME_PERCENTAGE,
@@ -2023,6 +2024,17 @@ enum class LABELS_FX_PAGE_ACTION_REMOVED : uint32_t {
   other
 };
 
+enum class LABELS_FX_PAGE_ACTION_MANAGED : uint32_t {
+  bookmark,
+  pocket,
+  screenshots,
+  webcompat,
+  copyURL,
+  emailLink,
+  sendToDevice,
+  other
+};
+
 enum class LABELS_FX_PAGE_ACTION_URLBAR_USED : uint32_t {
   bookmark,
   pocket,
@@ -2091,6 +2103,33 @@ enum class LABELS_TELEMETRY_TEST_KEYED_CATEGORICAL : uint32_t {
   CommonLabel,
   Label2,
   Label3
+};
+
+enum class LABELS_DEVTOOLS_ABOUT_DEVTOOLS_OPENED_KEY : uint32_t {
+  toggleToolbox,
+  toggleToolboxF12,
+  inspector,
+  webconsole,
+  jsdebugger,
+  netmonitor,
+  toggleToolbar,
+  webide,
+  browserToolbox,
+  browserConsole,
+  responsiveDesignMode,
+  scratchpad,
+  styleeditor,
+  performance,
+  storage,
+  dom
+};
+
+enum class LABELS_DEVTOOLS_ABOUT_DEVTOOLS_OPENED_REASON : uint32_t {
+  KeyShortcut,
+  SystemMenu,
+  HamburgerMenu,
+  ContextMenu,
+  CommandLine
 };
 
 enum class LABELS_DEVTOOLS_ENTRY_POINT : uint32_t {
@@ -2162,6 +2201,7 @@ template<> struct IsCategoricalLabelEnum<LABELS_FX_PREFERENCES_CATEGORY_OPENED_V
 template<> struct IsCategoricalLabelEnum<LABELS_FX_PREFERENCES_OPENED_VIA> : TrueType {};
 template<> struct IsCategoricalLabelEnum<LABELS_FX_PAGE_ACTION_ADDED> : TrueType {};
 template<> struct IsCategoricalLabelEnum<LABELS_FX_PAGE_ACTION_REMOVED> : TrueType {};
+template<> struct IsCategoricalLabelEnum<LABELS_FX_PAGE_ACTION_MANAGED> : TrueType {};
 template<> struct IsCategoricalLabelEnum<LABELS_FX_PAGE_ACTION_URLBAR_USED> : TrueType {};
 template<> struct IsCategoricalLabelEnum<LABELS_FX_PAGE_ACTION_PANEL_USED> : TrueType {};
 template<> struct IsCategoricalLabelEnum<LABELS_FX_URLBAR_SELECTED_RESULT_METHOD> : TrueType {};
@@ -2171,6 +2211,8 @@ template<> struct IsCategoricalLabelEnum<LABELS_TELEMETRY_TEST_CATEGORICAL> : Tr
 template<> struct IsCategoricalLabelEnum<LABELS_TELEMETRY_TEST_CATEGORICAL_OPTOUT> : TrueType {};
 template<> struct IsCategoricalLabelEnum<LABELS_TELEMETRY_TEST_CATEGORICAL_NVALUES> : TrueType {};
 template<> struct IsCategoricalLabelEnum<LABELS_TELEMETRY_TEST_KEYED_CATEGORICAL> : TrueType {};
+template<> struct IsCategoricalLabelEnum<LABELS_DEVTOOLS_ABOUT_DEVTOOLS_OPENED_KEY> : TrueType {};
+template<> struct IsCategoricalLabelEnum<LABELS_DEVTOOLS_ABOUT_DEVTOOLS_OPENED_REASON> : TrueType {};
 template<> struct IsCategoricalLabelEnum<LABELS_DEVTOOLS_ENTRY_POINT> : TrueType {};
 template<> struct IsCategoricalLabelEnum<LABELS_DOM_SCRIPT_LOADING_SOURCE> : TrueType {};
 template<> struct IsCategoricalLabelEnum<LABELS_DOM_SCRIPT_ENCODING_STATUS> : TrueType {};
@@ -2194,6 +2236,7 @@ template<> struct CategoricalLabelId<LABELS_FX_PREFERENCES_CATEGORY_OPENED_V2> :
 template<> struct CategoricalLabelId<LABELS_FX_PREFERENCES_OPENED_VIA> : IntegralConstant<uint32_t, FX_PREFERENCES_OPENED_VIA> {};
 template<> struct CategoricalLabelId<LABELS_FX_PAGE_ACTION_ADDED> : IntegralConstant<uint32_t, FX_PAGE_ACTION_ADDED> {};
 template<> struct CategoricalLabelId<LABELS_FX_PAGE_ACTION_REMOVED> : IntegralConstant<uint32_t, FX_PAGE_ACTION_REMOVED> {};
+template<> struct CategoricalLabelId<LABELS_FX_PAGE_ACTION_MANAGED> : IntegralConstant<uint32_t, FX_PAGE_ACTION_MANAGED> {};
 template<> struct CategoricalLabelId<LABELS_FX_PAGE_ACTION_URLBAR_USED> : IntegralConstant<uint32_t, FX_PAGE_ACTION_URLBAR_USED> {};
 template<> struct CategoricalLabelId<LABELS_FX_PAGE_ACTION_PANEL_USED> : IntegralConstant<uint32_t, FX_PAGE_ACTION_PANEL_USED> {};
 template<> struct CategoricalLabelId<LABELS_FX_URLBAR_SELECTED_RESULT_METHOD> : IntegralConstant<uint32_t, FX_URLBAR_SELECTED_RESULT_METHOD> {};
@@ -2203,6 +2246,8 @@ template<> struct CategoricalLabelId<LABELS_TELEMETRY_TEST_CATEGORICAL> : Integr
 template<> struct CategoricalLabelId<LABELS_TELEMETRY_TEST_CATEGORICAL_OPTOUT> : IntegralConstant<uint32_t, TELEMETRY_TEST_CATEGORICAL_OPTOUT> {};
 template<> struct CategoricalLabelId<LABELS_TELEMETRY_TEST_CATEGORICAL_NVALUES> : IntegralConstant<uint32_t, TELEMETRY_TEST_CATEGORICAL_NVALUES> {};
 template<> struct CategoricalLabelId<LABELS_TELEMETRY_TEST_KEYED_CATEGORICAL> : IntegralConstant<uint32_t, TELEMETRY_TEST_KEYED_CATEGORICAL> {};
+template<> struct CategoricalLabelId<LABELS_DEVTOOLS_ABOUT_DEVTOOLS_OPENED_KEY> : IntegralConstant<uint32_t, DEVTOOLS_ABOUT_DEVTOOLS_OPENED_KEY> {};
+template<> struct CategoricalLabelId<LABELS_DEVTOOLS_ABOUT_DEVTOOLS_OPENED_REASON> : IntegralConstant<uint32_t, DEVTOOLS_ABOUT_DEVTOOLS_OPENED_REASON> {};
 template<> struct CategoricalLabelId<LABELS_DEVTOOLS_ENTRY_POINT> : IntegralConstant<uint32_t, DEVTOOLS_ENTRY_POINT> {};
 template<> struct CategoricalLabelId<LABELS_DOM_SCRIPT_LOADING_SOURCE> : IntegralConstant<uint32_t, DOM_SCRIPT_LOADING_SOURCE> {};
 template<> struct CategoricalLabelId<LABELS_DOM_SCRIPT_ENCODING_STATUS> : IntegralConstant<uint32_t, DOM_SCRIPT_ENCODING_STATUS> {};

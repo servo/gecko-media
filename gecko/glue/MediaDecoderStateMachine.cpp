@@ -19,7 +19,7 @@
 #include "mediasink/AudioSinkWrapper.h"
 #include "mediasink/DecodedStream.h"
 #include "mediasink/OutputStreamManager.h"
-// #include "mediasink/VideoSink.h"
+#include "mediasink/VideoSink.h"
 #include "mozilla/DebugOnly.h"
 #include "mozilla/IndexSequence.h"
 #include "mozilla/Logging.h"
@@ -2602,7 +2602,7 @@ MediaDecoderStateMachine::MediaDecoderStateMachine(MediaDecoder* aDecoder,
   mDecoderID(aDecoder),
   mAbstractMainThread(aDecoder->AbstractMainThread()),
   mFrameStats(&aDecoder->GetFrameStatistics()),
-  // mVideoFrameContainer(aDecoder->GetVideoFrameContainer()),
+  mVideoFrameContainer(aDecoder->GetVideoFrameContainer()),
   mTaskQueue(new TaskQueue(
     GetMediaThreadPool(MediaThreadType::PLAYBACK),
     "MDSM::mTaskQueue", /* aSupportsTailDispatch = */ true)),
@@ -2719,12 +2719,11 @@ MediaDecoderStateMachine::CreateMediaSink(bool aAudioCaptured)
                         mSameOriginMedia.Ref(), mMediaPrincipalHandle.Ref())
     : CreateAudioSink();
 
-  return audioSink.forget();
-  // RefPtr<media::MediaSink> mediaSink =
-  //   new VideoSink(mTaskQueue, audioSink, mVideoQueue,
-  //                 mVideoFrameContainer, *mFrameStats,
-  //                 sVideoQueueSendToCompositorSize);
-  // return mediaSink.forget();
+  RefPtr<media::MediaSink> mediaSink =
+    new VideoSink(mTaskQueue, audioSink, mVideoQueue,
+                  mVideoFrameContainer, *mFrameStats,
+                  sVideoQueueSendToCompositorSize);
+  return mediaSink.forget();
 }
 
 TimeUnit
@@ -3349,7 +3348,7 @@ void
 MediaDecoderStateMachine::DecodeError(const MediaResult& aError)
 {
   MOZ_ASSERT(OnTaskQueue());
-  LOGE("Decode error");
+  LOGE("Decode error: %s", aError.Description().get());
   // Notify the decode error and MediaDecoder will shut down MDSM.
   mOnPlaybackErrorEvent.Notify(aError);
 }
@@ -3696,22 +3695,34 @@ nsCString
 MediaDecoderStateMachine::GetDebugInfo()
 {
   MOZ_ASSERT(OnTaskQueue());
-  return nsPrintfCString(
-           "MediaDecoderStateMachine State: GetMediaTime=%" PRId64 " GetClock="
-           "%" PRId64 " mMediaSink=%p state=%s mPlayState=%d "
-           "mSentFirstFrameLoadedEvent=%d IsPlaying=%d mAudioStatus=%s "
-           "mVideoStatus=%s mDecodedAudioEndTime=%" PRId64
-           " mDecodedVideoEndTime=%" PRId64 "mAudioCompleted=%d "
-           "mVideoCompleted=%d",
-           GetMediaTime().ToMicroseconds(),
-           mMediaSink->IsStarted() ? GetClock().ToMicroseconds() : -1,
-           mMediaSink.get(), ToStateStr(), mPlayState.Ref(),
-           mSentFirstFrameLoadedEvent, IsPlaying(), AudioRequestStatus(),
-           VideoRequestStatus(), mDecodedAudioEndTime.ToMicroseconds(),
-           mDecodedVideoEndTime.ToMicroseconds(),
-           mAudioCompleted, mVideoCompleted)
-         + mStateObj->GetDebugInfo() + nsCString("\n")
-         + mMediaSink->GetDebugInfo();
+  int64_t duration =
+    mDuration.Ref() ? mDuration.Ref().ref().ToMicroseconds() : -1;
+  auto str = nsPrintfCString(
+    "MDSM: duration=%" PRId64 " GetMediaTime=%" PRId64 " GetClock="
+    "%" PRId64 " mMediaSink=%p state=%s mPlayState=%d "
+    "mSentFirstFrameLoadedEvent=%d IsPlaying=%d mAudioStatus=%s "
+    "mVideoStatus=%s mDecodedAudioEndTime=%" PRId64
+    " mDecodedVideoEndTime=%" PRId64 " mAudioCompleted=%d "
+    "mVideoCompleted=%d %s",
+    duration,
+    GetMediaTime().ToMicroseconds(),
+    mMediaSink->IsStarted() ? GetClock().ToMicroseconds() : -1,
+    mMediaSink.get(),
+    ToStateStr(),
+    mPlayState.Ref(),
+    mSentFirstFrameLoadedEvent,
+    IsPlaying(),
+    AudioRequestStatus(),
+    VideoRequestStatus(),
+    mDecodedAudioEndTime.ToMicroseconds(),
+    mDecodedVideoEndTime.ToMicroseconds(),
+    mAudioCompleted,
+    mVideoCompleted,
+    mStateObj->GetDebugInfo().get());
+
+  AppendStringIfNotEmpty(str, mMediaSink->GetDebugInfo());
+
+  return str;
 }
 
 RefPtr<MediaDecoder::DebugInfoPromise>
