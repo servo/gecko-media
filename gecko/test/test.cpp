@@ -5,6 +5,8 @@
 #include <string>
 #include <unistd.h>
 
+#include "AudioBlock.h"
+#include "AudioEventTimeline.h"
 #include "AudioStream.h"
 #include "DecoderTraits.h"
 #include "GeckoMedia.h"
@@ -15,6 +17,7 @@
 #include "MediaDecoder.h"
 #include "MediaStreamGraph.h"
 #include "PlatformDecoderModule.h"
+#include "ThreeDPoint.h"
 #include "VideoUtils.h"
 #include "gecko_media_prefs.h"
 #include "mozilla/ArrayUtils.h"
@@ -545,24 +548,49 @@ TestGeckoDecoder()
   decoder->Shutdown();
 }
 
+void
+TestAudioBlock() {
+  AudioBlock block = AudioBlock();
+  assert(block.GetDuration() == WEBAUDIO_BLOCK_SIZE);
+}
+
+void
+TestThreeDPoint() {
+  dom::ThreeDPoint point(1.0, 2.0, 3.0);
+  assert(point.x == 1.0);
+  assert(point.y == 2.0);
+  assert(point.z == 3.0);
+}
+
+void
+TestAudioEventTimeline() {
+  dom::AudioEventTimeline timeline(1.0);
+  assert(timeline.GetValue() == 1.0);
+}
+
 } // namespace mozilla
 
 extern "C" void
 TestGecko()
 {
-  mozilla::TestPreferences();
-  mozilla::TestString();
-  mozilla::TestArray();
-  mozilla::TestAudioStream();
-  mozilla::TestHashTables();
-  mozilla::TestTimeStamp();
-  mozilla::TestThreads();
-  mozilla::TestMozPromise();
-  mozilla::TestVideoData();
-  mozilla::TestAudioData();
-  mozilla::Test_MediaDataDecoder();
-  mozilla::Test_MediaMIMETypes();
-  mozilla::Test_MP4Demuxer();
-  mozilla::TestDecoderTraits();
-  mozilla::TestGeckoDecoder();
+  using namespace mozilla;
+
+  TestPreferences();
+  TestString();
+  TestArray();
+  TestAudioStream();
+  TestHashTables();
+  TestTimeStamp();
+  TestThreads();
+  TestMozPromise();
+  TestVideoData();
+  TestAudioData();
+  Test_MediaDataDecoder();
+  Test_MediaMIMETypes();
+  Test_MP4Demuxer();
+  TestDecoderTraits();
+  TestGeckoDecoder();
+  TestAudioBlock();
+  TestThreeDPoint();
+  TestAudioEventTimeline();
 }

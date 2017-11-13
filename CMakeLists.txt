@@ -213,6 +213,8 @@ add_library(gecko_core OBJECT
   gecko/src/dom/media/VideoUtils.cpp
   gecko/src/dom/media/wave/WaveDecoder.cpp
   gecko/src/dom/media/wave/WaveDemuxer.cpp
+  gecko/src/dom/media/webaudio/AudioBlock.cpp
+  gecko/src/dom/media/webaudio/AudioEventTimeline.cpp
   gecko/src/memory/fallible/fallible.cpp
   gecko/src/memory/mozalloc/mozalloc.cpp
   gecko/src/memory/mozalloc/mozalloc_abort.cpp
