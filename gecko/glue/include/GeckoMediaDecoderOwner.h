@@ -193,6 +193,8 @@ public:
 
   void SetDecoder(GeckoMediaDecoder* aDecoder);
 
+  void UpdateCurrentImages(nsTArray<GeckoPlanarYCbCrImage> aImages);
+
 private:
   bool mHasError = false;
   PlayerCallbackObject mCallback = { 0 };

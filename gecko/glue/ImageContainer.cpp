@@ -38,6 +38,9 @@
 // #include "mozilla/layers/D3D11YCbCrImage.h"
 // #endif
 
+#include "mozilla/AbstractThread.h"
+#include "GeckoMediaDecoderOwner.h"
+
 namespace mozilla {
 
 namespace gfx {
@@ -195,15 +198,16 @@ BufferRecycleBin::ClearRecycledBuffers()
 //   }
 // }
 
-ImageContainer::ImageContainer(Mode flag)
+ImageContainer::ImageContainer(GeckoMediaDecoderOwner* aOwner)
 : mRecursiveMutex("ImageContainer.mRecursiveMutex"),
   mGenerationCounter(++sGenerationCounter),
   mPaintCount(0),
   mDroppedImageCount(0),
   mImageFactory(new ImageFactory()),
   mRecycleBin(new BufferRecycleBin()),
-  mIsAsync(flag == ASYNCHRONOUS),
-  mCurrentProducerID(-1)
+  // mIsAsync(flag == ASYNCHRONOUS),
+  mCurrentProducerID(-1),
+  mOwner(aOwner)
 {
   // if (flag == ASYNCHRONOUS) {
   //   mNotifyCompositeListener = new ImageContainerListener(this);
@@ -327,6 +331,86 @@ ImageContainer::SetCurrentImageInternal(const nsTArray<NonOwningImage>& aImages)
   }
 
   mCurrentImages.SwapElements(newImages);
+
+  NotifyOwnerOfNewImages();
+}
+
+void FreeGeckoPlanarYCbCrImage(void* aImage) {
+  Image* image = reinterpret_cast<Image*>(aImage);
+  image->Release();
+}
+
+class UpdateCurrentImagesRunnable : public Runnable
+{
+public:
+  UpdateCurrentImagesRunnable(GeckoMediaDecoderOwner* aOwner,
+                              nsTArray<GeckoPlanarYCbCrImage>&& aImages)
+    : Runnable("UpdateCurrentImagesRunnable")
+    , mOwner(aOwner)
+    , mImages(Move(aImages))
+  {
+  }
+  NS_IMETHOD Run() {
+    MOZ_ASSERT(NS_IsMainThread());
+    mOwner->UpdateCurrentImages(Move(mImages));
+    // Release owner on main thread.
+    mOwner = nullptr;
+    return NS_OK;
+  }
+private:
+  nsTArray<GeckoPlanarYCbCrImage> mImages;
+  GeckoMediaDecoderOwner* mOwner;
+};
+
+void
+ImageContainer::NotifyOwnerOfNewImages()
+{
+  if (!mOwner) {
+    return;
+  }
+
+  nsTArray<GeckoPlanarYCbCrImage> images;
+  for (const OwningImage& owningImage : mCurrentImages) {
+
+    PlanarYCbCrImage* planarImage = owningImage.mImage->AsPlanarYCbCrImage();
+    MOZ_ASSERT(planarImage);
+    if (!planarImage) {
+      continue;
+    }
+    const PlanarYCbCrData* data = planarImage->GetData();
+
+    GeckoPlanarYCbCrImage* img = images.AppendElement();
+
+    img->mYChannel = data->mYChannel;
+    img->mYStride = data->mYStride;
+    img->mYWidth = data->mYSize.width;
+    img->mYHeight = data->mYSize.height;
+    img->mYSkip = data->mYSkip;
+    img->mCbChannel = data->mCbChannel;
+    img->mCrChannel = data->mCrChannel;
+    img->mCbCrStride = data->mCbCrStride;
+    img->mCbCrWidth = data->mCbCrSize.width;
+    img->mCbCrHeight = data->mCbCrSize.height;
+    img->mCbSkip = data->mCbSkip;
+    img->mCrSkip = data->mCrSkip;
+    img->mPicX = data->mPicX;
+    img->mPicY = data->mPicY;
+    img->mPicWidth = data->mPicSize.width;
+    img->mPicHeight = data->mPicSize.height;
+
+    img->mTimeStamp = 0; // How to make this portable to Rust?
+    img->mFrameID = owningImage.mFrameID;
+
+    owningImage.mImage->AddRef();
+    img->mContext = reinterpret_cast<void*>(owningImage.mImage.get());
+
+    // Releases AddRef performed above.
+    img->mFree = &FreeGeckoPlanarYCbCrImage;
+  }
+
+  RefPtr<Runnable> task = new UpdateCurrentImagesRunnable(mOwner, Move(images));
+  RefPtr<AbstractThread> thread = AbstractThread::MainThread();
+  thread->Dispatch(task.forget());
 }
 
 // void
@@ -396,10 +480,10 @@ ImageContainer::SetCurrentImagesInTransaction(const nsTArray<NonOwningImage>& aI
   SetCurrentImageInternal(aImages);
 }
 
-bool ImageContainer::IsAsync() const
-{
-  return mIsAsync;
-}
+// bool ImageContainer::IsAsync() const
+// {
+//   return mIsAsync;
+// }
 
 // CompositableHandle ImageContainer::GetAsyncContainerHandle()
 // {

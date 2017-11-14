@@ -150,6 +150,7 @@ typedef void* HANDLE;
 
 namespace mozilla {
 
+class GeckoMediaDecoderOwner;
 
 namespace layers {
 
@@ -389,7 +390,7 @@ public:
 
   static const uint64_t sInvalidAsyncContainerId = 0;
 
-  explicit ImageContainer(ImageContainer::Mode flag = SYNCHRONOUS);
+  explicit ImageContainer(GeckoMediaDecoderOwner* aOwner);
 
   /**
    * Create ImageContainer just to hold another ASYNCHRONOUS ImageContainer's
@@ -487,7 +488,7 @@ public:
    *
    * Can be called from any thread.
    */
-  bool IsAsync() const;
+  // bool IsAsync() const;
 
   /**
    * If this ImageContainer uses ImageBridge, returns the ID associated to
@@ -627,6 +628,8 @@ private:
   // Private destructor, to discourage deletion outside of Release():
   ~ImageContainer();
 
+  void NotifyOwnerOfNewImages();
+
   void SetCurrentImageInternal(const nsTArray<NonOwningImage>& aImages);
 
   // This is called to ensure we have an active image, this may not be true
@@ -679,7 +682,7 @@ private:
   // asynchronusly using the ImageBridge IPDL protocol.
   // RefPtr<ImageClient> mImageClient;
 
-  bool mIsAsync;
+  // bool mIsAsync;
   // CompositableHandle mAsyncContainerHandle;
 
   nsTArray<FrameID> mFrameIDsNotYetComposited;
@@ -690,6 +693,8 @@ private:
   // RefPtr<ImageContainerListener> mNotifyCompositeListener;
 
   static mozilla::Atomic<uint32_t> sGenerationCounter;
+
+  GeckoMediaDecoderOwner* mOwner;
 };
 
 class AutoLockImage

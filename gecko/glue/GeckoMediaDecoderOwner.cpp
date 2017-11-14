@@ -211,9 +211,12 @@ VideoFrameContainer*
 GeckoMediaDecoderOwner::GetVideoFrameContainer()
 {
   RefPtr<layers::ImageContainer> container =
-    new layers::ImageContainer(layers::ImageContainer::SYNCHRONOUS);
+    new layers::ImageContainer(this);
   mVideoFrameContainer =
     new VideoFrameContainer(this, container.forget());
+
+  // TODO: I need to call VideoFrameContainer::ForgetElement()
+  // TODO: I need to remove ImageContainer's reference to `this`.
 
   return mVideoFrameContainer;
 }
@@ -242,6 +245,12 @@ void
 GeckoMediaDecoderOwner::SetDecoder(GeckoMediaDecoder* aDecoder)
 {
   mDecoder = aDecoder;
+}
+
+void
+GeckoMediaDecoderOwner::UpdateCurrentImages(nsTArray<GeckoPlanarYCbCrImage> aImages)
+{
+  // TODO: Call back to Rust to tell it to render frames.
 }
 
 } // namespace mozilla

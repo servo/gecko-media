@@ -97,4 +97,34 @@ GeckoMedia_Player_Shutdown(size_t aId);
 void
 GeckoMedia_Player_SetVolume(size_t aId, double volume);
 
+struct GeckoPlanarYCbCrImage {
+  // Luminance buffer
+  uint8_t* mYChannel;
+  int32_t mYStride;
+  int32_t mYWidth;
+  int32_t mYHeight;
+  int32_t mYSkip;
+
+  // Chroma buffers
+  uint8_t* mCbChannel;
+  uint8_t* mCrChannel;
+  int32_t mCbCrStride;
+  int32_t mCbCrWidth;
+  int32_t mCbCrHeight;
+  int32_t mCbSkip;
+  int32_t mCrSkip;
+
+  // Picture region
+  uint32_t mPicX;
+  uint32_t mPicY;
+  int32_t mPicWidth;
+  int32_t mPicHeight;
+
+  int64_t mTimeStamp;
+  uint32_t mFrameID;
+
+  void* mContext;
+  void (*mFree)(void* aContext);
+};
+
 #endif // GeckoMedia_h_

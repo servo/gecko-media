@@ -388,7 +388,7 @@ CreateBlankVideoData(uint32_t aFrameWidth, uint32_t aFrameHeight)
   VideoInfo info;
   info.mDisplay = gfx::IntSize(aFrameWidth, aFrameHeight);
   gfx::IntRect picture(0, 0, aFrameWidth, aFrameHeight);
-  RefPtr<layers::ImageContainer> imageContainer = new layers::ImageContainer();
+  RefPtr<layers::ImageContainer> imageContainer = new layers::ImageContainer(nullptr);
   return VideoData::CreateAndCopyData(
     info,
     imageContainer,
