@@ -148,6 +148,7 @@ add_library(gecko_core OBJECT
   gecko/glue/MediaFormatReader.cpp
   gecko/glue/MediaStreamGraph.cpp
   gecko/glue/PDMFactory.cpp
+  gecko/glue/mozalloc_abort.cpp
   gecko/glue/nsAppRunner.cpp
   gecko/glue/nsContentTypeParser.cpp
   gecko/glue/nsCategoryManager.cpp
@@ -215,7 +216,6 @@ add_library(gecko_core OBJECT
   gecko/src/dom/media/wave/WaveDemuxer.cpp
   gecko/src/memory/fallible/fallible.cpp
   gecko/src/memory/mozalloc/mozalloc.cpp
-  gecko/src/memory/mozalloc/mozalloc_abort.cpp
   gecko/src/memory/mozalloc/mozalloc_oom.cpp
   gecko/src/mfbt/Assertions.cpp
   gecko/src/mfbt/ChaosMode.cpp
