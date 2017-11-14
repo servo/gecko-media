@@ -4,7 +4,7 @@
 
 extern crate gecko_media;
 
-use gecko_media::{GeckoMedia, Metadata, PlayerEventSink, GeckoPlanarYCbCrImage};
+use gecko_media::{GeckoMedia, Metadata, PlayerEventSink, PlanarYCbCrImage};
 use std::env;
 use std::ffi::CString;
 use std::fs::File;
@@ -57,8 +57,10 @@ fn main() {
             fn time_update(&self, _time: f64) {}
             fn seek_started(&self) {}
             fn seek_completed(&self) {}
-            fn update_current_images(&self, images: Vec<GeckoPlanarYCbCrImage>) {
-                println!("update! {:?}", images);
+            fn update_current_images(&self, images: Vec<PlanarYCbCrImage>) {
+                for img in images.iter() {
+                    let _pixels = img.y_plane.data();
+                }
             }
         }
         let sink = Box::new(Sink { sender: sender });
@@ -104,7 +106,8 @@ fn main() {
             }
         } else {
             panic!(
-                "Unknown file type. Currently supported: wav, mp3, m4a, flac and ogg/vorbis files. Video files supported: mp4."
+                "Unknown file type. Currently supported: wav, mp3, m4a, flac and ogg/vorbis files.\
+                 Video files supported: mp4."
             )
         }
     }

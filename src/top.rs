@@ -33,6 +33,89 @@ pub struct Metadata {
     pub duration: f64,
 }
 
+/// Holds pixel data and coordinates of a plane of data.
+///
+/// skip, enable various output formats from hardware decoder. They
+/// are per-pixel skips in the source image.
+///
+/// For example when image width is 640, stride is 670, skip is 3,
+/// the pixel data looks like:
+///
+/// |<------------------------- stride ----------------------------->|
+/// |<-------------------- width ------------------>|
+///  0   3   6   9   12  15  18  21                659             669
+/// |----------------------------------------------------------------|
+/// |Y___Y___Y___Y___Y___Y___Y___Y...                      |%%%%%%%%%|
+/// |Y___Y___Y___Y___Y___Y___Y___Y...                      |%%%%%%%%%|
+/// |Y___Y___Y___Y___Y___Y___Y___Y...                      |%%%%%%%%%|
+/// |            |<->|
+///                skip
+///
+pub struct Plane {
+    pixels: *const u8,
+    /// The width of a line of pixels in bytes.
+    pub width: i32,
+    /// The stride of a line of pixels in bytes.
+    pub stride: i32,
+    /// The height of the plane in lines.
+    pub height: i32,
+    /// The skip bytes per pixel. This is the number of bytes to skip between
+    /// each sample. So if skip is 3, bytes {0,3,6,...} contain pixels.
+    pub skip: i32,
+}
+
+impl Plane {
+    /// Returns a slice storing the raw pixel data.
+    pub fn data<'a>(&'a self) -> &'a [u8] {
+        unsafe {
+            let size = self.stride as usize * self.height as usize;
+            slice::from_raw_parts(self.pixels, size)
+        }
+    }
+}
+
+pub struct Region {
+    pub x: u32,
+    pub y: u32,
+    pub width: i32,
+    pub height: i32,
+}
+
+/// Stores a planar YCbCr image.
+///
+/// We assume that the image data is in the REC 470M color space (see
+/// Theora specification, section 4.3.1).
+///
+/// The YCbCr format can be:
+///
+/// 4:4:4 - CbCr width/height are the same as Y.
+/// 4:2:2 - CbCr width is half that of Y. Height is the same.
+/// 4:2:0 - CbCr width and height is half that of Y.
+///
+/// The color format is detected based on the height/width ratios
+/// defined above.
+pub struct PlanarYCbCrImage {
+    /// Pixel data for the Y channel.
+    pub y_plane: Plane,
+    /// Pixel data for the Cb channel.
+    pub cb_plane: Plane,
+    /// Pixel data for the Cr channel.
+    pub cr_plane: Plane,
+    /// The sub-region of the image which contains the image to be rendered.
+    pub picture: Region,
+    /// The time at which this image should be renderd.
+    pub time_stamp: i64,
+    /// A stream-unique identifier.
+    pub frame_id: u32,
+    gecko_image: GeckoPlanarYCbCrImage,
+}
+
+impl Drop for PlanarYCbCrImage {
+    fn drop(&mut self) {
+        unsafe { GeckoMedia_FreeImage(self.gecko_image); };
+    }
+}
+
 /// Users of Player pass in an implementation of this trait when creating
 /// Player objects. When events happen in the Player, users will receive
 /// callbacks upon the trait implementation, notifying them of the event.
@@ -67,7 +150,7 @@ pub trait PlayerEventSink {
     /// Called when the Player has stopped seeking.
     fn seek_completed(&self);
     /// Called when new video frames need to be rendered.
-    fn update_current_images(&self, images: Vec<GeckoPlanarYCbCrImage>);
+    fn update_current_images(&self, images: Vec<PlanarYCbCrImage>);
 }
 
 impl Player {
@@ -109,13 +192,6 @@ impl Player {
         });
     }
 }
-
-// FIXME: This doesn't compile because a struct can't have both a Copy (in bindgen) and Drop
-// impl Drop for GeckoPlanarYCbCrImage {
-//     fn drop(&mut self) {
-//         unsafe { GeckoMedia_FreeImage(self); };
-//     }
-// }
 
 impl Drop for Player {
     fn drop(&mut self) {
@@ -262,14 +338,15 @@ impl GeckoMedia {
             let wrapper = &*(ptr as *mut Wrapper);
             wrapper.sink.time_update(time);
         }
-        unsafe extern "C" fn update_current_images(ptr: *mut c_void, size: usize, elements: *mut GeckoPlanarYCbCrImage) {
+        unsafe extern "C" fn update_current_images(ptr: *mut c_void, size: usize,
+                                                   elements: *mut GeckoPlanarYCbCrImage) {
             let wrapper = &*(ptr as *mut Wrapper);
             let images = to_ffi_planar_ycbycr_images(size, elements);
             wrapper.sink.update_current_images(images);
         }
 
         PlayerCallbackObject {
-            mContext: Box::into_raw(Box::new(Wrapper { sink: sink })) as *mut c_void,
+            mContext: Box::into_raw(Box::new(Wrapper { sink: sink } )) as *mut c_void,
             mPlaybackEnded: Some(playback_ended),
             mDecodeError: Some(decode_error),
             mDurationChanged: Some(duration_changed),
@@ -390,8 +467,42 @@ fn to_ffi_vec(bytes: Vec<u8>) -> RustVecU8Object {
     }
 }
 
-fn to_ffi_planar_ycbycr_images(size: usize, elements: *mut GeckoPlanarYCbCrImage) -> Vec<GeckoPlanarYCbCrImage> {
-    // TODO: Build a vector of nicer structs here?
+fn to_ffi_planar_ycbycr_images(size: usize, elements: *mut GeckoPlanarYCbCrImage) -> Vec<PlanarYCbCrImage> {
     let elements = unsafe { slice::from_raw_parts(elements, size) };
-    Vec::from(elements)
+    elements.iter()
+    .map(|&img| -> PlanarYCbCrImage {
+        PlanarYCbCrImage {
+            y_plane: Plane {
+                pixels: img.mYChannel as *const u8,
+                width: img.mYWidth,
+                stride: img.mYStride,
+                height: img.mYHeight,
+                skip: img.mYSkip,
+            },
+            cb_plane: Plane {
+                pixels: img.mCbChannel as *const u8,
+                width: img.mCbCrWidth,
+                stride: img.mCbCrStride,
+                height: img.mCbCrHeight,
+                skip: img.mCbSkip,
+            },
+            cr_plane: Plane {
+                pixels: img.mCrChannel as *const u8,
+                width: img.mCbCrWidth,
+                stride: img.mCbCrStride,
+                height: img.mCbCrHeight,
+                skip: img.mCrSkip,
+            },
+            picture: Region {
+                x: img.mPicX,
+                y: img.mPicY,
+                width: img.mPicWidth,
+                height: img.mPicHeight,
+            },
+            time_stamp: img.mTimeStamp,
+            frame_id: img.mFrameID,
+            gecko_image: img
+        }
+    })
+    .collect::<Vec<PlanarYCbCrImage>>()
 }
