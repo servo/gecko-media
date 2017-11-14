@@ -250,7 +250,9 @@ GeckoMediaDecoderOwner::SetDecoder(GeckoMediaDecoder* aDecoder)
 void
 GeckoMediaDecoderOwner::UpdateCurrentImages(nsTArray<GeckoPlanarYCbCrImage> aImages)
 {
-  // TODO: Call back to Rust to tell it to render frames.
+  if (mCallback.mContext && mCallback.mUpdateCurrentImages) {
+    (*mCallback.mUpdateCurrentImages)(mCallback.mContext, aImages.Length(), aImages.Elements());
+  }
 }
 
 } // namespace mozilla

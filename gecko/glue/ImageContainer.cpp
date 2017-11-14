@@ -337,6 +337,7 @@ ImageContainer::SetCurrentImageInternal(const nsTArray<NonOwningImage>& aImages)
 
 void FreeGeckoPlanarYCbCrImage(void* aImage) {
   Image* image = reinterpret_cast<Image*>(aImage);
+  printf("Free %p\n", image);
   image->Release();
 }
 

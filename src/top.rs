@@ -66,6 +66,8 @@ pub trait PlayerEventSink {
     fn seek_started(&self);
     /// Called when the Player has stopped seeking.
     fn seek_completed(&self);
+    /// Called when new video frames need to be rendered.
+    fn update_current_images(&self, images: Vec<GeckoPlanarYCbCrImage>);
 }
 
 impl Player {
@@ -107,6 +109,13 @@ impl Player {
         });
     }
 }
+
+// FIXME: This doesn't compile because a struct can't have both a Copy (in bindgen) and Drop
+// impl Drop for GeckoPlanarYCbCrImage {
+//     fn drop(&mut self) {
+//         unsafe { GeckoMedia_FreeImage(self); };
+//     }
+// }
 
 impl Drop for Player {
     fn drop(&mut self) {
@@ -253,6 +262,12 @@ impl GeckoMedia {
             let wrapper = &*(ptr as *mut Wrapper);
             wrapper.sink.time_update(time);
         }
+        unsafe extern "C" fn update_current_images(ptr: *mut c_void, size: usize, elements: *mut GeckoPlanarYCbCrImage) {
+            let wrapper = &*(ptr as *mut Wrapper);
+            let images = to_ffi_planar_ycbycr_images(size, elements);
+            wrapper.sink.update_current_images(images);
+        }
+
         PlayerCallbackObject {
             mContext: Box::into_raw(Box::new(Wrapper { sink: sink })) as *mut c_void,
             mPlaybackEnded: Some(playback_ended),
@@ -264,6 +279,7 @@ impl GeckoMedia {
             mSeekStarted: Some(seek_started),
             mSeekCompleted: Some(seek_completed),
             mTimeUpdate: Some(time_update),
+            mUpdateCurrentImages: Some(update_current_images),
             mFree: Some(free),
         }
     }
@@ -372,4 +388,10 @@ fn to_ffi_vec(bytes: Vec<u8>) -> RustVecU8Object {
         mLength: len,
         mFree: Some(free),
     }
+}
+
+fn to_ffi_planar_ycbycr_images(size: usize, elements: *mut GeckoPlanarYCbCrImage) -> Vec<GeckoPlanarYCbCrImage> {
+    // TODO: Build a vector of nicer structs here?
+    let elements = unsafe { slice::from_raw_parts(elements, size) };
+    Vec::from(elements)
 }
