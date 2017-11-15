@@ -31,6 +31,8 @@ pub use top::GeckoMedia;
 pub use top::Player;
 pub use top::PlayerEventSink;
 pub use top::Metadata;
+pub use top::Plane;
+pub use top::Region;
 
 #[cfg(test)]
 mod tests {

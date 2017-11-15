@@ -41,14 +41,14 @@ pub struct Metadata {
 /// For example when image width is 640, stride is 670, skip is 3,
 /// the pixel data looks like:
 ///
-/// |<------------------------- stride ----------------------------->|
-/// |<-------------------- width ------------------>|
-///  0   3   6   9   12  15  18  21                659             669
-/// |----------------------------------------------------------------|
-/// |Y___Y___Y___Y___Y___Y___Y___Y...                      |%%%%%%%%%|
-/// |Y___Y___Y___Y___Y___Y___Y___Y...                      |%%%%%%%%%|
-/// |Y___Y___Y___Y___Y___Y___Y___Y...                      |%%%%%%%%%|
-/// |            |<->|
+///     |<------------------------- stride ----------------------------->|
+///     |<-------------------- width ------------------>|
+///      0   3   6   9   12  15  18  21                659             669
+///     |----------------------------------------------------------------|
+///     |Y___Y___Y___Y___Y___Y___Y___Y...                      |%%%%%%%%%|
+///     |Y___Y___Y___Y___Y___Y___Y___Y...                      |%%%%%%%%%|
+///     |Y___Y___Y___Y___Y___Y___Y___Y...                      |%%%%%%%%%|
+///     |            |<->|
 ///                skip
 ///
 pub struct Plane {
@@ -74,10 +74,15 @@ impl Plane {
     }
 }
 
+/// A subregion of an image buffer.
 pub struct Region {
+    // X coordinate of the origin of the region.
     pub x: u32,
+    // Y coordinate of the origin of the region.
     pub y: u32,
+    // Width of region.
     pub width: i32,
+    // Height of the region.
     pub height: i32,
 }
 
@@ -88,9 +93,9 @@ pub struct Region {
 ///
 /// The YCbCr format can be:
 ///
-/// 4:4:4 - CbCr width/height are the same as Y.
-/// 4:2:2 - CbCr width is half that of Y. Height is the same.
-/// 4:2:0 - CbCr width and height is half that of Y.
+/// * 4:4:4 - CbCr width/height are the same as Y.
+/// * 4:2:2 - CbCr width is half that of Y. Height is the same.
+/// * 4:2:0 - CbCr width and height is half that of Y.
 ///
 /// The color format is detected based on the height/width ratios
 /// defined above.
@@ -101,7 +106,7 @@ pub struct PlanarYCbCrImage {
     pub cb_plane: Plane,
     /// Pixel data for the Cr channel.
     pub cr_plane: Plane,
-    /// The sub-region of the image which contains the image to be rendered.
+    /// The sub-region of the buffer which contains the image to be rendered.
     pub picture: Region,
     /// The time at which this image should be renderd.
     pub time_stamp: i64,
@@ -149,7 +154,24 @@ pub trait PlayerEventSink {
     fn seek_started(&self);
     /// Called when the Player has stopped seeking.
     fn seek_completed(&self);
-    /// Called when new video frames need to be rendered.
+    /// Called when new video frames need to be rendered. The vector of
+    /// frames should be passed to the client's compositor for rendering.
+    /// Each frame has a timestamp at which it should be rendered.
+    ///
+    /// Note: this is the complete queue of decoded frames; frames may
+    /// be passed multiple times as new frames are added. For example,
+    /// the client may receive calls with frames with frame_ids as:
+    ///
+    ///     update_current_images([1,2,3,4])
+    ///     update_current_images([2,3,4,5])
+    ///     update_current_images([3,4,5,6])
+    ///     ... etc..
+    ///
+    /// Clients should be careful if making extra copies of the image data to
+    /// check the frame_id field to avoid making unnecessay copies.
+    ///
+    /// TODO: The timestamp needs to be converted into something client
+    /// can use.
     fn update_current_images(&self, images: Vec<PlanarYCbCrImage>);
 }
 
