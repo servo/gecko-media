@@ -19,6 +19,7 @@ extern crate mp4parse_capi;
 
 pub mod mime_parser_glue;
 pub mod player;
+pub mod timestamp;
 mod top;
 
 pub mod bindings {
@@ -29,6 +30,7 @@ pub mod bindings {
 pub use bindings::CanPlayTypeResult as CanPlayType;
 pub use player::{Metadata, PlanarYCbCrImage, Plane, Player, PlayerEventSink, Region};
 pub use top::GeckoMedia;
+pub use timestamp::{GeckoMedia_Rust_TimeNow, TimeStamp};
 
 #[cfg(test)]
 mod tests {

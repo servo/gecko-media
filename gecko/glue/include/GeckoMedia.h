@@ -69,7 +69,7 @@ struct GeckoPlanarYCbCrImage {
   int32_t mPicWidth;
   int32_t mPicHeight;
 
-  int64_t mTimeStamp;
+  uint64_t mTimeStamp;
   uint32_t mFrameID;
 
   void* mContext;
@@ -132,5 +132,7 @@ GeckoMedia_Player_Shutdown(size_t aId);
 void
 GeckoMedia_Player_SetVolume(size_t aId, double volume);
 }
+
+extern "C" uint64_t GeckoMedia_Rust_TimeNow();
 
 #endif // GeckoMedia_h_

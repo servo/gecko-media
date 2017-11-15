@@ -3,6 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use CanPlayType;
+use TimeStamp;
 use bindings::*;
 use player::{Metadata, Plane, PlanarYCbCrImage, Player, PlayerEventSink, Region};
 use std::ffi::CStr;
@@ -315,7 +316,7 @@ fn to_ffi_planar_ycbycr_images(size: usize, elements: *mut GeckoPlanarYCbCrImage
                 width: img.mPicWidth,
                 height: img.mPicHeight,
             },
-            time_stamp: img.mTimeStamp,
+            time_stamp: TimeStamp(img.mTimeStamp),
             frame_id: img.mFrameID,
             gecko_image: img
         }
