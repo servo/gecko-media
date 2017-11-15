@@ -62,7 +62,10 @@ fn main() {
             fn update_current_images(&self, images: Vec<PlanarYCbCrImage>) {
                 for img in images.iter() {
                     let _pixels = img.y_plane.data();
-                    println!("frame display at {} (now is {})", img.time_stamp, TimeStamp(time::precise_time_ns()));
+                    let now = TimeStamp(time::precise_time_ns());
+                    if img.time_stamp > now {
+                        println!("frame display at {} (now is {})", img.time_stamp, now);
+                    }
                 }
             }
         }
