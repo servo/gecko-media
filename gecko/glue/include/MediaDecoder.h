@@ -276,8 +276,7 @@ private:
 
   VideoFrameContainer* GetVideoFrameContainer()
   {
-    return nullptr;
-    // return mVideoFrameContainer;
+    return mVideoFrameContainer;
   }
 
   layers::ImageContainer* GetImageContainer();
@@ -540,7 +539,7 @@ protected:
   // Counters related to decode and presentation of frames.
   const RefPtr<FrameStatistics> mFrameStats;
 
-  // RefPtr<VideoFrameContainer> mVideoFrameContainer;
+  RefPtr<VideoFrameContainer> mVideoFrameContainer;
 
   // True if the decoder has been directed to minimize its preroll before
   // playback starts. After the first time playback starts, we don't attempt

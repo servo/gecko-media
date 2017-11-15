@@ -126,7 +126,6 @@ target_include_directories(ogg PRIVATE gecko/include/mozilla/media/libogg/includ
 
 add_library(gecko_core OBJECT
   gecko/glue/AsyncShutdown.cpp
-  gecko/glue/AbstractThread.cpp
   gecko/glue/AgnosticDecoderModule.cpp
   gecko/glue/Benchmark.cpp
   gecko/glue/CooperativeThreadPool.cpp
@@ -179,6 +178,7 @@ add_library(gecko_core OBJECT
   gecko/src/dom/media/MediaPrefs.cpp
   gecko/src/dom/media/MediaResource.cpp
   gecko/src/dom/media/MediaStreamListener.cpp
+  gecko/src/dom/media/MediaStreamVideoSink.cpp
   gecko/src/dom/media/MediaTimer.cpp
   gecko/src/dom/media/QueueObject.cpp
   gecko/src/dom/media/ReaderProxy.cpp
@@ -187,6 +187,7 @@ add_library(gecko_core OBJECT
   gecko/src/dom/media/fmp4/MP4Decoder.cpp
   gecko/src/dom/media/fmp4/MP4Demuxer.cpp
   gecko/src/dom/media/mediasink/AudioSink.cpp
+  gecko/src/dom/media/mediasink/VideoSink.cpp
   gecko/src/dom/media/mediasink/AudioSinkWrapper.cpp
   gecko/src/dom/media/mediasink/DecodedStream.cpp
   gecko/src/dom/media/mediasink/OutputStreamManager.cpp
@@ -212,6 +213,7 @@ add_library(gecko_core OBJECT
   gecko/src/dom/media/platforms/ffmpeg/FFmpegLibWrapper.cpp
   gecko/src/dom/media/platforms/wrappers/H264Converter.cpp
   gecko/src/dom/media/VideoUtils.cpp
+  gecko/src/dom/media/VideoFrameContainer.cpp
   gecko/src/dom/media/wave/WaveDecoder.cpp
   gecko/src/dom/media/wave/WaveDemuxer.cpp
   gecko/src/memory/fallible/fallible.cpp
@@ -247,6 +249,7 @@ add_library(gecko_core OBJECT
   gecko/src/xpcom/string/nsReadableUtilsSSE2.cpp
   gecko/src/xpcom/string/nsUTF8UtilsSSE2.cpp
   gecko/src/xpcom/string/unified.cpp
+  gecko/src/xpcom/threads/AbstractThread.cpp
   gecko/src/xpcom/threads/BlockingResourceBase.cpp
   gecko/src/xpcom/threads/EventQueue.cpp
   gecko/src/xpcom/threads/nsILabelableRunnable.cpp

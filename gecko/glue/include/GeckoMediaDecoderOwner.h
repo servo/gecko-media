@@ -12,12 +12,12 @@
 #include "MediaInfo.h"
 #include "mozilla/UniquePtr.h"
 #include "nsAString.h"
+#include "VideoFrameContainer.h"
 
 namespace mozilla {
 
 class AbstractThread;
 class GMPCrashHelper;
-class VideoFrameContainer;
 class MediaInfo;
 class MediaResult;
 class TaskQueue;
@@ -37,7 +37,7 @@ public:
   void DownloadProgressed() override;
 
   // Dispatch an asynchronous event to the decoder owner
-  nsresult DispatchAsyncEvent(const nsAString& aName) override;
+  void DispatchAsyncEvent(const nsAString& aName) override;
 
   // Triggers a recomputation of readyState.
   void UpdateReadyState() override;
@@ -129,12 +129,6 @@ public:
     NEXT_FRAME_UNINITIALIZED
   };
 
-  // Check if the decoder owner is active.
-  bool IsActive() const override;
-
-  // Check if the decoder owner is hidden.
-  bool IsHidden() const override;
-
   // Called by media decoder when the audible state changed
   void SetAudibleState(bool aAudible) override;
 
@@ -188,12 +182,24 @@ public:
   // Called by the media decoder to create a GMPCrashHelper.
   already_AddRefed<GMPCrashHelper> CreateGMPCrashHelper() override;
 
+  void Invalidate(bool aImageSizeChanged,
+                  Maybe<nsIntSize>& aNewIntrinsicSize,
+                  bool aForceInvalidate) override;
+
+  // Called after the MediaStream we're playing rendered a frame to aContainer
+  // with a different principalHandle than the previous frame.
+  void PrincipalHandleChangedForVideoFrameContainer(VideoFrameContainer* aContainer,
+                                                    const PrincipalHandle& aNewPrincipalHandle) override;
+
   void SetDecoder(GeckoMediaDecoder* aDecoder);
+
+  void UpdateCurrentImages(nsTArray<GeckoPlanarYCbCrImage> aImages);
 
 private:
   bool mHasError = false;
   PlayerCallbackObject mCallback = { 0 };
   RefPtr<GeckoMediaDecoder> mDecoder;
+  RefPtr<VideoFrameContainer> mVideoFrameContainer;
 };
 
 } // namespace mozilla

@@ -26,10 +26,13 @@ pub mod bindings {
 
 #[doc(inline)]
 pub use bindings::CanPlayTypeResult as CanPlayType;
+pub use top::PlanarYCbCrImage;
 pub use top::GeckoMedia;
 pub use top::Player;
 pub use top::PlayerEventSink;
 pub use top::Metadata;
+pub use top::Plane;
+pub use top::Region;
 
 #[cfg(test)]
 mod tests {
@@ -37,7 +40,7 @@ mod tests {
     use std::fs::File;
     use std::io::prelude::*;
     use std::sync::mpsc;
-    use {CanPlayType, GeckoMedia, Metadata, PlayerEventSink, Player};
+    use {CanPlayType, GeckoMedia, PlanarYCbCrImage, Metadata, PlayerEventSink, Player};
 
     fn test_can_play_type() {
         let gecko_media = GeckoMedia::get().unwrap();
@@ -68,6 +71,7 @@ mod tests {
         TimeUpdate(f64),
         SeekStarted,
         SeekComplete,
+        UpdateImages(Vec<PlanarYCbCrImage>),
     }
     fn create_test_player(path: &str, mime: &str) -> (Player, mpsc::Receiver<Status>) {
         let (sender, receiver) = mpsc::channel();
@@ -103,6 +107,9 @@ mod tests {
             }
             fn seek_completed(&self) {
                 self.sender.send(Status::SeekComplete).unwrap();
+            }
+            fn update_current_images(&self, images: Vec<PlanarYCbCrImage>) {
+                self.sender.send(Status::UpdateImages(images)).unwrap();
             }
         }
         let sink = Box::new(Sink { sender: sender });
@@ -181,6 +188,8 @@ mod tests {
                 Status::Error => {
                     reached_error = true;
                     break;
+                }
+                Status::UpdateImages(_images) => {
                 }
                 _ => {}
             };

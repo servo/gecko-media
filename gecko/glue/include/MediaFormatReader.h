@@ -78,7 +78,7 @@ typedef void* MediaDecoderOwnerID;
 struct MOZ_STACK_CLASS MediaFormatReaderInit
 {
   MediaResource* mResource = nullptr;
-  // VideoFrameContainer* mVideoFrameContainer = nullptr;
+  VideoFrameContainer* mVideoFrameContainer = nullptr;
   FrameStatistics* mFrameStats = nullptr;
   already_AddRefed<layers::KnowsCompositor> mKnowsCompositor;
   already_AddRefed<GMPCrashHelper> mCrashHelper;
@@ -91,7 +91,6 @@ class MediaFormatReader final
   static const bool IsExclusive = true;
   typedef TrackInfo::TrackType TrackType;
   typedef MozPromise<bool, MediaResult, IsExclusive> NotifyDataArrivedPromise;
-
   NS_INLINE_DECL_THREADSAFE_REFCOUNTING(MediaFormatReader)
 
 public:
@@ -733,8 +732,8 @@ private:
   Maybe<media::TimeUnit> mPendingSeekTime;
   MozPromiseHolder<SeekPromise> mSeekPromise;
 
-  // RefPtr<VideoFrameContainer> mVideoFrameContainer;
-  // layers::ImageContainer* GetImageContainer();
+  RefPtr<VideoFrameContainer> mVideoFrameContainer;
+  layers::ImageContainer* GetImageContainer();
 
   // RefPtr<CDMProxy> mCDMProxy;
 

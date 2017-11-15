@@ -498,7 +498,7 @@ private:
   void* const mDecoderID;
   const RefPtr<AbstractThread> mAbstractMainThread;
   const RefPtr<FrameStatistics> mFrameStats;
-  // const RefPtr<VideoFrameContainer> mVideoFrameContainer;
+  const RefPtr<VideoFrameContainer> mVideoFrameContainer;
 
   // Task queue for running the state machine.
   RefPtr<TaskQueue> mTaskQueue;

@@ -12,7 +12,7 @@
 #include "MediaDecoderOwner.h"
 #include "MediaInfo.h"
 #include "MediaResource.h"
-// #include "VideoFrameContainer.h"
+#include "VideoFrameContainer.h"
 #include "VideoUtils.h"
 #include "mozilla/AbstractThread.h"
 // #include "mozilla/CDMProxy.h"
@@ -758,18 +758,18 @@ MediaFormatReader::DecoderFactory::DoCreateDecoder(Data& aData)
     case TrackType::kVideoTrack: {
       // Decoders use the layers backend to decide if they can use hardware decoding,
       // so specify LAYERS_NONE if we want to forcibly disable it.
-      // aData.mDecoder = mOwner->mPlatform->CreateDecoder(
-      //   { ownerData.mInfo ? *ownerData.mInfo->GetAsVideoInfo()
-      //                     : *ownerData.mOriginalInfo->GetAsVideoInfo(),
-      //     ownerData.mTaskQueue,
-      //     mOwner->mKnowsCompositor,
-      //     mOwner->GetImageContainer(),
-      //     mOwner->mCrashHelper,
-      //     CreateDecoderParams::UseNullDecoder(ownerData.mIsNullDecode),
-      //     &result,
-      //     TrackType::kVideoTrack,
-      //     &mOwner->OnTrackWaitingForKeyProducer(),
-      //     CreateDecoderParams::VideoFrameRate(ownerData.mMeanRate.Mean()) });
+      aData.mDecoder = mOwner->mPlatform->CreateDecoder(
+        { ownerData.mInfo ? *ownerData.mInfo->GetAsVideoInfo()
+                          : *ownerData.mOriginalInfo->GetAsVideoInfo(),
+          ownerData.mTaskQueue,
+          mOwner->mKnowsCompositor,
+          mOwner->GetImageContainer(),
+          mOwner->mCrashHelper,
+          CreateDecoderParams::UseNullDecoder(ownerData.mIsNullDecode),
+          &result,
+          TrackType::kVideoTrack,
+          &mOwner->OnTrackWaitingForKeyProducer(),
+          CreateDecoderParams::VideoFrameRate(ownerData.mMeanRate.Mean()) });
       break;
     }
 
@@ -1196,7 +1196,7 @@ MediaFormatReader::MediaFormatReader(MediaFormatReaderInit& aInit,
   , mInitDone(false)
   , mTrackDemuxersMayBlock(false)
   , mSeekScheduled(false)
-  // , mVideoFrameContainer(aInit.mVideoFrameContainer)
+  , mVideoFrameContainer(aInit.mVideoFrameContainer)
   , mCrashHelper(aInit.mCrashHelper)
   , mDecoderFactory(new DecoderFactory(this))
   , mShutdownPromisePool(new ShutdownPromisePool())
@@ -1296,7 +1296,7 @@ MediaFormatReader::TearDownDecoders()
 
   mDecoderFactory = nullptr;
   mPlatform = nullptr;
-  // mVideoFrameContainer = nullptr;
+  mVideoFrameContainer = nullptr;
 
   ReleaseResources();
   mBuffered.DisconnectAll();
@@ -1391,9 +1391,8 @@ MediaFormatReader::OnDemuxerInitDone(const MediaResult& aResult)
   }
 
   // To decode, we need valid video and a place to put it.
-  bool videoActive = false;
-  // bool videoActive =
-  //   !!mDemuxer->GetNumberTracks(TrackInfo::kVideoTrack) && GetImageContainer();
+  bool videoActive =
+    !!mDemuxer->GetNumberTracks(TrackInfo::kVideoTrack) && GetImageContainer();
 
   if (videoActive) {
     // We currently only handle the first video track.
@@ -2022,21 +2021,21 @@ MediaFormatReader::DecodeDemuxedSamples(TrackType aTrack,
   decoder.mFlushed = false;
   decoder.mDecoder->Decode(aSample)
     ->Then(mTaskQueue, __func__,
-           [self, this, aTrack, &decoder]
+           [self, aTrack, &decoder]
            (const MediaDataDecoder::DecodedData& aResults) {
              decoder.mDecodeRequest.Complete();
-             NotifyNewOutput(aTrack, aResults);
+             self->NotifyNewOutput(aTrack, aResults);
 
              // When we recovered from a GPU crash and get the first decoded
              // frame, report the recovery time telemetry.
              // if (aTrack == TrackType::kVideoTrack) {
              //   GPUProcessCrashTelemetryLogger::ReportTelemetry(
-             //     mMediaDecoderOwnerID, decoder.mDecoder.get());
+             //     self->mMediaDecoderOwnerID, decoder.mDecoder.get());
              // }
            },
-           [self, this, aTrack, &decoder](const MediaResult& aError) {
+           [self, aTrack, &decoder](const MediaResult& aError) {
              decoder.mDecodeRequest.Complete();
-             NotifyError(aTrack, aError);
+             self->NotifyError(aTrack, aError);
            })
     ->Track(decoder.mDecodeRequest);
 }
@@ -2211,21 +2210,21 @@ MediaFormatReader::DrainDecoder(TrackType aTrack)
   RefPtr<MediaFormatReader> self = this;
   decoder.mDecoder->Drain()
     ->Then(mTaskQueue, __func__,
-           [self, this, aTrack, &decoder]
+           [self, aTrack, &decoder]
            (const MediaDataDecoder::DecodedData& aResults) {
              decoder.mDrainRequest.Complete();
              if (aResults.IsEmpty()) {
                decoder.mDrainState = DrainState::DrainCompleted;
              } else {
-               NotifyNewOutput(aTrack, aResults);
+               self->NotifyNewOutput(aTrack, aResults);
                // Let's see if we have any more data available to drain.
                decoder.mDrainState = DrainState::PartialDrainPending;
              }
-             ScheduleUpdate(aTrack);
+             self->ScheduleUpdate(aTrack);
            },
-           [self, this, aTrack, &decoder](const MediaResult& aError) {
+           [self, aTrack, &decoder](const MediaResult& aError) {
              decoder.mDrainRequest.Complete();
-             NotifyError(aTrack, aError);
+             self->NotifyError(aTrack, aError);
            })
     ->Track(decoder.mDrainRequest);
   LOG("Requesting %s decoder to drain", TrackTypeToStr(aTrack));
@@ -3120,12 +3119,12 @@ MediaFormatReader::UpdateBuffered()
   }
 }
 
-// layers::ImageContainer*
-// MediaFormatReader::GetImageContainer()
-// {
-//   return mVideoFrameContainer ? mVideoFrameContainer->GetImageContainer()
-//                               : nullptr;
-// }
+layers::ImageContainer*
+MediaFormatReader::GetImageContainer()
+{
+  return mVideoFrameContainer ? mVideoFrameContainer->GetImageContainer()
+                              : nullptr;
+}
 
 void
 MediaFormatReader::GetMozDebugReaderData(nsACString& aString)

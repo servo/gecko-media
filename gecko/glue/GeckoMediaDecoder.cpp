@@ -43,6 +43,7 @@ GeckoMediaDecoder::CreateStateMachine()
 {
   MOZ_ASSERT(NS_IsMainThread());
   MediaFormatReaderInit init;
+  init.mVideoFrameContainer = GetVideoFrameContainer();
   init.mCrashHelper = GetOwner()->CreateGMPCrashHelper();
   init.mFrameStats = mFrameStats;
   init.mResource = mResource;

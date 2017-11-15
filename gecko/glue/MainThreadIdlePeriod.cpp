@@ -8,17 +8,23 @@
 
 #include "mozilla/Maybe.h"
 #include "mozilla/Preferences.h"
-#include "nsThreadUtils.h"
-
 #ifndef GECKO_MEDIA_CRATE
 #include "nsRefreshDriver.h"
 #endif
+#include "nsThreadUtils.h"
 
-#define DEFAULT_LONG_IDLE_PERIOD 50.0f
-#define DEFAULT_MIN_IDLE_PERIOD 3.0f
-#define DEFAULT_MAX_TIMER_THREAD_BOUND 5
+// The amount of idle time (milliseconds) reserved for a long idle period.
+static const double kLongIdlePeriodMS = 50.0;
 
-const uint32_t kMaxTimerThreadBoundClamp = 15;
+// The minimum amount of time (milliseconds) required for an idle period to be
+// scheduled on the main thread. N.B. layout.idle_period.time_limit adds
+// padding at the end of the idle period, which makes the point in time that we
+// expect to become busy again be:
+//   now + kMinIdlePeriodMS + layout.idle_period.time_limit
+static const double kMinIdlePeriodMS = 3.0;
+
+static const uint32_t kMaxTimerThreadBound = 5;       // milliseconds
+static const uint32_t kMaxTimerThreadBoundClamp = 15; // milliseconds
 
 namespace mozilla {
 
@@ -30,17 +36,17 @@ MainThreadIdlePeriod::GetIdlePeriodHint(TimeStamp* aIdleDeadline)
 
   TimeStamp now = TimeStamp::Now();
   TimeStamp currentGuess =
-    now + TimeDuration::FromMilliseconds(GetLongIdlePeriod());
+    now + TimeDuration::FromMilliseconds(kLongIdlePeriodMS);
 
 #ifndef GECKO_MEDIA_CRATE
   currentGuess = nsRefreshDriver::GetIdleDeadlineHint(currentGuess);
 #endif
-  currentGuess = NS_GetTimerDeadlineHintOnCurrentThread(currentGuess, GetMaxTimerThreadBound());
+  currentGuess = NS_GetTimerDeadlineHintOnCurrentThread(currentGuess, kMaxTimerThreadBound);
 
   // If the idle period is too small, then just return a null time
   // to indicate we are busy. Otherwise return the actual deadline.
   TimeDuration minIdlePeriod =
-    TimeDuration::FromMilliseconds(GetMinIdlePeriod());
+    TimeDuration::FromMilliseconds(kMinIdlePeriodMS);
   bool busySoon = currentGuess.IsNull() ||
                   (now >= (currentGuess - minIdlePeriod)) ||
                   currentGuess < mLastIdleDeadline;
@@ -55,58 +61,7 @@ MainThreadIdlePeriod::GetIdlePeriodHint(TimeStamp* aIdleDeadline)
 /* static */ float
 MainThreadIdlePeriod::GetLongIdlePeriod()
 {
-  MOZ_ASSERT(NS_IsMainThread());
-
-  static float sLongIdlePeriod = DEFAULT_LONG_IDLE_PERIOD;
-  static bool sInitialized = false;
-
-#ifndef GECKO_MEDIA_CRATE
-  if (!sInitialized && Preferences::IsServiceAvailable()) {
-    sInitialized = true;
-    Preferences::AddFloatVarCache(&sLongIdlePeriod, "idle_queue.long_period",
-                                  DEFAULT_LONG_IDLE_PERIOD);
-  }
-#endif
-
-  return sLongIdlePeriod;
-}
-
-/* static */ float
-MainThreadIdlePeriod::GetMinIdlePeriod()
-{
-  MOZ_ASSERT(NS_IsMainThread());
-
-  static float sMinIdlePeriod = DEFAULT_MIN_IDLE_PERIOD;
-  static bool sInitialized = false;
-
-#ifndef GECKO_MEDIA_CRATE
-  if (!sInitialized && Preferences::IsServiceAvailable()) {
-    sInitialized = true;
-    Preferences::AddFloatVarCache(&sMinIdlePeriod, "idle_queue.min_period",
-                                  DEFAULT_MIN_IDLE_PERIOD);
-  }
-#endif
-
-  return sMinIdlePeriod;
-}
-
-/* static */ uint32_t
-MainThreadIdlePeriod::GetMaxTimerThreadBound()
-{
-  MOZ_ASSERT(NS_IsMainThread());
-
-  static uint32_t sMaxTimerThreadBound = DEFAULT_MAX_TIMER_THREAD_BOUND;
-  static bool sInitialized = false;
-
-#ifndef GECKO_MEDIA_CRATE
-  if (!sInitialized && Preferences::IsServiceAvailable()) {
-    sInitialized = true;
-    Preferences::AddUintVarCache(&sMaxTimerThreadBound, "idle_queue.max_timer_thread_bound",
-                                 DEFAULT_MAX_TIMER_THREAD_BOUND);
-  }
-#endif
-
-  return std::max(sMaxTimerThreadBound, kMaxTimerThreadBoundClamp);
+  return kLongIdlePeriodMS;
 }
 
 } // namespace mozilla

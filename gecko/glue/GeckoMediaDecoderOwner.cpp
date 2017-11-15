@@ -6,6 +6,8 @@
 
 #include "GeckoMediaDecoderOwner.h"
 #include "mozilla/AbstractThread.h"
+#include "VideoFrameContainer.h"
+#include "ImageContainer.h"
 
 namespace mozilla {
 
@@ -26,21 +28,21 @@ GeckoMediaDecoderOwner::DownloadProgressed()
 {
 }
 
-nsresult
+void
 GeckoMediaDecoderOwner::DispatchAsyncEvent(const nsAString& aName)
 {
   nsAutoCString dst;
   CopyUTF16toUTF8(aName, dst);
   if (dst.EqualsLiteral("durationchange")) {
     if (mCallback.mContext && mCallback.mDurationChanged) {
-      (*mCallback.mDurationChanged)(mCallback.mContext, mDecoder->GetDuration());
-      return NS_OK;
+      (*mCallback.mDurationChanged)(mCallback.mContext,
+                                    mDecoder->GetDuration());
+      return;
     }
   }
   if (mCallback.mContext && mCallback.mAsyncEvent) {
     (*mCallback.mAsyncEvent)(mCallback.mContext, (const int8_t*)dst.get());
   }
-  return NS_OK;
 };
 
 void
@@ -152,18 +154,6 @@ GeckoMediaDecoderOwner::NotifyDecoderPrincipalChanged()
 {
 }
 
-bool
-GeckoMediaDecoderOwner::IsActive() const
-{
-  return true;
-}
-
-bool
-GeckoMediaDecoderOwner::IsHidden() const
-{
-  return false;
-}
-
 void
 GeckoMediaDecoderOwner::SetAudibleState(bool aAudible)
 {
@@ -220,7 +210,15 @@ GeckoMediaDecoderOwner::GetMediaElement()
 VideoFrameContainer*
 GeckoMediaDecoderOwner::GetVideoFrameContainer()
 {
-  return nullptr;
+  RefPtr<layers::ImageContainer> container =
+    new layers::ImageContainer(this);
+  mVideoFrameContainer =
+    new VideoFrameContainer(this, container.forget());
+
+  // TODO: I need to call VideoFrameContainer::ForgetElement()
+  // TODO: I need to remove ImageContainer's reference to `this`.
+
+  return mVideoFrameContainer;
 }
 
 already_AddRefed<GMPCrashHelper>
@@ -230,9 +228,31 @@ GeckoMediaDecoderOwner::CreateGMPCrashHelper()
 }
 
 void
+GeckoMediaDecoderOwner::Invalidate(bool aImageSizeChanged,
+                                   Maybe<nsIntSize>& aNewIntrinsicSize,
+                                   bool aForceInvalidate)
+{
+}
+
+void
+GeckoMediaDecoderOwner::PrincipalHandleChangedForVideoFrameContainer(
+  VideoFrameContainer* aContainer,
+  const PrincipalHandle& aNewPrincipalHandle)
+{
+}
+
+void
 GeckoMediaDecoderOwner::SetDecoder(GeckoMediaDecoder* aDecoder)
 {
   mDecoder = aDecoder;
+}
+
+void
+GeckoMediaDecoderOwner::UpdateCurrentImages(nsTArray<GeckoPlanarYCbCrImage> aImages)
+{
+  if (mCallback.mContext && mCallback.mUpdateCurrentImages) {
+    (*mCallback.mUpdateCurrentImages)(mCallback.mContext, aImages.Length(), aImages.Elements());
+  }
 }
 
 } // namespace mozilla

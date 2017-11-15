@@ -12,7 +12,7 @@
 #include "MediaFormatReader.h"
 #include "MediaResource.h"
 #include "MediaShutdownManager.h"
-// #include "VideoFrameContainer.h"
+#include "VideoFrameContainer.h"
 #include "VideoUtils.h"
 #include "Visibility.h"
 #include "mozilla/AbstractThread.h"
@@ -38,7 +38,7 @@
 #include <limits>
 
 using namespace mozilla::dom;
-// using namespace mozilla::layers;
+using namespace mozilla::layers;
 using namespace mozilla::media;
 
 namespace services {
@@ -367,7 +367,7 @@ MediaDecoder::MediaDecoder(MediaDecoderInit& aInit)
   , mOwner(aInit.mOwner)
   , mAbstractMainThread(aInit.mOwner->AbstractMainThread())
   , mFrameStats(new FrameStatistics())
-  // , mVideoFrameContainer(aInit.mOwner->GetVideoFrameContainer())
+  , mVideoFrameContainer(aInit.mOwner->GetVideoFrameContainer())
   , mMinimizePreroll(aInit.mMinimizePreroll)
   , mFiredMetadataLoaded(false)
   , mIsDocumentVisible(false)
@@ -465,7 +465,7 @@ MediaDecoder::Shutdown()
     RefPtr<MediaDecoder> self = this;
     nsCOMPtr<nsIRunnable> r =
       NS_NewRunnableFunction("MediaDecoder::Shutdown", [self]() {
-        // self->mVideoFrameContainer = nullptr;
+        self->mVideoFrameContainer = nullptr;
         MediaShutdownManager::Instance().Unregister(self);
       });
     mAbstractMainThread->Dispatch(r.forget());
@@ -594,7 +594,7 @@ MediaDecoder::FinishShutdown()
 {
   MOZ_ASSERT(NS_IsMainThread());
   SetStateMachine(nullptr);
-  // mVideoFrameContainer = nullptr;
+  mVideoFrameContainer = nullptr;
   MediaShutdownManager::Instance().Unregister(this);
 }
 
@@ -921,7 +921,7 @@ MediaDecoder::PlaybackEnded()
   LOG("MediaDecoder::PlaybackEnded");
 
   ChangeState(PLAY_STATE_ENDED);
-  // InvalidateWithFlags(VideoFrameContainer::INVALIDATE_FORCE);
+  InvalidateWithFlags(VideoFrameContainer::INVALIDATE_FORCE);
   GetOwner()->PlaybackEnded();
 }
 
@@ -1311,27 +1311,27 @@ MediaDecoder::SetStateMachine(MediaDecoderStateMachine* aStateMachine)
   }
 }
 
-// ImageContainer*
-// MediaDecoder::GetImageContainer()
-// {
-//   return mVideoFrameContainer ? mVideoFrameContainer->GetImageContainer()
-//                               : nullptr;
-// }
+ImageContainer*
+MediaDecoder::GetImageContainer()
+{
+  return mVideoFrameContainer ? mVideoFrameContainer->GetImageContainer()
+                              : nullptr;
+}
 
 void
 MediaDecoder::InvalidateWithFlags(uint32_t aFlags)
 {
-  // if (mVideoFrameContainer) {
-  //   mVideoFrameContainer->InvalidateWithFlags(aFlags);
-  // }
+  if (mVideoFrameContainer) {
+    mVideoFrameContainer->InvalidateWithFlags(aFlags);
+  }
 }
 
 void
 MediaDecoder::Invalidate()
 {
-  // if (mVideoFrameContainer) {
-  //   mVideoFrameContainer->Invalidate();
-  // }
+  if (mVideoFrameContainer) {
+    mVideoFrameContainer->Invalidate();
+  }
 }
 
 // Constructs the time ranges representing what segments of the media

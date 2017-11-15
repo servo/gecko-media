@@ -16,7 +16,7 @@
 #include "mozilla/Unused.h"
 
 #include "nsThreadUtils.h"
-//#include "nsContentUtils.h"
+#include "nsContentUtils.h"
 #include "nsServiceManagerUtils.h"
 
 
@@ -46,20 +46,20 @@ public:
     MOZ_ASSERT_IF(aRequireTailDispatch, NS_IsMainThread() && aTarget->IsOnCurrentThread());
   }
 
-  virtual void Dispatch(already_AddRefed<nsIRunnable> aRunnable,
-                        DispatchFailureHandling aFailureHandling = AssertDispatchSuccess,
-                        DispatchReason aReason = NormalDispatch) override
+  virtual nsresult Dispatch(already_AddRefed<nsIRunnable> aRunnable,
+                            DispatchFailureHandling aFailureHandling = AssertDispatchSuccess,
+                            DispatchReason aReason = NormalDispatch) override
   {
     AbstractThread* currentThread;
     if (aReason != TailDispatch && (currentThread = GetCurrent()) && RequiresTailDispatch(currentThread)) {
       currentThread->TailDispatcher().AddTask(this, Move(aRunnable), aFailureHandling);
-      return;
+      return NS_OK;
     }
 
     RefPtr<nsIRunnable> runner(new Runner(this, Move(aRunnable), false /* already drained by TaskGroupRunnable  */));
     nsresult rv = mTarget->Dispatch(runner.forget(), NS_DISPATCH_NORMAL);
     MOZ_DIAGNOSTIC_ASSERT(aFailureHandling == DontAssertDispatchSuccess || NS_SUCCEEDED(rv));
-    Unused << rv;
+    return rv;
   }
 
   // Prevent a GCC warning about the other overload of Dispatch being hidden.
@@ -89,15 +89,7 @@ public:
         NewRunnableMethod("EventTargetWrapper::FireTailDispatcher",
                           this,
                           &EventTargetWrapper::FireTailDispatcher);
-      // nsContentUtils::RunInStableState(event.forget());
-      // RunInStableState ensures no JS contexts are running at the
-      // time when this runnable runs. Inside GeckoMedia, we don't
-      // run JS on the main thread, we let Servo run JS on its own
-      // script thread, so we can just dispatch the task to the current
-      // thread. Note: we can't just run it, as FireTailDispatcher()
-      // clears mTailDispatcher which would make the ref() call below
-      // fail.
-      NS_DispatchToCurrentThread(event.forget());
+      nsContentUtils::RunInStableState(event.forget());
     }
 
     return mTailDispatcher.ref();
