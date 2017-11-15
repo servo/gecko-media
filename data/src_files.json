@@ -54,6 +54,8 @@
     "dom/media/VideoFrameContainer.cpp",
     "dom/media/wave/WaveDecoder.cpp",
     "dom/media/wave/WaveDemuxer.cpp",
+    "dom/media/webaudio/AudioBlock.cpp",
+    "dom/media/webaudio/AudioEventTimeline.cpp",
     "media/libcubeb/src/cubeb.c",
     "media/libcubeb/src/cubeb_alsa.c",
     "media/libcubeb/src/cubeb_audiotrack.c",
