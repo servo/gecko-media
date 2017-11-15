@@ -22,12 +22,6 @@ struct ThreadObserverObject
   const ThreadObserverVtable* mVtable;
 };
 
-bool
-GeckoMedia_Initialize(ThreadObserverObject aObject);
-
-void
-GeckoMedia_Shutdown();
-
 enum CanPlayTypeResult
 {
   No = 0,
@@ -35,20 +29,11 @@ enum CanPlayTypeResult
   Probably = 2,
 };
 
-CanPlayTypeResult
-GeckoMedia_CanPlayType(const char* aMimeType);
-
-void
-GeckoMedia_ProcessEvents();
-
 struct RustRunnable
 {
   void* mData;
   void (*mFunction)(void* aData);
 };
-
-void
-GeckoMedia_QueueRustRunnable(RustRunnable aRunnable);
 
 struct RustVecU8Object
 {
@@ -107,6 +92,22 @@ struct PlayerCallbackObject
   void (*mFree)(void*);
 };
 
+extern "C" {
+bool
+GeckoMedia_Initialize(ThreadObserverObject aObject);
+
+void
+GeckoMedia_Shutdown();
+
+CanPlayTypeResult
+GeckoMedia_CanPlayType(const char* aMimeType);
+
+void
+GeckoMedia_ProcessEvents();
+
+void
+GeckoMedia_QueueRustRunnable(RustRunnable aRunnable);
+
 void
 GeckoMedia_FreeImage(GeckoPlanarYCbCrImage image);
 
@@ -130,5 +131,6 @@ GeckoMedia_Player_Shutdown(size_t aId);
 
 void
 GeckoMedia_Player_SetVolume(size_t aId, double volume);
+}
 
 #endif // GeckoMedia_h_
