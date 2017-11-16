@@ -8,6 +8,7 @@ pref("media.eme.vp9-in-mp4.enabled", true);
 #else
 pref("media.eme.vp9-in-mp4.enabled", false);
 #endif
+pref("media.eme.hdcp-policy-check.enabled", false);
 pref("media.gmp.trial-create.enabled", true);
 #ifdef MOZ_WIDEVINE_EME
 pref("media.gmp-widevinecdm.visible", true);

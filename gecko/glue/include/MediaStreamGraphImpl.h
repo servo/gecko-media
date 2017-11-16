@@ -11,6 +11,7 @@
 #include "AudioMixer.h"
 #include "GraphDriver.h"
 #include "Latency.h"
+#include "mozilla/Atomics.h"
 #include "mozilla/Monitor.h"
 #include "mozilla/Services.h"
 #include "mozilla/TimeStamp.h"
@@ -199,8 +200,7 @@ public:
 
   bool Running() const
   {
-    mMonitor.AssertCurrentThreadOwns();
-    return mLifecycleState == LIFECYCLE_RUNNING;
+    return LifecycleStateRef() == LIFECYCLE_RUNNING;
   }
 
   /* This is the end of the current iteration, that is, the current time of the
@@ -358,7 +358,7 @@ public:
    * Given a graph time aTime, convert it to a stream time taking into
    * account the time during which aStream is scheduled to be blocked.
    */
-  StreamTime GraphTimeToStreamTimeWithBlocking(MediaStream* aStream, GraphTime aTime);
+  StreamTime GraphTimeToStreamTimeWithBlocking(const MediaStream* aStream, GraphTime aTime) const;
 
   /**
    * Call NotifyHaveCurrentData on aStream's listeners.
@@ -417,6 +417,7 @@ public:
    */
   void SetStreamOrderDirty()
   {
+    MOZ_ASSERT(OnGraphThreadOrNotRunning());
     mStreamOrderDirty = true;
   }
 
@@ -724,10 +725,28 @@ public:
    * Modified only on the main thread in mMonitor.
    */
   LifecycleState mLifecycleState;
+  LifecycleState& LifecycleStateRef()
+  {
+#if DEBUG
+    if (!mDetectedNotRunning) {
+      mMonitor.AssertCurrentThreadOwns();
+    }
+#endif
+    return mLifecycleState;
+  }
+  const LifecycleState& LifecycleStateRef() const
+  {
+#if DEBUG
+    if (!mDetectedNotRunning) {
+      mMonitor.AssertCurrentThreadOwns();
+    }
+#endif
+    return mLifecycleState;
+  }
   /**
    * The graph should stop processing at or after this time.
    */
-  GraphTime mEndTime;
+  Atomic<GraphTime> mEndTime;
 
   /**
    * True when we need to do a forced shutdown during application shutdown.
@@ -761,7 +780,7 @@ public:
    * LIFECYCLE_RUNNING. Since only the main thread can reset mLifecycleState to
    * LIFECYCLE_RUNNING, this can be relied on to not change unexpectedly.
    */
-  bool mDetectedNotRunning;
+  Atomic<bool> mDetectedNotRunning;
   /**
    * True when a stable state runner has been posted to the appshell to run
    * RunInStableState at the next stable state.
