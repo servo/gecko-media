@@ -23,12 +23,6 @@ fn main() {
         panic!("Usage: test-player file_path")
     };
 
-    GeckoMedia::get().unwrap();
-    let (sender, receiver) = mpsc::channel();
-    GeckoMedia::get().unwrap().queue_task(
-        move || sender.send(()).unwrap(),
-    );
-    receiver.recv().unwrap();
     {
         enum Status {
             Error,
