@@ -18,6 +18,7 @@ extern crate mime;
 extern crate mp4parse_capi;
 
 pub mod mime_parser_glue;
+pub mod player;
 mod top;
 
 pub mod bindings {
@@ -26,21 +27,18 @@ pub mod bindings {
 
 #[doc(inline)]
 pub use bindings::CanPlayTypeResult as CanPlayType;
-pub use top::PlanarYCbCrImage;
+pub use player::{Metadata, PlanarYCbCrImage, Plane, Player, PlayerEventSink, Region};
 pub use top::GeckoMedia;
-pub use top::Player;
-pub use top::PlayerEventSink;
-pub use top::Metadata;
-pub use top::Plane;
-pub use top::Region;
 
 #[cfg(test)]
 mod tests {
+    use CanPlayType;
+    use GeckoMedia;
+    use player::{Metadata, PlanarYCbCrImage, Player, PlayerEventSink};
     use std::ffi::CString;
     use std::fs::File;
     use std::io::prelude::*;
     use std::sync::mpsc;
-    use {CanPlayType, GeckoMedia, PlanarYCbCrImage, Metadata, PlayerEventSink, Player};
 
     fn test_can_play_type() {
         let gecko_media = GeckoMedia::get().unwrap();
