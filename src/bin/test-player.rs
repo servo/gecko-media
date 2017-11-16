@@ -23,6 +23,27 @@ fn main() {
         panic!("Usage: test-player file_path")
     };
 
+    let path = Path::new(filename);
+    let mime = match path.extension().unwrap().to_str() {
+        Some("wav") => "audio/wav",
+        Some("mp3") => "audio/mp3",
+        Some("flac") => "audio/flac",
+        Some("ogg") => "audio/ogg; codecs=\"vorbis\"",
+        Some("m4a") => "audio/mp4",
+        Some("mp4") => "video/mp4",
+        _ => "",
+    };
+    if mime == "" {
+        panic!(
+            "Unknown file type. Currently supported: wav, mp3, m4a, flac and ogg/vorbis files.\
+                Video files supported: mp4."
+        )
+    }
+
+    let mut file = File::open(filename).unwrap();
+    let mut bytes = vec![];
+    file.read_to_end(&mut bytes).unwrap();
+
     {
         enum Status {
             Error,
@@ -74,56 +95,35 @@ fn main() {
         }
         let sink = Box::new(Sink { sender: sender });
 
-        let mut file = File::open(filename).unwrap();
-        let mut bytes = vec![];
-        file.read_to_end(&mut bytes).unwrap();
-
-        let path = Path::new(filename);
-        let mime = match path.extension().unwrap().to_str() {
-            Some("wav") => "audio/wav",
-            Some("mp3") => "audio/mp3",
-            Some("flac") => "audio/flac",
-            Some("ogg") => "audio/ogg; codecs=\"vorbis\"",
-            Some("m4a") => "audio/mp4",
-            Some("mp4") => "video/mp4",
-            _ => "",
-        };
-        if mime != "" {
-            let player = GeckoMedia::get()
-                .unwrap()
-                .create_blob_player(bytes, mime, sink)
-                .unwrap();
-            player.play();
-            player.set_volume(1.0);
-            loop {
-                match receiver.recv().unwrap() {
-                    Status::Ended => {
-                        println!("Ended");
-                        break;
-                    }
-                    Status::Error => {
-                        println!("Error");
-                        break;
-                    }
-                    Status::AsyncEvent(name) => {
-                        println!("Event received: {:?}", name);
-                    }
-                    Status::MetadataLoaded(metadata) => {
-                        println!("MetadataLoaded; duration: {:?}", metadata.duration);
-                    }
-                    Status::BufferedRanges(ranges) => {
-                        println!("Buffered ranges: {:?}", ranges);
-                    }
-                    Status::SeekableRanges(ranges) => {
-                        println!("Seekable ranges: {:?}", ranges);
-                    }
-                };
-            }
-        } else {
-            panic!(
-                "Unknown file type. Currently supported: wav, mp3, m4a, flac and ogg/vorbis files.\
-                 Video files supported: mp4."
-            )
+        let player = GeckoMedia::get()
+            .unwrap()
+            .create_blob_player(bytes, mime, sink)
+            .unwrap();
+        player.play();
+        player.set_volume(1.0);
+        loop {
+            match receiver.recv().unwrap() {
+                Status::Ended => {
+                    println!("Ended");
+                    break;
+                }
+                Status::Error => {
+                    println!("Error");
+                    break;
+                }
+                Status::AsyncEvent(name) => {
+                    println!("Event received: {:?}", name);
+                }
+                Status::MetadataLoaded(metadata) => {
+                    println!("MetadataLoaded; duration: {:?}", metadata.duration);
+                }
+                Status::BufferedRanges(ranges) => {
+                    println!("Buffered ranges: {:?}", ranges);
+                }
+                Status::SeekableRanges(ranges) => {
+                    println!("Seekable ranges: {:?}", ranges);
+                }
+            };
         }
     }
 
