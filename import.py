@@ -30,9 +30,6 @@ def get_obj_dir_path(src_dir):
 def get_obj_dir_include_path(src_dir):
     return os.path.join(get_obj_dir_path(src_dir), "dist", "include/")
 
-def get_obj_dir_config_path(src_dir):
-    return os.path.join(get_obj_dir_path(src_dir), "config/")
-
 def verify_files_present(src_dir, dst_dir):
     had_error = False
     for (dst, src) in header_files.items():
