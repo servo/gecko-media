@@ -9,7 +9,6 @@ extern crate time;
 /// This function is used by Gecko's ImageContainer to translate its internal
 /// TimeStamp to a value in nanoseconds that can be used by Servo's compositor
 /// for synchronization.
-#[no_mangle]
 pub extern "C" fn GeckoMedia_Rust_TimeNow() -> u64 {
     time::precise_time_ns()
 }

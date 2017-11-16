@@ -16,6 +16,7 @@ use std::sync::Mutex;
 use std::sync::atomic::{AtomicUsize, Ordering, ATOMIC_USIZE_INIT};
 use std::sync::mpsc::{self, Sender};
 use std::thread::Builder;
+use timestamp::GeckoMedia_Rust_TimeNow;
 
 /// Represents the main connection to the media playback system.
 pub struct GeckoMedia {
@@ -208,8 +209,9 @@ lazy_static! {
         let msg_sender_clone = msg_sender.clone();
         Builder::new().name("GeckoMedia".to_owned()).spawn(move || {
             let thread_observer_object = thread_observer_object(msg_sender_clone);
+            let services = RustServicesFnTable { mGetTimeNowFn: Some(GeckoMedia_Rust_TimeNow) };
             assert!(
-                unsafe { GeckoMedia_Initialize(thread_observer_object) },
+                unsafe { GeckoMedia_Initialize(thread_observer_object, services) },
                 "failed to initialize GeckoMedia"
             );
             ok_sender.send(()).unwrap();

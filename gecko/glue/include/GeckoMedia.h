@@ -22,6 +22,12 @@ struct ThreadObserverObject
   const ThreadObserverVtable* mVtable;
 };
 
+typedef uint64_t (*RustGetTimeNowFn_t)();
+
+struct RustServicesFnTable {
+  RustGetTimeNowFn_t mGetTimeNowFn;
+};
+
 enum CanPlayTypeResult
 {
   No = 0,
@@ -94,7 +100,8 @@ struct PlayerCallbackObject
 
 extern "C" {
 bool
-GeckoMedia_Initialize(ThreadObserverObject aObject);
+GeckoMedia_Initialize(ThreadObserverObject aObject,
+                      RustServicesFnTable aRustServices);
 
 void
 GeckoMedia_Shutdown();
@@ -132,7 +139,5 @@ GeckoMedia_Player_Shutdown(size_t aId);
 void
 GeckoMedia_Player_SetVolume(size_t aId, double volume);
 }
-
-extern "C" uint64_t GeckoMedia_Rust_TimeNow();
 
 #endif // GeckoMedia_h_

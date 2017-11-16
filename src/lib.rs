@@ -30,7 +30,7 @@ pub mod bindings {
 pub use bindings::CanPlayTypeResult as CanPlayType;
 pub use player::{Metadata, PlanarYCbCrImage, Plane, Player, PlayerEventSink, Region};
 pub use top::GeckoMedia;
-pub use timestamp::{GeckoMedia_Rust_TimeNow, TimeStamp};
+pub use timestamp::TimeStamp;
 
 #[cfg(test)]
 mod tests {
