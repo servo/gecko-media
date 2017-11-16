@@ -21,6 +21,7 @@
 #include "nsTArray.h"
 #include "nsThreadManager.h"
 #include "nsThreadUtils.h"
+#include "RustServices.h"
 
 using namespace mozilla;
 
@@ -67,7 +68,8 @@ AddMainThreadObserver(ThreadObserverObject aObject)
 }
 
 bool
-GeckoMedia_Initialize(ThreadObserverObject aObject)
+GeckoMedia_Initialize(ThreadObserverObject aObject,
+                      RustServicesFnTable aServices)
 {
   NS_SetMainThread();
   if (NS_FAILED(nsThreadManager::get().Init())) {
@@ -94,6 +96,8 @@ GeckoMedia_Initialize(ThreadObserverObject aObject)
   if (NS_FAILED(NS_ProcessPendingEvents(nullptr))) {
     return false;
   }
+
+  RustServices::Init(aServices);
 
   return true;
 }

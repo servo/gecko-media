@@ -40,6 +40,7 @@
 
 #include "mozilla/AbstractThread.h"
 #include "GeckoMediaDecoderOwner.h"
+#include "RustServices.h"
 
 namespace mozilla {
 
@@ -398,7 +399,8 @@ ImageContainer::NotifyOwnerOfNewImages()
     img->mPicWidth = data->mPicSize.width;
     img->mPicHeight = data->mPicSize.height;
 
-    img->mTimeStamp = 0; // How to make this portable to Rust?
+    uint64_t rustTime = RustServices::TimeNow();
+    img->mTimeStamp = rustTime + (owningImage.mTimeStamp - TimeStamp::Now()).ToMicroseconds() * 1000.0;
     img->mFrameID = owningImage.mFrameID;
 
     owningImage.mImage->AddRef();

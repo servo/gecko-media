@@ -7,6 +7,7 @@ use bindings::GeckoPlanarYCbCrImage;
 use bindings::{GeckoMedia_FreeImage, GeckoMedia_Player_Pause, GeckoMedia_Player_Play};
 use bindings::{GeckoMedia_Player_Seek, GeckoMedia_Player_SetVolume, GeckoMedia_Player_Shutdown};
 use std::slice;
+use timestamp::TimeStamp;
 
 /// Plays a media resource.
 pub struct Player {
@@ -97,7 +98,7 @@ pub struct PlanarYCbCrImage {
     /// The sub-region of the buffer which contains the image to be rendered.
     pub picture: Region,
     /// The time at which this image should be renderd.
-    pub time_stamp: i64,
+    pub time_stamp: TimeStamp,
     /// A stream-unique identifier.
     pub frame_id: u32,
     pub gecko_image: GeckoPlanarYCbCrImage,

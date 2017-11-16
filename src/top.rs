@@ -3,6 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use CanPlayType;
+use TimeStamp;
 use bindings::*;
 use player::{Metadata, Plane, PlanarYCbCrImage, Player, PlayerEventSink, Region};
 use std::ffi::CStr;
@@ -15,6 +16,7 @@ use std::sync::Mutex;
 use std::sync::atomic::{AtomicUsize, Ordering, ATOMIC_USIZE_INIT};
 use std::sync::mpsc::{self, Sender};
 use std::thread::Builder;
+use timestamp::GeckoMedia_Rust_TimeNow;
 
 /// Represents the main connection to the media playback system.
 pub struct GeckoMedia {
@@ -207,8 +209,9 @@ lazy_static! {
         let msg_sender_clone = msg_sender.clone();
         Builder::new().name("GeckoMedia".to_owned()).spawn(move || {
             let thread_observer_object = thread_observer_object(msg_sender_clone);
+            let services = RustServicesFnTable { mGetTimeNowFn: Some(GeckoMedia_Rust_TimeNow) };
             assert!(
-                unsafe { GeckoMedia_Initialize(thread_observer_object) },
+                unsafe { GeckoMedia_Initialize(thread_observer_object, services) },
                 "failed to initialize GeckoMedia"
             );
             ok_sender.send(()).unwrap();
@@ -315,7 +318,7 @@ fn to_ffi_planar_ycbycr_images(size: usize, elements: *mut GeckoPlanarYCbCrImage
                 width: img.mPicWidth,
                 height: img.mPicHeight,
             },
-            time_stamp: img.mTimeStamp,
+            time_stamp: TimeStamp(img.mTimeStamp),
             frame_id: img.mFrameID,
             gecko_image: img
         }

@@ -4,13 +4,15 @@
 
 extern crate gecko_media;
 
-use gecko_media::{GeckoMedia, Metadata, PlayerEventSink, PlanarYCbCrImage};
+use gecko_media::{GeckoMedia, Metadata, PlayerEventSink, PlanarYCbCrImage, TimeStamp};
 use std::env;
 use std::ffi::CString;
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
 use std::sync::mpsc;
+
+extern crate time;
 
 fn main() {
     let args: Vec<_> = env::args().collect();
@@ -60,6 +62,10 @@ fn main() {
             fn update_current_images(&self, images: Vec<PlanarYCbCrImage>) {
                 for img in images.iter() {
                     let _pixels = img.y_plane.data();
+                    let now = TimeStamp(time::precise_time_ns());
+                    if img.time_stamp > now {
+                        println!("frame display at {} (now is {})", img.time_stamp, now);
+                    }
                 }
             }
         }
