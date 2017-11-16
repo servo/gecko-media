@@ -78,5 +78,5 @@ before_install:
 script:
   - env
   - servo-tidy
-  - cargo test --verbose $CARGO_FLAGS
+  - RUST_BACKTRACE=1 cargo test --verbose $CARGO_FLAGS
   - sccache --show-stats
