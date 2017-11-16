@@ -2,12 +2,20 @@
 
 Firefox's Media stack in a Rust crate.
 
-Due to our use of target dependencies declarations in Cargo.toml, a nightly Rust
-toolchain is required to build this crate.
+Build with `cargo build`.
 
-Build with `rustup run nightly cargo build`.
+Run tests with `cargo test`.
 
-Run tests with `rustup run nightly cargo test`.
+A minimalistic player is also available: `cargo run --bin test-player -- /path/to/some/audio-file.ogg`
 
-On Linux both commands currently require the --features pulseaudio argument.
-Otherwise the tests will fail.
+## Procedure to update the imported code from Gecko
+
+1. A mozilla-central Gecko build is required. Optimizations and debug should be enabled. Example `mozconfig`:
+    ```
+    ac_add_options --enable-optimize 
+    ac_add_options --enable-debug 
+    ```
+2. The import script has to be executed like this: `python3 import.py /path/to/mozilla-central gecko/`. The `gecko/src` and `gecko/include` directories content will be removed and the source and header files declared in `data/*.json` will be copied back to those two directories.
+
+3. Fix potential build errors!
+
