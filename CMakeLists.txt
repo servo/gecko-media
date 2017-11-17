@@ -117,6 +117,16 @@ add_library(ogg OBJECT
   )
 target_include_directories(ogg PRIVATE gecko/include/mozilla/media/libogg/include)
 
+############
+# libnestegg
+############
+
+add_library(nestegg OBJECT
+  gecko/src/media/libnestegg/src/nestegg.c
+  )
+target_include_directories(nestegg PRIVATE gecko/include/mozilla/media/libnestegg/include)
+
+
 
 
 
@@ -145,6 +155,7 @@ add_library(gecko_core OBJECT
   gecko/glue/MediaDecoder.cpp
   gecko/glue/MediaDecoderStateMachine.cpp
   gecko/glue/MediaFormatReader.cpp
+  gecko/glue/MediaSource.cpp
   gecko/glue/MediaStreamGraph.cpp
   gecko/glue/PDMFactory.cpp
   gecko/glue/mozalloc_abort.cpp
@@ -163,9 +174,13 @@ add_library(gecko_core OBJECT
   gecko/glue/Scheduler.cpp
   gecko/glue/SchedulerGroup.cpp
   gecko/glue/Services.cpp
+  gecko/glue/SourceBuffer.cpp
+  gecko/glue/SourceBufferList.cpp
   gecko/glue/Telemetry.cpp
   gecko/glue/ThreadEventQueue.cpp
   gecko/glue/ThreadAnnotation.cpp
+  gecko/glue/TimeRanges.cpp
+  gecko/glue/TrackBuffersManager.cpp
   gecko/glue/VideoSegment.cpp
   gecko/glue/WebAudioUtils.cpp
   gecko/glue/XPCOMInit.cpp
@@ -192,6 +207,11 @@ add_library(gecko_core OBJECT
   gecko/src/dom/media/mediasink/AudioSinkWrapper.cpp
   gecko/src/dom/media/mediasink/DecodedStream.cpp
   gecko/src/dom/media/mediasink/OutputStreamManager.cpp
+  gecko/src/dom/media/mediasource/ContainerParser.cpp
+  gecko/src/dom/media/mediasource/MediaSourceDecoder.cpp
+  gecko/src/dom/media/mediasource/MediaSourceDemuxer.cpp
+  gecko/src/dom/media/mediasource/ResourceQueue.cpp
+  gecko/src/dom/media/mediasource/SourceBufferResource.cpp
   gecko/src/dom/media/mp3/MP3Decoder.cpp
   gecko/src/dom/media/mp3/MP3Demuxer.cpp
   gecko/src/dom/media/mp3/MP3FrameParser.cpp
@@ -217,6 +237,7 @@ add_library(gecko_core OBJECT
   gecko/src/dom/media/VideoFrameContainer.cpp
   gecko/src/dom/media/wave/WaveDecoder.cpp
   gecko/src/dom/media/wave/WaveDemuxer.cpp
+  gecko/src/dom/media/webm/WebMBufferedParser.cpp
   gecko/src/memory/fallible/fallible.cpp
   gecko/src/memory/mozalloc/mozalloc.cpp
   gecko/src/memory/mozalloc/mozalloc_oom.cpp
@@ -344,6 +365,7 @@ target_include_directories(gecko_core PRIVATE
     gecko/include/mozilla/double-conversion
     gecko/include/mozilla/media/libvorbis/include
     gecko/include/mozilla/media/libogg/include
+    gecko/include/mozilla/media/libnestegg/include
     gecko/include/mozilla/media/libtheora/include
     gecko/include/mozilla/media/libstagefright/
     gecko/include/mozilla/media/libstagefright/binding/include
@@ -1050,6 +1072,7 @@ target_include_directories(tests PRIVATE
     gecko/include/mozilla/double-conversion
     gecko/include/mozilla/media/libvorbis/include
     gecko/include/mozilla/media/libogg/include
+    gecko/include/mozilla/media/libnestegg/include
     gecko/include/mozilla/media/libtheora/include
     gecko/include/mozilla/media/libstagefright/
     gecko/include/mozilla/media/libstagefright/binding/include
