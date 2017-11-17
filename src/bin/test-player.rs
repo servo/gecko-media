@@ -12,8 +12,120 @@ use std::io::prelude::*;
 use std::ops::Range;
 use std::path::Path;
 use std::sync::mpsc;
+use std::thread;
 
 extern crate time;
+
+
+enum PlayerEvent {
+    BreakOutOfEventLoop,
+    Error,
+    Ended,
+    AsyncEvent(CString),
+    MetadataLoaded(Metadata),
+    BufferedRanges(Vec<Range<f64>>),
+    SeekableRanges(Vec<Range<f64>>),
+}
+
+struct PlayerWrapper {
+    sender: mpsc::Sender<PlayerEvent>,
+    ended_receiver: mpsc::Receiver<()>,
+}
+
+impl PlayerWrapper {
+    pub fn new(bytes: Vec<u8>, mime: &'static str) -> PlayerWrapper {
+        let (sender, receiver) = mpsc::channel();
+        struct Sink {
+            sender: mpsc::Sender<PlayerEvent>,
+        }
+        impl PlayerEventSink for Sink {
+            fn playback_ended(&self) {
+                self.sender.send(PlayerEvent::Ended).unwrap();
+            }
+            fn decode_error(&self) {
+                self.sender.send(PlayerEvent::Error).unwrap();
+            }
+            fn async_event(&self, name: &str) {
+                self.sender
+                    .send(PlayerEvent::AsyncEvent(CString::new(name).unwrap()))
+                    .unwrap();
+            }
+            fn metadata_loaded(&self, metadata: Metadata) {
+                self.sender.send(PlayerEvent::MetadataLoaded(metadata)).unwrap();
+            }
+            fn duration_changed(&self, _duration: f64) {}
+            fn loaded_data(&self) {}
+            fn time_update(&self, _time: f64) {}
+            fn seek_started(&self) {}
+            fn seek_completed(&self) {}
+            fn update_current_images(&self, images: Vec<PlanarYCbCrImage>) {
+                for img in images.iter() {
+                    let _pixels = img.y_plane.data();
+                    let now = TimeStamp(time::precise_time_ns());
+                    if img.time_stamp > now {
+                        println!("frame display at {} (now is {})", img.time_stamp, now);
+                    }
+                }
+            }
+            fn buffered(&self, ranges: Vec<Range<f64>>) {
+                self.sender.send(PlayerEvent::BufferedRanges(ranges)).unwrap();
+            }
+            fn seekable(&self, ranges: Vec<Range<f64>>) {
+                self.sender.send(PlayerEvent::SeekableRanges(ranges)).unwrap();
+            }
+        }
+
+        let (ended_sender, ended_receiver) = mpsc::channel();
+
+        let wrapper_sender = sender.clone();
+        thread::spawn(move || {
+            let sink = Box::new(Sink { sender: sender });
+            let player = GeckoMedia::get()
+                .unwrap()
+                .create_blob_player(bytes, mime, sink)
+                .unwrap();
+            player.play();
+            player.set_volume(1.0);
+            loop {
+                match receiver.recv().unwrap() {
+                    PlayerEvent::Ended => {
+                        println!("Ended");
+                        break;
+                    }
+                    PlayerEvent::Error => {
+                        println!("Error");
+                        break;
+                    }
+                    PlayerEvent::AsyncEvent(name) => {
+                        println!("Event received: {:?}", name);
+                    }
+                    PlayerEvent::MetadataLoaded(metadata) => {
+                        println!("MetadataLoaded; duration: {:?}", metadata.duration);
+                    }
+                    PlayerEvent::BreakOutOfEventLoop => {
+                        break;
+                    }
+                    PlayerEvent::BufferedRanges(ranges) => {
+                        println!("Buffered ranges: {:?}", ranges);
+                    }
+                    PlayerEvent::SeekableRanges(ranges) => {
+                        println!("Seekable ranges: {:?}", ranges);
+                    }
+                };
+            }
+            drop(player);
+            ended_sender.send(()).unwrap();
+        });
+        PlayerWrapper { sender: wrapper_sender, ended_receiver: ended_receiver }
+    }
+    pub fn shutdown(&self) {
+        self.sender.send(PlayerEvent::BreakOutOfEventLoop).unwrap();
+        self.await_ended();
+    }
+    pub fn await_ended(&self) {
+        self.ended_receiver.recv().unwrap();
+    }
+}
 
 fn main() {
     let args: Vec<_> = env::args().collect();
@@ -44,88 +156,7 @@ fn main() {
     let mut bytes = vec![];
     file.read_to_end(&mut bytes).unwrap();
 
-    {
-        enum Status {
-            Error,
-            Ended,
-            AsyncEvent(CString),
-            MetadataLoaded(Metadata),
-            BufferedRanges(Vec<Range<f64>>),
-            SeekableRanges(Vec<Range<f64>>),
-        }
-        let (sender, receiver) = mpsc::channel();
-        struct Sink {
-            sender: mpsc::Sender<Status>,
-        }
-        impl PlayerEventSink for Sink {
-            fn playback_ended(&self) {
-                self.sender.send(Status::Ended).unwrap();
-            }
-            fn decode_error(&self) {
-                self.sender.send(Status::Error).unwrap();
-            }
-            fn async_event(&self, name: &str) {
-                self.sender
-                    .send(Status::AsyncEvent(CString::new(name).unwrap()))
-                    .unwrap();
-            }
-            fn metadata_loaded(&self, metadata: Metadata) {
-                self.sender.send(Status::MetadataLoaded(metadata)).unwrap();
-            }
-            fn duration_changed(&self, _duration: f64) {}
-            fn loaded_data(&self) {}
-            fn time_update(&self, _time: f64) {}
-            fn seek_started(&self) {}
-            fn seek_completed(&self) {}
-            fn update_current_images(&self, images: Vec<PlanarYCbCrImage>) {
-                for img in images.iter() {
-                    let _pixels = img.y_plane.data();
-                    let now = TimeStamp(time::precise_time_ns());
-                    if img.time_stamp > now {
-                        println!("frame display at {} (now is {})", img.time_stamp, now);
-                    }
-                }
-            }
-            fn buffered(&self, ranges: Vec<Range<f64>>) {
-                self.sender.send(Status::BufferedRanges(ranges)).unwrap();
-            }
-            fn seekable(&self, ranges: Vec<Range<f64>>) {
-                self.sender.send(Status::SeekableRanges(ranges)).unwrap();
-            }
-        }
-        let sink = Box::new(Sink { sender: sender });
-
-        let player = GeckoMedia::get()
-            .unwrap()
-            .create_blob_player(bytes, mime, sink)
-            .unwrap();
-        player.play();
-        player.set_volume(1.0);
-        loop {
-            match receiver.recv().unwrap() {
-                Status::Ended => {
-                    println!("Ended");
-                    break;
-                }
-                Status::Error => {
-                    println!("Error");
-                    break;
-                }
-                Status::AsyncEvent(name) => {
-                    println!("Event received: {:?}", name);
-                }
-                Status::MetadataLoaded(metadata) => {
-                    println!("MetadataLoaded; duration: {:?}", metadata.duration);
-                }
-                Status::BufferedRanges(ranges) => {
-                    println!("Buffered ranges: {:?}", ranges);
-                }
-                Status::SeekableRanges(ranges) => {
-                    println!("Seekable ranges: {:?}", ranges);
-                }
-            };
-        }
-    }
-
+    let player = PlayerWrapper::new(bytes, mime);
+    player.await_ended();
     GeckoMedia::shutdown().unwrap();
 }
