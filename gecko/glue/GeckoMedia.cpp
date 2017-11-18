@@ -167,12 +167,6 @@ GeckoMedia_QueueRustRunnable(RustRunnable aRunnable)
   MOZ_ASSERT(NS_SUCCEEDED(rv));
 }
 
-void
-GeckoMedia_FreeImage(GeckoPlanarYCbCrImage image)
-{
-  (*image.mFree)(image.mContext);
-}
-
 class RustVecU8BufferMediaResource : public BufferMediaResource
 {
 public:

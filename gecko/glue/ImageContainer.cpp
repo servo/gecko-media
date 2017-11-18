@@ -41,6 +41,8 @@
 #include "mozilla/AbstractThread.h"
 #include "GeckoMediaDecoderOwner.h"
 #include "RustServices.h"
+#include "nsRefPtrHashtable.h"
+#include "mozilla/Assertions.h"
 
 namespace mozilla {
 
@@ -336,11 +338,6 @@ ImageContainer::SetCurrentImageInternal(const nsTArray<NonOwningImage>& aImages)
   NotifyOwnerOfNewImages();
 }
 
-void FreeGeckoPlanarYCbCrImage(void* aImage) {
-  Image* image = reinterpret_cast<Image*>(aImage);
-  image->Release();
-}
-
 class UpdateCurrentImagesRunnable : public Runnable
 {
 public:
@@ -363,6 +360,61 @@ private:
   GeckoMediaDecoderOwner* mOwner;
 };
 
+StaticMutex sImageMutex;
+static nsRefPtrHashtable<nsUint32HashKey, Image> sImages;
+static nsDataHashtable<nsUint32HashKey, uint32_t> sImageFFIRefCnt;
+
+void PlanarYCbCrImage_AddRefPixelData(uint32_t aFrameID)
+{
+  StaticMutexAutoLock lock(sImageMutex);
+  MOZ_ASSERT(sImages.Contains(aFrameID));
+  MOZ_ASSERT(sImageFFIRefCnt.Contains(aFrameID));
+
+  uint32_t* refcnt = sImageFFIRefCnt.GetValue(aFrameID);
+  MOZ_ASSERT(refcnt && *refcnt);
+  *refcnt += 1;
+}
+
+void PlanarYCbCrImage_FreeData(uint32_t aFrameID) {
+  StaticMutexAutoLock lock(sImageMutex);
+  MOZ_ASSERT(sImages.Contains(aFrameID));
+  MOZ_ASSERT(sImageFFIRefCnt.Contains(aFrameID));
+
+  uint32_t* refcnt = sImageFFIRefCnt.GetValue(aFrameID);
+  MOZ_ASSERT(refcnt && *refcnt);
+  *refcnt -= 1;
+
+  if (*refcnt == 0) {
+    sImageFFIRefCnt.Remove(aFrameID);
+    sImages.Remove(aFrameID);
+  }
+}
+
+const uint8_t*
+PlanarYCbCrImage_GetPixelData(uint32_t aFrameID, PlaneType aPlaneType)
+{
+  RefPtr<Image> img;
+  {
+    StaticMutexAutoLock lock(sImageMutex);
+    MOZ_ASSERT(sImages.Contains(aFrameID));
+    if (!sImages.Get(aFrameID, getter_AddRefs(img))) {
+      return nullptr;
+    }
+  }
+  PlanarYCbCrImage* planarImage = img->AsPlanarYCbCrImage();
+  MOZ_ASSERT(planarImage);
+  if (!planarImage) {
+    return nullptr;
+  }
+  const PlanarYCbCrData* data = planarImage->GetData();
+  switch (aPlaneType) {
+    case PlaneType::Y: return data->mYChannel;
+    case PlaneType::Cb: return data->mCbChannel;
+    case PlaneType::Cr: return data->mCrChannel;
+  }
+  return nullptr;
+}
+
 void
 ImageContainer::NotifyOwnerOfNewImages()
 {
@@ -382,13 +434,10 @@ ImageContainer::NotifyOwnerOfNewImages()
 
     GeckoPlanarYCbCrImage* img = images.AppendElement();
 
-    img->mYChannel = data->mYChannel;
     img->mYStride = data->mYStride;
     img->mYWidth = data->mYSize.width;
     img->mYHeight = data->mYSize.height;
     img->mYSkip = data->mYSkip;
-    img->mCbChannel = data->mCbChannel;
-    img->mCrChannel = data->mCrChannel;
     img->mCbCrStride = data->mCbCrStride;
     img->mCbCrWidth = data->mCbCrSize.width;
     img->mCbCrHeight = data->mCbCrSize.height;
@@ -403,11 +452,21 @@ ImageContainer::NotifyOwnerOfNewImages()
     img->mTimeStamp = rustTime + (owningImage.mTimeStamp - TimeStamp::Now()).ToMicroseconds() * 1000.0;
     img->mFrameID = owningImage.mFrameID;
 
-    owningImage.mImage->AddRef();
-    img->mContext = reinterpret_cast<void*>(owningImage.mImage.get());
+    {
+      StaticMutexAutoLock lock(sImageMutex);
+      if (!sImages.Contains(img->mFrameID)) {
+        sImages.Put(img->mFrameID, owningImage.mImage);
+        sImageFFIRefCnt.Put(img->mFrameID, 1);
+      } else {
+        uint32_t* refcnt = sImageFFIRefCnt.GetValue(img->mFrameID);
+        MOZ_ASSERT(refcnt && *refcnt);
+        *refcnt += 1;
+      }
+    }
 
-    // Releases AddRef performed above.
-    img->mFree = &FreeGeckoPlanarYCbCrImage;
+    img->mAddRefPixelData = &PlanarYCbCrImage_AddRefPixelData;
+    img->mFreePixelData = &PlanarYCbCrImage_FreeData;
+    img->mGetPixelData = &PlanarYCbCrImage_GetPixelData;
   }
 
   RefPtr<Runnable> task = new UpdateCurrentImagesRunnable(mOwner, Move(images));

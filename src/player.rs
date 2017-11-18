@@ -4,8 +4,8 @@
 
 use GeckoMedia;
 use bindings::GeckoPlanarYCbCrImage;
-use bindings::{GeckoMedia_FreeImage, GeckoMedia_Player_Pause, GeckoMedia_Player_Play};
-use bindings::{GeckoMedia_Player_Seek, GeckoMedia_Player_SetVolume, GeckoMedia_Player_Shutdown};
+use bindings::{GeckoMedia_Player_Pause, GeckoMedia_Player_Play};
+use bindings::{GeckoMedia_Player_Seek, GeckoMedia_Player_SetVolume, GeckoMedia_Player_Shutdown, PlaneType_Cb, PlaneType_Cr, PlaneType_Y};
 use std::ops::Range;
 use std::slice;
 use timestamp::TimeStamp;
@@ -65,8 +65,9 @@ impl Plane {
 }
 
 /// A subregion of an image buffer.
+#[derive(Clone)]
 pub struct Region {
-    // X coordinate of the origin of the region.
+    // X coordinate of theExternalImage origin of the region.
     pub x: u32,
     // Y coordinate of the origin of the region.
     pub y: u32,
@@ -90,12 +91,9 @@ pub struct Region {
 /// The color format is detected based on the height/width ratios
 /// defined above.
 pub struct PlanarYCbCrImage {
-    /// Pixel data for the Y channel.
-    pub y_plane: Plane,
-    /// Pixel data for the Cb channel.
-    pub cb_plane: Plane,
-    /// Pixel data for the Cr channel.
-    pub cr_plane: Plane,
+    // pub y_plane: Plane,
+    // pub cb_plane: Plane,
+    // pub cr_plane: Plane,
     /// The sub-region of the buffer which contains the image to be rendered.
     pub picture: Region,
     /// The time at which this image should be renderd.
@@ -105,9 +103,85 @@ pub struct PlanarYCbCrImage {
     pub gecko_image: GeckoPlanarYCbCrImage,
 }
 
+// When cloning, we need to ensure we increment the reference count on
+// the pixel data on the C++ side, so that our Drop impl can decrement
+// the reference count appropriately.
+impl Clone for PlanarYCbCrImage {
+    fn clone(&self) -> Self {
+        unsafe {
+            (self.gecko_image.mAddRefPixelData.unwrap())(self.frame_id);
+        }
+        PlanarYCbCrImage {
+            picture: self.picture.clone(),
+            time_stamp: self.time_stamp.clone(),
+            frame_id: self.frame_id,
+            gecko_image: self.gecko_image,
+        }
+    }
+}
+
+impl PlanarYCbCrImage {
+
+    /// Returns a slice storing the raw pixel data.
+    pub fn pixel_data<'a>(&'a self, channel_index: u8) -> &'a [u8] {
+        let img = &self.gecko_image;
+        let (pixels, size) = match channel_index {
+            0 => (self.get_pixels(PlaneType_Y), img.mYStride as usize * img.mYHeight as usize),
+            1 => (self.get_pixels(PlaneType_Cb), img.mCbCrStride as usize * img.mCbCrHeight as usize),
+            2 => (self.get_pixels(PlaneType_Cr), img.mCbCrStride as usize * img.mCbCrHeight as usize),
+             _ => panic!("Invalid channel_index"),
+        };
+        unsafe {
+            slice::from_raw_parts(pixels, size)
+        }
+    }
+
+    fn get_pixels(&self, plane: u32) -> *const u8 {
+        let img = &self.gecko_image;
+        let f = img.mGetPixelData.unwrap();
+        unsafe {
+            f(img.mFrameID, plane) as *const u8
+        }
+    }
+
+    pub fn y_plane(&self) -> Plane {
+        let img = &self.gecko_image;
+        Plane {
+            pixels: self.get_pixels(PlaneType_Y),
+            width: img.mYWidth,
+            stride: img.mYStride,
+            height: img.mYHeight,
+            skip: img.mYSkip,
+        }
+    }
+
+    pub fn cb_plane(&self) -> Plane {
+        let img = &self.gecko_image;
+        Plane {
+            pixels: self.get_pixels(PlaneType_Cb),
+            width: img.mCbCrWidth,
+            stride: img.mCbCrStride,
+            height: img.mCbCrHeight,
+            skip: img.mCbSkip,
+        }
+    }
+
+    pub fn cr_plane(&self) -> Plane {
+        let img = &self.gecko_image;
+        Plane {
+            pixels: self.get_pixels(PlaneType_Cr),
+            width: img.mCbCrWidth,
+            stride: img.mCbCrStride,
+            height: img.mCbCrHeight,
+            skip: img.mCrSkip,
+        }
+    }
+}
+
 impl Drop for PlanarYCbCrImage {
     fn drop(&mut self) {
-        unsafe { GeckoMedia_FreeImage(self.gecko_image); };
+        let frame_id = self.gecko_image.mFrameID;
+        unsafe { (self.gecko_image.mFreePixelData.unwrap())(frame_id); };
     }
 }
 

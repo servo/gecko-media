@@ -23,6 +23,9 @@ mp4parse = "0.8.0"
 mp4parse_capi = "0.8.0"
 encoding_c = "0.8.0"
 time = "0.1.17"
+webrender = {path = "../webrender/webrender"}
+gleam = "0.4.8"
+servo-glutin = "0.12"
 
 [features]
 default = ["audio-sample-type-f32"]
