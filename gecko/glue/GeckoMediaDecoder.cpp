@@ -34,8 +34,10 @@ namespace mozilla {
 
 GeckoMediaDecoder::GeckoMediaDecoder(MediaDecoderInit& aInit)
   : MediaDecoder(aInit)
+  , mGeckoWatchManager(this, aInit.mOwner->AbstractMainThread())
 {
   mExplicitDuration.emplace(UnspecifiedNaN<double>());
+  mGeckoWatchManager.Watch(mBuffered, &GeckoMediaDecoder::NotifyBuffered);
 }
 
 MediaDecoderStateMachine*
@@ -90,6 +92,7 @@ GeckoMediaDecoder::Shutdown()
   AbstractThread::AutoEnter context(AbstractMainThread());
   GECKO_DEBUG("Shutdown");
 
+  mGeckoWatchManager.Shutdown();
   MediaDecoder::Shutdown();
 }
 
@@ -157,6 +160,12 @@ GeckoMediaDecoder::GetCurrentPrincipal()
 {
   MOZ_ASSERT(NS_IsMainThread());
   return nullptr;
+}
+
+void
+GeckoMediaDecoder::NotifyBuffered()
+{
+  mOwner->NotifyBuffered();
 }
 
 #undef GECKO_DEBUG

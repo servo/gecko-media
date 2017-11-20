@@ -195,6 +195,8 @@ public:
 
   void UpdateCurrentImages(nsTArray<GeckoPlanarYCbCrImage> aImages);
 
+  void NotifyBuffered() const override;
+
 private:
   bool mHasError = false;
   PlayerCallbackObject mCallback = { 0 };

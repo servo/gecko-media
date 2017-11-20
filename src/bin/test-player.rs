@@ -9,6 +9,7 @@ use std::env;
 use std::ffi::CString;
 use std::fs::File;
 use std::io::prelude::*;
+use std::ops::Range;
 use std::path::Path;
 use std::sync::mpsc;
 
@@ -34,6 +35,7 @@ fn main() {
             Ended,
             AsyncEvent(CString),
             MetadataLoaded(Metadata),
+            BufferedRanges(Vec<Range<f64>>),
         }
         let (sender, receiver) = mpsc::channel();
         struct Sink {
@@ -67,6 +69,9 @@ fn main() {
                         println!("frame display at {} (now is {})", img.time_stamp, now);
                     }
                 }
+            }
+            fn buffered(&self, ranges: Vec<Range<f64>>) {
+                self.sender.send(Status::BufferedRanges(ranges)).unwrap();
             }
         }
         let sink = Box::new(Sink { sender: sender });
@@ -107,6 +112,10 @@ fn main() {
                     }
                     Status::MetadataLoaded(metadata) => {
                         println!("MetadataLoaded; duration: {:?}", metadata.duration);
+                    }
+                    Status::BufferedRanges(ranges) => {
+                        println!("Buffered ranges: {:?}", ranges);
+
                     }
                 };
             }

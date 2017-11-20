@@ -50,6 +50,10 @@ private:
   bool CanPlayThroughImpl() override;
   bool IsLiveStream() override final { return !mEnded; }
 
+  void NotifyBuffered();
+
+  WatchManager<GeckoMediaDecoder> mGeckoWatchManager;
+
   bool mEnded = false;
   bool mOwnerPaused = false;
 };

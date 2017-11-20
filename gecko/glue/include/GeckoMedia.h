@@ -48,6 +48,11 @@ struct RustVecU8Object
   void (*mFree)(uint8_t* mData, size_t aLength);
 };
 
+struct GeckoMediaTimeInterval {
+  double mStart;
+  double mEnd;
+};
+
 struct GeckoMediaMetadata {
   double mDuration;
 };
@@ -95,6 +100,7 @@ struct PlayerCallbackObject
   void (*mSeekCompleted)(void*);
   void (*mTimeUpdate)(void*, double);
   void (*mUpdateCurrentImages)(void*, size_t, GeckoPlanarYCbCrImage*);
+  void (*mNotifyBuffered)(void*, size_t, GeckoMediaTimeInterval*);
   void (*mFree)(void*);
 };
 
