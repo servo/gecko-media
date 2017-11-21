@@ -5,6 +5,7 @@
 use CanPlayType;
 use TimeStamp;
 use bindings::*;
+use mse::mediasource::{MediaSource, MediaSourceImpl};
 use player::{Metadata, Plane, PlanarYCbCrImage, Player, PlayerEventSink, Region};
 use std::ffi::CStr;
 use std::ffi::CString;
@@ -205,6 +206,13 @@ impl GeckoMedia {
         }
     }
 
+    pub fn create_media_source(&self, media_source_impl: Box<MediaSourceImpl>)
+        -> Result<MediaSource, ()> {
+        let handle = GeckoMedia::get()?;
+        let id = NEXT_MEDIA_SOURCE_ID.fetch_add(1, Ordering::SeqCst);
+        Ok(MediaSource::new(handle, id, media_source_impl))
+    }
+
     #[cfg(test)]
     pub fn test(&self) {
         self.sender.send(GeckoMediaMsg::Test).unwrap();
@@ -227,6 +235,7 @@ enum GeckoMediaMsg {
 
 static OUTSTANDING_HANDLES: AtomicUsize = ATOMIC_USIZE_INIT;
 static NEXT_PLAYER_ID: AtomicUsize = ATOMIC_USIZE_INIT;
+static NEXT_MEDIA_SOURCE_ID: AtomicUsize = ATOMIC_USIZE_INIT;
 static mut SENDER: *const Mutex<Option<Sender<GeckoMediaMsg>>> = 0 as *const _;
 static INITIALIZER: Once = sync::ONCE_INIT;
 

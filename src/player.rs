@@ -168,7 +168,7 @@ impl Player {
     pub fn new(gecko_media: GeckoMedia, id: usize) -> Player {
         Player {
             gecko_media,
-            id
+            id,
         }
     }
 

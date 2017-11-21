@@ -7,6 +7,8 @@
 #ifndef GeckoMedia_h_
 #define GeckoMedia_h_
 
+#include "GeckoMediaSource.h"
+
 #include <stddef.h>
 #include <stdint.h>
 
