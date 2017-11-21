@@ -9,7 +9,7 @@ use player::{Metadata, Plane, PlanarYCbCrImage, Player, PlayerEventSink, Region}
 use std::ffi::CStr;
 use std::ffi::CString;
 use std::mem;
-use std::ops::Drop;
+use std::ops::{Drop, Range};
 use std::os::raw::c_void;
 use std::slice;
 use std::sync::Mutex;
@@ -188,6 +188,18 @@ impl GeckoMedia {
             let images = to_ffi_planar_ycbycr_images(size, elements);
             wrapper.sink.update_current_images(images);
         }
+        unsafe extern "C" fn notify_buffered(ptr: *mut c_void, size: usize,
+                                             ranges: *mut GeckoMediaTimeInterval) {
+            let wrapper = &*(ptr as *mut Wrapper);
+            let ranges = to_ffi_time_ranges(size, ranges);
+            wrapper.sink.buffered(ranges);
+        }
+        unsafe extern "C" fn notify_seekable(ptr: *mut c_void, size: usize,
+                                             ranges: *mut GeckoMediaTimeInterval) {
+            let wrapper = &*(ptr as *mut Wrapper);
+            let ranges = to_ffi_time_ranges(size, ranges);
+            wrapper.sink.seekable(ranges);
+        }
 
         PlayerCallbackObject {
             mContext: Box::into_raw(Box::new(Wrapper { sink: sink } )) as *mut c_void,
@@ -201,6 +213,8 @@ impl GeckoMedia {
             mSeekCompleted: Some(seek_completed),
             mTimeUpdate: Some(time_update),
             mUpdateCurrentImages: Some(update_current_images),
+            mNotifyBuffered: Some(notify_buffered),
+            mNotifySeekable: Some(notify_seekable),
             mFree: Some(free),
         }
     }
@@ -335,4 +349,11 @@ fn to_ffi_planar_ycbycr_images(size: usize, elements: *mut GeckoPlanarYCbCrImage
         }
     })
     .collect::<Vec<PlanarYCbCrImage>>()
+}
+
+fn to_ffi_time_ranges(size: usize, elements: *mut GeckoMediaTimeInterval) -> Vec<Range<f64>> {
+    let ranges = unsafe { slice::from_raw_parts(elements, size) };
+    ranges.iter().map(|&range| -> Range<f64> {
+        Range { start: range.mStart, end: range.mEnd }
+    }).collect::<Vec<Range<f64>>>()
 }

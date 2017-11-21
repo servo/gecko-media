@@ -34,8 +34,10 @@ namespace mozilla {
 
 GeckoMediaDecoder::GeckoMediaDecoder(MediaDecoderInit& aInit)
   : MediaDecoder(aInit)
+  , mGeckoWatchManager(this, aInit.mOwner->AbstractMainThread())
 {
   mExplicitDuration.emplace(UnspecifiedNaN<double>());
+  mGeckoWatchManager.Watch(mBuffered, &GeckoMediaDecoder::NotifyBuffered);
 }
 
 MediaDecoderStateMachine*
@@ -90,6 +92,7 @@ GeckoMediaDecoder::Shutdown()
   AbstractThread::AutoEnter context(AbstractMainThread());
   GECKO_DEBUG("Shutdown");
 
+  mGeckoWatchManager.Shutdown();
   MediaDecoder::Shutdown();
 }
 
@@ -116,6 +119,22 @@ GeckoMediaDecoder::GetDuration()
   } else {
     return MediaDecoder::GetDuration();
   }
+}
+
+void
+GeckoMediaDecoder::DurationChanged()
+{
+  MediaDecoder::DurationChanged();
+  CheckSeekable();
+}
+
+void
+GeckoMediaDecoder::MetadataLoaded(UniquePtr<MediaInfo> aInfo,
+                                  UniquePtr<MetadataTags> aTags,
+                                  MediaDecoderEventVisibility aEventVisibility)
+{
+  MediaDecoder::MetadataLoaded(Move(aInfo), Move(aTags), aEventVisibility);
+  CheckSeekable();
 }
 
 void
@@ -157,6 +176,23 @@ GeckoMediaDecoder::GetCurrentPrincipal()
 {
   MOZ_ASSERT(NS_IsMainThread());
   return nullptr;
+}
+
+void
+GeckoMediaDecoder::NotifyBuffered()
+{
+  mOwner->NotifyBuffered();
+  CheckSeekable();
+}
+
+void
+GeckoMediaDecoder::CheckSeekable()
+{
+  media::TimeIntervals currentSeekable = GetSeekable();
+  if (currentSeekable != mCachedSeekable) {
+    mCachedSeekable = currentSeekable;
+    mOwner->NotifySeekable();
+  }
 }
 
 #undef GECKO_DEBUG

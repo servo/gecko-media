@@ -6,6 +6,7 @@ use GeckoMedia;
 use bindings::GeckoPlanarYCbCrImage;
 use bindings::{GeckoMedia_FreeImage, GeckoMedia_Player_Pause, GeckoMedia_Player_Play};
 use bindings::{GeckoMedia_Player_Seek, GeckoMedia_Player_SetVolume, GeckoMedia_Player_Shutdown};
+use std::ops::Range;
 use std::slice;
 use timestamp::TimeStamp;
 
@@ -159,9 +160,11 @@ pub trait PlayerEventSink {
     /// Clients should be careful if making extra copies of the image data to
     /// check the frame_id field to avoid making unnecessay copies.
     ///
-    /// TODO: The timestamp needs to be converted into something client
-    /// can use.
     fn update_current_images(&self, images: Vec<PlanarYCbCrImage>);
+    /// Called when the Player buffered ranges were updated.
+    fn buffered(&self, ranges: Vec<Range<f64>>);
+    /// Called when the Player seekable ranges were updated.
+    fn seekable(&self, ranges: Vec<Range<f64>>);
 }
 
 impl Player {

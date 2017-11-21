@@ -38,6 +38,7 @@ mod tests {
     use std::ffi::CString;
     use std::fs::File;
     use std::io::prelude::*;
+    use std::ops::Range;
     use std::sync::mpsc;
 
     fn test_can_play_type() {
@@ -70,6 +71,8 @@ mod tests {
         SeekStarted,
         SeekComplete,
         UpdateImages(Vec<PlanarYCbCrImage>),
+        Buffered(Vec<Range<f64>>),
+        Seekable(Vec<Range<f64>>),
     }
     fn create_test_player(path: &str, mime: &str) -> (Player, mpsc::Receiver<Status>) {
         let (sender, receiver) = mpsc::channel();
@@ -108,6 +111,12 @@ mod tests {
             }
             fn update_current_images(&self, images: Vec<PlanarYCbCrImage>) {
                 self.sender.send(Status::UpdateImages(images)).unwrap();
+            }
+            fn buffered(&self, ranges: Vec<Range<f64>>) {
+                self.sender.send(Status::Buffered(ranges)).unwrap();
+            }
+            fn seekable(&self, ranges: Vec<Range<f64>>) {
+                self.sender.send(Status::Seekable(ranges)).unwrap();
             }
         }
         let sink = Box::new(Sink { sender: sender });
@@ -152,6 +161,8 @@ mod tests {
         let mut reached_seek_complete = false;
         let mut reached_ended = false;
         let mut reached_error = false;
+        let mut reached_buffered = false;
+        let mut reached_seekable = false;
         loop {
             match receiver.recv().unwrap() {
                 Status::MetadataLoaded(metadata) => {
@@ -189,6 +200,12 @@ mod tests {
                 }
                 Status::UpdateImages(_images) => {
                 }
+                Status::Buffered(_ranges) => {
+                    reached_buffered = true;
+                }
+                Status::Seekable(_ranges) => {
+                    reached_seekable = true;
+                }
                 _ => {}
             };
         }
@@ -198,6 +215,8 @@ mod tests {
         assert!(reached_seek_complete);
         assert!(reached_ended);
         assert!(!reached_error);
+        assert!(reached_buffered);
+        assert!(reached_seekable);
     }
 
     #[test]

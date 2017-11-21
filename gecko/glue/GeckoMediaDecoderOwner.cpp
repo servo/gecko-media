@@ -255,4 +255,40 @@ GeckoMediaDecoderOwner::UpdateCurrentImages(nsTArray<GeckoPlanarYCbCrImage> aIma
   }
 }
 
+void
+GeckoMediaDecoderOwner::NotifyBuffered() const
+{
+  if (mCallback.mContext && mCallback.mNotifyBuffered) {
+    auto buffered = mDecoder->GetBuffered();
+    size_t size = buffered.Length();
+    GeckoMediaTimeInterval* ranges = new GeckoMediaTimeInterval[size];
+    size_t i = 0;
+    for (auto interval : buffered) {
+      ranges[i].mStart = interval.mStart.ToSeconds();
+      ranges[i].mEnd = interval.mEnd.ToSeconds();
+      i++;
+    }
+    (*mCallback.mNotifyBuffered)(mCallback.mContext, size, ranges);
+    delete [] ranges;
+  }
+}
+
+void
+GeckoMediaDecoderOwner::NotifySeekable() const
+{
+  if (mCallback.mContext && mCallback.mNotifySeekable) {
+    auto seekable = mDecoder->GetSeekable();
+    size_t size = seekable.Length();
+    GeckoMediaTimeInterval* ranges = new GeckoMediaTimeInterval[size];
+    size_t i = 0;
+    for (auto interval : seekable) {
+      ranges[i].mStart = interval.mStart.ToSeconds();
+      ranges[i].mEnd = interval.mEnd.ToSeconds();
+      i++;
+    }
+    (*mCallback.mNotifySeekable)(mCallback.mContext, size, ranges);
+    delete [] ranges;
+  }
+}
+
 } // namespace mozilla
