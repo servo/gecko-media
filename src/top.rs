@@ -14,7 +14,8 @@ use std::os::raw::c_void;
 use std::slice;
 use std::sync::Mutex;
 use std::sync::atomic::{AtomicUsize, Ordering, ATOMIC_USIZE_INIT};
-use std::sync::mpsc::{self, Sender};
+use std::sync::mpsc::{self, Receiver, Sender};
+use std::sync::{self, Once};
 use std::thread::Builder;
 use timestamp::GeckoMedia_Rust_TimeNow;
 
@@ -27,7 +28,27 @@ impl GeckoMedia {
     /// Retrieves a handle to the media system.
     pub fn get() -> Result<Self, ()> {
         OUTSTANDING_HANDLES.fetch_add(1, Ordering::SeqCst);
-        let sender = SENDER.lock().unwrap();
+        INITIALIZER.call_once(|| {
+            let (msg_sender, msg_receiver) = mpsc::channel();
+            let (ok_sender, ok_receiver) = mpsc::channel();
+            let msg_sender_clone = msg_sender.clone();
+            Builder::new().name("GeckoMedia".to_owned()).spawn(move || {
+                let thread_observer_object = thread_observer_object(msg_sender_clone);
+                let services = RustServicesFnTable { mGetTimeNowFn: Some(GeckoMedia_Rust_TimeNow) };
+                assert!(
+                    unsafe { GeckoMedia_Initialize(thread_observer_object, services) },
+                    "failed to initialize GeckoMedia"
+                );
+                ok_sender.send(()).unwrap();
+                drop(ok_sender);
+                server_loop(msg_receiver);
+            }).unwrap();
+            ok_receiver.recv().unwrap();
+            unsafe {
+                SENDER = Box::into_raw(Box::new(Mutex::new(Some(msg_sender))));
+            }
+        });
+        let sender = unsafe { &*SENDER }.lock().unwrap();
         match sender.clone() {
             Some(sender) => Ok(GeckoMedia { sender }),
             None => {
@@ -41,7 +62,12 @@ impl GeckoMedia {
     /// finished playing media. Returns Err() if any GeckoMedia or Player
     /// objects remain undropped.
     pub fn shutdown() -> Result<(), ()> {
-        let mut sender = SENDER.lock().unwrap();
+        INITIALIZER.call_once(|| {
+            unsafe {
+                SENDER = Box::into_raw(Box::new(Mutex::new(None)));
+            }
+        });
+        let mut sender = unsafe { &*SENDER }.lock().unwrap();
         if OUTSTANDING_HANDLES.load(Ordering::SeqCst) > 0 {
             return Err(());
         }
@@ -201,51 +227,36 @@ enum GeckoMediaMsg {
 
 static OUTSTANDING_HANDLES: AtomicUsize = ATOMIC_USIZE_INIT;
 static NEXT_PLAYER_ID: AtomicUsize = ATOMIC_USIZE_INIT;
+static mut SENDER: *const Mutex<Option<Sender<GeckoMediaMsg>>> = 0 as *const _;
+static INITIALIZER: Once = sync::ONCE_INIT;
 
-lazy_static! {
-    static ref SENDER: Mutex<Option<Sender<GeckoMediaMsg>>> = {
-        let (msg_sender, msg_receiver) = mpsc::channel();
-        let (ok_sender, ok_receiver) = mpsc::channel();
-        let msg_sender_clone = msg_sender.clone();
-        Builder::new().name("GeckoMedia".to_owned()).spawn(move || {
-            let thread_observer_object = thread_observer_object(msg_sender_clone);
-            let services = RustServicesFnTable { mGetTimeNowFn: Some(GeckoMedia_Rust_TimeNow) };
-            assert!(
-                unsafe { GeckoMedia_Initialize(thread_observer_object, services) },
-                "failed to initialize GeckoMedia"
-            );
-            ok_sender.send(()).unwrap();
-            drop(ok_sender);
-            loop {
-                match msg_receiver.recv().unwrap() {
-                    GeckoMediaMsg::Exit(sender) => {
-                        unsafe { GeckoMedia_Shutdown() };
-                        sender.send(()).unwrap();
-                        break;
-                    },
-                    GeckoMediaMsg::CanPlayType(mime_type, sender) => {
-                        unsafe {
-                            sender.send(GeckoMedia_CanPlayType(mime_type.as_ptr())).unwrap();
-                        }
-                    },
-                    GeckoMediaMsg::CallProcessGeckoEvents => {
-                        // Process any pending messages in Gecko's main thread
-                        // event queue.
-                        unsafe {
-                            GeckoMedia_ProcessEvents();
-                        }
-                    },
-                    #[cfg(test)]
-                    GeckoMediaMsg::Test => {
-                        extern "C" { fn TestGecko(); }
-                        unsafe { TestGecko(); }
-                    }
+fn server_loop(receiver: Receiver<GeckoMediaMsg>) {
+    loop {
+        match receiver.recv().unwrap() {
+            GeckoMediaMsg::Exit(sender) => {
+                unsafe { GeckoMedia_Shutdown() };
+                sender.send(()).unwrap();
+                break;
+            },
+            GeckoMediaMsg::CanPlayType(mime_type, sender) => {
+                unsafe {
+                    sender.send(GeckoMedia_CanPlayType(mime_type.as_ptr())).unwrap();
                 }
+            },
+            GeckoMediaMsg::CallProcessGeckoEvents => {
+                // Process any pending messages in Gecko's main thread
+                // event queue.
+                unsafe {
+                    GeckoMedia_ProcessEvents();
+                }
+            },
+            #[cfg(test)]
+            GeckoMediaMsg::Test => {
+                extern "C" { fn TestGecko(); }
+                unsafe { TestGecko(); }
             }
-        }).unwrap();
-        ok_receiver.recv().unwrap();
-        Mutex::new(Some(msg_sender))
-    };
+        }
+    }
 }
 
 fn thread_observer_object(sender: Sender<GeckoMediaMsg>) -> ThreadObserverObject {
