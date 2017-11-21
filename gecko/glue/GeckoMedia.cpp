@@ -284,7 +284,7 @@ GeckoMedia_Player_Shutdown(size_t aId)
   }
   player->mDecoder->Shutdown();
   for (size_t i = 0; i < sPlayers.Length(); i++) {
-    if (player[i].mId == aId) {
+    if (sPlayers[i].mId == aId) {
       sPlayers.RemoveElementAt(i);
       break;
     }
