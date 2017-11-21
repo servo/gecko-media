@@ -122,6 +122,22 @@ GeckoMediaDecoder::GetDuration()
 }
 
 void
+GeckoMediaDecoder::DurationChanged()
+{
+  MediaDecoder::DurationChanged();
+  CheckSeekable();
+}
+
+void
+GeckoMediaDecoder::MetadataLoaded(UniquePtr<MediaInfo> aInfo,
+                                  UniquePtr<MetadataTags> aTags,
+                                  MediaDecoderEventVisibility aEventVisibility)
+{
+  MediaDecoder::MetadataLoaded(Move(aInfo), Move(aTags), aEventVisibility);
+  CheckSeekable();
+}
+
+void
 GeckoMediaDecoder::Pause()
 {
   mOwnerPaused = true;
@@ -166,6 +182,17 @@ void
 GeckoMediaDecoder::NotifyBuffered()
 {
   mOwner->NotifyBuffered();
+  CheckSeekable();
+}
+
+void
+GeckoMediaDecoder::CheckSeekable()
+{
+  media::TimeIntervals currentSeekable = GetSeekable();
+  if (currentSeekable != mCachedSeekable) {
+    mCachedSeekable = currentSeekable;
+    mOwner->NotifySeekable();
+  }
 }
 
 #undef GECKO_DEBUG

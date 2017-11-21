@@ -199,6 +199,9 @@ public:
   // Called by the media decoder whenever the buffered ranges are updated.
   virtual void NotifyBuffered() const { }
 
+  // Called by the media decoder whenever the seekable ranges are updated.
+  virtual void NotifySeekable() const { }
+
 };
 
 } // namespace mozilla

@@ -36,6 +36,7 @@ fn main() {
             AsyncEvent(CString),
             MetadataLoaded(Metadata),
             BufferedRanges(Vec<Range<f64>>),
+            SeekableRanges(Vec<Range<f64>>),
         }
         let (sender, receiver) = mpsc::channel();
         struct Sink {
@@ -72,6 +73,9 @@ fn main() {
             }
             fn buffered(&self, ranges: Vec<Range<f64>>) {
                 self.sender.send(Status::BufferedRanges(ranges)).unwrap();
+            }
+            fn seekable(&self, ranges: Vec<Range<f64>>) {
+                self.sender.send(Status::SeekableRanges(ranges)).unwrap();
             }
         }
         let sink = Box::new(Sink { sender: sender });
@@ -115,7 +119,9 @@ fn main() {
                     }
                     Status::BufferedRanges(ranges) => {
                         println!("Buffered ranges: {:?}", ranges);
-
+                    }
+                    Status::SeekableRanges(ranges) => {
+                        println!("Seekable ranges: {:?}", ranges);
                     }
                 };
             }

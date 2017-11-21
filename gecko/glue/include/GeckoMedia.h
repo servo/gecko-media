@@ -101,6 +101,7 @@ struct PlayerCallbackObject
   void (*mTimeUpdate)(void*, double);
   void (*mUpdateCurrentImages)(void*, size_t, GeckoPlanarYCbCrImage*);
   void (*mNotifyBuffered)(void*, size_t, GeckoMediaTimeInterval*);
+  void (*mNotifySeekable)(void*, size_t, GeckoMediaTimeInterval*);
   void (*mFree)(void*);
 };
 

@@ -163,6 +163,8 @@ pub trait PlayerEventSink {
     fn update_current_images(&self, images: Vec<PlanarYCbCrImage>);
     /// Called when the Player buffered ranges were updated.
     fn buffered(&self, ranges: Vec<Range<f64>>);
+    /// Called when the Player seekable ranges were updated.
+    fn seekable(&self, ranges: Vec<Range<f64>>);
 }
 
 impl Player {

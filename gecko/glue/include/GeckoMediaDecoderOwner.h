@@ -196,6 +196,7 @@ public:
   void UpdateCurrentImages(nsTArray<GeckoPlanarYCbCrImage> aImages);
 
   void NotifyBuffered() const override;
+  void NotifySeekable() const override;
 
 private:
   bool mHasError = false;

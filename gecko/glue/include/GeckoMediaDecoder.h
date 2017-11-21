@@ -32,6 +32,11 @@ public:
   void AddSizeOfResources(ResourceSizes* aSizes) override;
 
   virtual double GetDuration() override;
+  virtual void DurationChanged() override;
+
+  virtual void MetadataLoaded(UniquePtr<MediaInfo> aInfo,
+                              UniquePtr<MetadataTags> aTags,
+                              MediaDecoderEventVisibility aEventVisibility) override;
 
   void Pause() override;
 
@@ -51,11 +56,13 @@ private:
   bool IsLiveStream() override final { return !mEnded; }
 
   void NotifyBuffered();
+  void CheckSeekable();
 
   WatchManager<GeckoMediaDecoder> mGeckoWatchManager;
 
   bool mEnded = false;
   bool mOwnerPaused = false;
+  media::TimeIntervals mCachedSeekable;
 };
 
 } // namespace mozilla

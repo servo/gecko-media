@@ -188,12 +188,17 @@ impl GeckoMedia {
             let images = to_ffi_planar_ycbycr_images(size, elements);
             wrapper.sink.update_current_images(images);
         }
-
         unsafe extern "C" fn notify_buffered(ptr: *mut c_void, size: usize,
                                              ranges: *mut GeckoMediaTimeInterval) {
             let wrapper = &*(ptr as *mut Wrapper);
             let ranges = to_ffi_time_ranges(size, ranges);
             wrapper.sink.buffered(ranges);
+        }
+        unsafe extern "C" fn notify_seekable(ptr: *mut c_void, size: usize,
+                                             ranges: *mut GeckoMediaTimeInterval) {
+            let wrapper = &*(ptr as *mut Wrapper);
+            let ranges = to_ffi_time_ranges(size, ranges);
+            wrapper.sink.seekable(ranges);
         }
 
         PlayerCallbackObject {
@@ -209,6 +214,7 @@ impl GeckoMedia {
             mTimeUpdate: Some(time_update),
             mUpdateCurrentImages: Some(update_current_images),
             mNotifyBuffered: Some(notify_buffered),
+            mNotifySeekable: Some(notify_seekable),
             mFree: Some(free),
         }
     }
