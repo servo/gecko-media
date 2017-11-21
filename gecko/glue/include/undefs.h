@@ -12,6 +12,7 @@
 
 #undef MOZ_WEBRTC
 
+#define ReentrancyGuard GeckoMedia_ReentrancyGuard
 #define TimeStamp GeckoMedia_TimeStamp
 #define HashBytes GeckoMedia_HashBytes
 #define BaseTimeDurationPlatformUtils GeckoMedia_BaseTimeDurationPlatformUtils
