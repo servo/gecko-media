@@ -361,7 +361,7 @@ impl ui::Example for App {
         builder.pop_stacking_context();
     }
 
-    fn on_event(&mut self, event: glutin::Event, api: &RenderApi, document_id: DocumentId) -> bool {
+    fn on_event(&mut self, _event: glutin::Event, _api: &RenderApi, _document_id: DocumentId) -> bool {
         true
     }
 

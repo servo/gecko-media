@@ -59,7 +59,7 @@ pub trait Example {
     ) -> Option<Box<webrender::OutputImageHandler>> {
         None
     }
-    fn init(&mut self, window_proxy: glutin::WindowProxy) {}
+    fn init(&mut self, _window_proxy: glutin::WindowProxy) {}
     fn needs_repaint(&mut self) -> bool { true }
 }
 
