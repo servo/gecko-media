@@ -41,6 +41,7 @@ enum PlayerEvent {
 
 struct PlayerWrapper {
     sender: mpsc::Sender<PlayerEvent>,
+    shutdown_receiver: mpsc::Receiver<()>,
 }
 
 impl PlayerWrapper {
@@ -89,6 +90,7 @@ impl PlayerWrapper {
             }
         }
 
+        let (shutdown_sender, shutdown_receiver) = mpsc::channel();
         let wrapper_sender = sender.clone();
         thread::spawn(move || {
             let sink = Box::new(Sink {
@@ -139,10 +141,12 @@ impl PlayerWrapper {
             }
             drop(player);
             sink.frame_sender.send(vec![]).unwrap();
+            shutdown_sender.send(()).unwrap();
         });
 
         PlayerWrapper {
             sender: wrapper_sender,
+            shutdown_receiver: shutdown_receiver,
         }
     }
     pub fn shutdown(&self) {
@@ -150,6 +154,10 @@ impl PlayerWrapper {
             Ok(_) => (),
             Err(_) => (),
         }
+        // Block until shutdown is complete. This ensures the Player object
+        // and its reference to the GeckoMedia object have been dropped by the
+        // time our main function calls GeckoMedia::Shutdown().
+        self.shutdown_receiver.recv().unwrap();
     }
 }
 
