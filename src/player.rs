@@ -3,9 +3,10 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use GeckoMedia;
-use bindings::GeckoPlanarYCbCrImage;
-use bindings::{GeckoMedia_Player_Pause, GeckoMedia_Player_Play};
-use bindings::{GeckoMedia_Player_Seek, GeckoMedia_Player_SetVolume, GeckoMedia_Player_Shutdown, PlaneType_Cb, PlaneType_Cr, PlaneType_Y};
+use bindings::{GeckoMedia_Player_Play, GeckoMedia_Player_Seek};
+use bindings::{GeckoMedia_Player_SetVolume, GeckoMedia_Player_Shutdown};
+use bindings::{GeckoPlanarYCbCrImage, GeckoMedia_Player_Pause};
+use bindings::{PlaneType_Cb, PlaneType_Cr, PlaneType_Y};
 use std::ops::Range;
 use std::slice;
 use timestamp::TimeStamp;
@@ -121,27 +122,31 @@ impl Clone for PlanarYCbCrImage {
 }
 
 impl PlanarYCbCrImage {
-
     /// Returns a slice storing the raw pixel data.
     pub fn pixel_data<'a>(&'a self, channel_index: u8) -> &'a [u8] {
         let img = &self.gecko_image;
         let (pixels, size) = match channel_index {
-            0 => (self.get_pixels(PlaneType_Y), img.mYStride as usize * img.mYHeight as usize),
-            1 => (self.get_pixels(PlaneType_Cb), img.mCbCrStride as usize * img.mCbCrHeight as usize),
-            2 => (self.get_pixels(PlaneType_Cr), img.mCbCrStride as usize * img.mCbCrHeight as usize),
-             _ => panic!("Invalid channel_index"),
+            0 => (
+                self.get_pixels(PlaneType_Y),
+                img.mYStride as usize * img.mYHeight as usize,
+            ),
+            1 => (
+                self.get_pixels(PlaneType_Cb),
+                img.mCbCrStride as usize * img.mCbCrHeight as usize,
+            ),
+            2 => (
+                self.get_pixels(PlaneType_Cr),
+                img.mCbCrStride as usize * img.mCbCrHeight as usize,
+            ),
+            _ => panic!("Invalid channel_index"),
         };
-        unsafe {
-            slice::from_raw_parts(pixels, size)
-        }
+        unsafe { slice::from_raw_parts(pixels, size) }
     }
 
     fn get_pixels(&self, plane: u32) -> *const u8 {
         let img = &self.gecko_image;
         let f = img.mGetPixelData.unwrap();
-        unsafe {
-            f(img.mFrameID, plane) as *const u8
-        }
+        unsafe { f(img.mFrameID, plane) as *const u8 }
     }
 
     pub fn y_plane(&self) -> Plane {
@@ -181,7 +186,9 @@ impl PlanarYCbCrImage {
 impl Drop for PlanarYCbCrImage {
     fn drop(&mut self) {
         let frame_id = self.gecko_image.mFrameID;
-        unsafe { (self.gecko_image.mFreePixelData.unwrap())(frame_id); };
+        unsafe {
+            (self.gecko_image.mFreePixelData.unwrap())(frame_id);
+        };
     }
 }
 
@@ -243,10 +250,7 @@ pub trait PlayerEventSink {
 
 impl Player {
     pub fn new(gecko_media: GeckoMedia, id: usize) -> Player {
-        Player {
-            gecko_media,
-            id,
-        }
+        Player { gecko_media, id }
     }
 
     /// Starts playback of the media resource. While playing,

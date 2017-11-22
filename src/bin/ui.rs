@@ -2,14 +2,13 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-// Copied from:
-// https://github.com/servo/webrender/blob/58ab0f136885b33386ee85878939e3384e2b1fba/webrender/examples/common/boilerplate.rs
+// Copied from WebRender's boilerplate.rs.
 
 use gleam::gl;
 use glutin;
+use time;
 use webrender;
 use webrender::api::*;
-use time;
 
 struct Notifier {
     window_proxy: glutin::WindowProxy,
@@ -23,19 +22,17 @@ impl Notifier {
 
 impl RenderNotifier for Notifier {
     fn clone(&self) -> Box<RenderNotifier> {
-        Box::new(Notifier {
-            window_proxy: self.window_proxy.clone(),
-        })
+        Box::new(Notifier { window_proxy: self.window_proxy.clone() })
     }
 
     fn new_frame_ready(&self) {
-        #[cfg(not(target_os = "android"))]
-        self.window_proxy.wakeup_event_loop();
+        #[cfg(not(target_os = "android"))] self.window_proxy.wakeup_event_loop();
     }
 
     fn new_scroll_frame_ready(&self, _composite_needed: bool) {
-        #[cfg(not(target_os = "android"))]
-        self.window_proxy.wakeup_event_loop();
+        #[cfg(not(target_os = "android"))] self.window_proxy.wakeup_event_loop();
+    }
+}
     }
 }
 
@@ -60,7 +57,9 @@ pub trait Example {
         None
     }
     fn init(&mut self, _window_proxy: glutin::WindowProxy) {}
-    fn needs_repaint(&mut self) -> bool { true }
+    fn needs_repaint(&mut self) -> bool {
+        true
+    }
 }
 
 pub fn main_wrapper(example: &mut Example, options: Option<webrender::RendererOptions>) {
@@ -139,7 +138,9 @@ pub fn main_wrapper(example: &mut Example, options: Option<webrender::RendererOp
         for event in events {
             match event {
                 glutin::Event::Closed |
-                glutin::Event::KeyboardInput(_, _, Some(glutin::VirtualKeyCode::Escape)) => break 'outer,
+                glutin::Event::KeyboardInput(_, _, Some(glutin::VirtualKeyCode::Escape)) => {
+                    break 'outer
+                }
                 glutin::Event::Resized(width, height) => {
                     resized = true;
                     let size = DeviceUintSize::new(width, height);
@@ -149,9 +150,8 @@ pub fn main_wrapper(example: &mut Example, options: Option<webrender::RendererOp
                         DeviceUintRect::new(DeviceUintPoint::new(0, 0), size),
                         window.hidpi_factor(),
                     );
-                },
-                _ => if example.on_event(event, &api, document_id) {
-                },
+                }
+                _ => if example.on_event(event, &api, document_id) {},
             }
         }
 
@@ -192,6 +192,10 @@ pub fn main_wrapper(example: &mut Example, options: Option<webrender::RendererOp
     renderer.deinit();
     let duration = time::precise_time_s() - start_time;
     let fps = (counter as f64) / duration;
-    println!("Rendered {} frames in {} seconds; {} fps",
-        counter, duration, fps)
+    println!(
+        "Rendered {} frames in {} seconds; {} fps",
+        counter,
+        duration,
+        fps
+    )
 }

@@ -183,8 +183,11 @@ impl GeckoMedia {
             let wrapper = &*(ptr as *mut Wrapper);
             wrapper.sink.time_update(time);
         }
-        unsafe extern "C" fn update_current_images(ptr: *mut c_void, size: usize,
-                                                   elements: *mut GeckoPlanarYCbCrImage) {
+        unsafe extern "C" fn update_current_images(
+            ptr: *mut c_void,
+            size: usize,
+            elements: *mut GeckoPlanarYCbCrImage,
+        ) {
             let wrapper = &*(ptr as *mut Wrapper);
             let images = to_ffi_planar_ycbycr_images(size, elements);
             wrapper.sink.update_current_images(images);
@@ -203,7 +206,7 @@ impl GeckoMedia {
         }
 
         PlayerCallbackObject {
-            mContext: Box::into_raw(Box::new(Wrapper { sink: sink } )) as *mut c_void,
+            mContext: Box::into_raw(Box::new(Wrapper { sink: sink })) as *mut c_void,
             mPlaybackEnded: Some(playback_ended),
             mDecodeError: Some(decode_error),
             mDurationChanged: Some(duration_changed),
@@ -320,23 +323,27 @@ fn to_ffi_vec(bytes: Vec<u8>) -> RustVecU8Object {
     }
 }
 
-fn to_ffi_planar_ycbycr_images(size: usize, elements: *mut GeckoPlanarYCbCrImage) -> Vec<PlanarYCbCrImage> {
+fn to_ffi_planar_ycbycr_images(
+    size: usize,
+    elements: *mut GeckoPlanarYCbCrImage,
+) -> Vec<PlanarYCbCrImage> {
     let elements = unsafe { slice::from_raw_parts(elements, size) };
-    elements.iter()
-    .map(|&img| -> PlanarYCbCrImage {
-        PlanarYCbCrImage {
-            picture: Region {
-                x: img.mPicX,
-                y: img.mPicY,
-                width: img.mPicWidth,
-                height: img.mPicHeight,
-            },
-            time_stamp: TimeStamp(img.mTimeStamp),
-            frame_id: img.mFrameID,
-            gecko_image: img
-        }
-    })
-    .collect::<Vec<PlanarYCbCrImage>>()
+    elements
+        .iter()
+        .map(|&img| -> PlanarYCbCrImage {
+            PlanarYCbCrImage {
+                picture: Region {
+                    x: img.mPicX,
+                    y: img.mPicY,
+                    width: img.mPicWidth,
+                    height: img.mPicHeight,
+                },
+                time_stamp: TimeStamp(img.mTimeStamp),
+                frame_id: img.mFrameID,
+                gecko_image: img,
+            }
+        })
+        .collect::<Vec<PlanarYCbCrImage>>()
 }
 
 fn to_ffi_time_ranges(size: usize, elements: *mut GeckoMediaTimeInterval) -> Vec<Range<f64>> {

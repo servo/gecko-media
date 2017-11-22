@@ -199,8 +199,7 @@ mod tests {
                     reached_error = true;
                     break;
                 }
-                Status::UpdateImages(_images) => {
-                }
+                Status::UpdateImages(_images) => {}
                 Status::Buffered(_ranges) => {
                     reached_buffered = true;
                 }
