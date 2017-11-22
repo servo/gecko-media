@@ -8,7 +8,7 @@ Build with `cargo build`.
 
 Run tests with `cargo test`.
 
-A minimalistic player is also available: `cargo run --bin test-player -- /path/to/some/audio-file.ogg`
+A minimalistic player is also available: `cargo run --example test-player -- /path/to/some/audio-file.ogg`
 
 ## Procedure to update the imported code from Gecko
 
