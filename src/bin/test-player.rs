@@ -26,6 +26,8 @@ use webrender::api::ImageData::*;
 
 mod ui;
 
+static mut CLOSE_WINDOW: bool = false;
+
 enum PlayerEvent {
     BreakOutOfEventLoop,
     Error,
@@ -39,7 +41,6 @@ enum PlayerEvent {
 
 struct PlayerWrapper {
     sender: mpsc::Sender<PlayerEvent>,
-    ended_receiver: mpsc::Receiver<()>,
 }
 
 impl PlayerWrapper {
@@ -88,8 +89,6 @@ impl PlayerWrapper {
             }
         }
 
-        let (ended_sender, ended_receiver) = mpsc::channel();
-
         let wrapper_sender = sender.clone();
         thread::spawn(move || {
             let sink = Box::new(Sink {
@@ -108,6 +107,7 @@ impl PlayerWrapper {
                 match receiver.recv().unwrap() {
                     PlayerEvent::Ended => {
                         println!("Ended");
+                        unsafe { CLOSE_WINDOW = true; };
                         break;
                     }
                     PlayerEvent::Error => {
@@ -138,22 +138,15 @@ impl PlayerWrapper {
                 };
             }
             drop(player);
-            ended_sender.send(()).unwrap();
+            sink.frame_sender.send(vec![]).unwrap();
         });
+
         PlayerWrapper {
             sender: wrapper_sender,
-            ended_receiver: ended_receiver,
         }
     }
     pub fn shutdown(&self) {
         match self.sender.send(PlayerEvent::BreakOutOfEventLoop) {
-            Ok(_) => (),
-            Err(_) => (),
-        }
-        self.await_ended();
-    }
-    pub fn await_ended(&self) {
-        match self.ended_receiver.recv() {
             Ok(_) => (),
             Err(_) => (),
         }
@@ -249,6 +242,10 @@ impl ui::Example for App {
         }
 
         false
+    }
+
+    fn should_close_window(&self) -> bool {
+        unsafe { CLOSE_WINDOW }
     }
 
     fn render(
@@ -498,6 +495,5 @@ fn main() {
     let player = PlayerWrapper::new(bytes, mime, frame_sender);
     ui::main_wrapper(&mut app, None);
     player.shutdown();
-    player.await_ended();
     GeckoMedia::shutdown().unwrap();
 }

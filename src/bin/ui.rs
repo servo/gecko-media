@@ -59,6 +59,9 @@ pub trait Example {
     fn needs_repaint(&mut self) -> bool {
         true
     }
+    fn should_close_window(&self) -> bool {
+        false
+    }
 }
 
 pub fn main_wrapper(example: &mut Example, options: Option<webrender::RendererOptions>) {
@@ -128,6 +131,10 @@ pub fn main_wrapper(example: &mut Example, options: Option<webrender::RendererOp
     'outer: for event in window.wait_events() {
         let mut events = Vec::new();
         events.push(event);
+
+        if example.should_close_window() {
+            break 'outer;
+        }
 
         for event in window.poll_events() {
             events.push(event);
