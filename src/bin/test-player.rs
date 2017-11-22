@@ -34,6 +34,7 @@ enum PlayerEvent {
     MetadataLoaded(Metadata),
     BufferedRanges(Vec<Range<f64>>),
     SeekableRanges(Vec<Range<f64>>),
+    UpdateCurrentImages(Vec<PlanarYCbCrImage>),
 }
 
 struct PlayerWrapper {
@@ -48,6 +49,8 @@ impl PlayerWrapper {
         frame_sender: mpsc::Sender<Vec<PlanarYCbCrImage>>,
     ) -> PlayerWrapper {
         let (sender, receiver) = mpsc::channel();
+
+        #[derive(Clone)]
         struct Sink {
             sender: mpsc::Sender<PlayerEvent>,
             frame_sender: mpsc::Sender<Vec<PlanarYCbCrImage>>,
@@ -75,7 +78,7 @@ impl PlayerWrapper {
             fn seek_started(&self) {}
             fn seek_completed(&self) {}
             fn update_current_images(&self, images: Vec<PlanarYCbCrImage>) {
-                self.frame_sender.send(images).unwrap();
+                self.sender.send(PlayerEvent::UpdateCurrentImages(images)).unwrap();
             }
             fn buffered(&self, ranges: Vec<Range<f64>>) {
                 self.sender.send(PlayerEvent::BufferedRanges(ranges)).unwrap();
@@ -93,12 +96,14 @@ impl PlayerWrapper {
                 sender: sender,
                 frame_sender: frame_sender,
             });
+            let sink_clone = sink.clone();
             let player = GeckoMedia::get()
                 .unwrap()
-                .create_blob_player(bytes, mime, sink)
+                .create_blob_player(bytes, mime, sink_clone)
                 .unwrap();
             player.play();
             player.set_volume(1.0);
+            let mut metadata_loaded = false;
             loop {
                 match receiver.recv().unwrap() {
                     PlayerEvent::Ended => {
@@ -113,7 +118,13 @@ impl PlayerWrapper {
                         println!("Event received: {:?}", name);
                     }
                     PlayerEvent::MetadataLoaded(metadata) => {
+                        metadata_loaded = true;
                         println!("MetadataLoaded; duration: {:?}", metadata.duration);
+                    }
+                    PlayerEvent::UpdateCurrentImages(images) => {
+                        if metadata_loaded {
+                            sink.frame_sender.send(images).unwrap();
+                        }
                     }
                     PlayerEvent::BreakOutOfEventLoop => {
                         break;
