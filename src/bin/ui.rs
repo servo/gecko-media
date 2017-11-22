@@ -25,12 +25,13 @@ impl RenderNotifier for Notifier {
         Box::new(Notifier { window_proxy: self.window_proxy.clone() })
     }
 
-    fn new_frame_ready(&self) {
-        #[cfg(not(target_os = "android"))] self.window_proxy.wakeup_event_loop();
+    fn wake_up(&self) {
+        #[cfg(not(target_os = "android"))]
+        self.window_proxy.wakeup_event_loop();
     }
 
-    fn new_scroll_frame_ready(&self, _composite_needed: bool) {
-        #[cfg(not(target_os = "android"))] self.window_proxy.wakeup_event_loop();
+    fn new_document_ready(&self, _: DocumentId, _scrolled: bool, _composite_needed: bool) {
+        self.wake_up();
     }
 }
     }
@@ -106,7 +107,7 @@ pub fn main_wrapper(example: &mut Example, options: Option<webrender::RendererOp
     let notifier = Box::new(Notifier::new(window.create_window_proxy()));
     let (mut renderer, sender) = webrender::Renderer::new(gl.clone(), notifier, opts).unwrap();
     let api = sender.create_api();
-    let document_id = api.add_document(size);
+    let document_id = api.add_document(size, 0);
 
     example.init(window.create_window_proxy());
 
