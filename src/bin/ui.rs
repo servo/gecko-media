@@ -122,9 +122,6 @@ pub fn main_wrapper(example: &mut Example, options: Option<webrender::RendererOp
     let root_background_color = ColorF::new(0.0, 0.0, 0.0, 1.0);
 
     let pipeline_id = PipelineId(0, 0);
-    let mut layout_size = LayoutSize::new(width as f32, height as f32);
-    let mut builder = DisplayListBuilder::new(pipeline_id, layout_size);
-    let mut resources = ResourceUpdates::new();
     api.set_root_pipeline(document_id, pipeline_id);
 
     let mut counter = 0;
@@ -145,7 +142,6 @@ pub fn main_wrapper(example: &mut Example, options: Option<webrender::RendererOp
                 glutin::Event::KeyboardInput(_, _, Some(glutin::VirtualKeyCode::Escape)) => break 'outer,
                 glutin::Event::Resized(width, height) => {
                     resized = true;
-                    let (width, height) = window.get_inner_size_pixels().unwrap();
                     let size = DeviceUintSize::new(width, height);
                     api.set_window_parameters(
                         document_id,
@@ -154,7 +150,6 @@ pub fn main_wrapper(example: &mut Example, options: Option<webrender::RendererOp
                         window.hidpi_factor(),
                     );
                 },
-
                 _ => if example.on_event(event, &api, document_id) {
                 },
             }
@@ -165,7 +160,7 @@ pub fn main_wrapper(example: &mut Example, options: Option<webrender::RendererOp
         }
 
         let (width, height) = window.get_inner_size_pixels().unwrap();
-        layout_size = LayoutSize::new(width as f32, height as f32);
+        let layout_size = LayoutSize::new(width as f32, height as f32);
         let mut builder = DisplayListBuilder::new(pipeline_id, layout_size);
         let mut resources = ResourceUpdates::new();
 
