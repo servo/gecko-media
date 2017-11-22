@@ -34,8 +34,6 @@ impl RenderNotifier for Notifier {
         self.wake_up();
     }
 }
-    }
-}
 
 pub trait Example {
     fn render(
