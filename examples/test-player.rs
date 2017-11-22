@@ -5,7 +5,7 @@
 extern crate gecko_media;
 
 use gecko_media::{GeckoMedia, Metadata, PlayerEventSink};
-use gecko_media::{PlanarYCbCrImage, TimeStamp};
+use gecko_media::{PlanarYCbCrImage, Plane, TimeStamp};
 use std::env;
 use std::ffi::CString;
 use std::fs::File;
@@ -228,6 +228,53 @@ impl App {
     }
 }
 
+fn create_or_update_planar_image(
+    api: &RenderApi,
+    resources: &mut ResourceUpdates,
+    image_key: &mut Option<ImageKey>,
+    plane: Plane,
+    channel_index: u8,
+) {
+    match image_key {
+        &mut Some(ref image_key) => {
+            resources.update_image(
+                *image_key,
+                ImageDescriptor::new(
+                    plane.width as u32,
+                    plane.height as u32,
+                    ImageFormat::A8,
+                    true,
+                ),
+                External(ExternalImageData {
+                    id: EXTERNAL_VIDEO_IMAGE_ID,
+                    channel_index: channel_index,
+                    image_type: ExternalImageType::ExternalBuffer,
+                }),
+                None,
+            );
+        }
+        &mut None => {
+            let key = api.generate_image_key();
+            *image_key = Some(key);
+            resources.add_image(
+                key,
+                ImageDescriptor::new(
+                    plane.width as u32,
+                    plane.height as u32,
+                    ImageFormat::A8,
+                    true,
+                ),
+                External(ExternalImageData {
+                    id: EXTERNAL_VIDEO_IMAGE_ID,
+                    channel_index: channel_index,
+                    image_type: ExternalImageType::ExternalBuffer,
+                }),
+                None,
+            );
+        }
+    }
+}
+
 impl ui::Example for App {
     fn needs_repaint(&mut self) -> bool {
         if let Ok(v) = self.frame_receiver.try_recv() {
@@ -277,133 +324,31 @@ impl ui::Example for App {
             Vec::new(),
         );
 
-
         if self.frame_queue.len() > 0 {
             // Assume dimensions of first frame.
             let frame = &self.frame_queue[0];
 
-            match self.y_channel_key {
-                Some(ref image_key) => {
-                    let y_plane = frame.y_plane();
-                    resources.update_image(
-                        *image_key,
-                        ImageDescriptor::new(
-                            y_plane.width as u32,
-                            y_plane.height as u32,
-                            ImageFormat::A8,
-                            true,
-                        ),
-                        External(ExternalImageData {
-                            id: EXTERNAL_VIDEO_IMAGE_ID,
-                            channel_index: 0,
-                            image_type: ExternalImageType::ExternalBuffer,
-                        }),
-                        None,
-                    );
-                }
-                None => {
-                    let image_key = api.generate_image_key();
-                    self.y_channel_key = Some(image_key.clone());
-                    let y_plane = frame.y_plane();
-                    resources.add_image(
-                        image_key,
-                        ImageDescriptor::new(
-                            y_plane.width as u32,
-                            y_plane.height as u32,
-                            ImageFormat::A8,
-                            true,
-                        ),
-                        External(ExternalImageData {
-                            id: EXTERNAL_VIDEO_IMAGE_ID,
-                            channel_index: 0,
-                            image_type: ExternalImageType::ExternalBuffer,
-                        }),
-                        None,
-                    );
-                }
-            }
-
-            match self.cb_channel_key {
-                Some(ref image_key) => {
-                    let cb_plane = frame.cb_plane();
-                    resources.update_image(
-                        *image_key,
-                        ImageDescriptor::new(
-                            cb_plane.width as u32,
-                            cb_plane.height as u32,
-                            ImageFormat::A8,
-                            true,
-                        ),
-                        External(ExternalImageData {
-                            id: EXTERNAL_VIDEO_IMAGE_ID,
-                            channel_index: 1,
-                            image_type: ExternalImageType::ExternalBuffer,
-                        }),
-                        None,
-                    );
-                }
-                None => {
-                    let image_key = api.generate_image_key();
-                    self.cb_channel_key = Some(image_key.clone());
-                    let cb_plane = frame.cb_plane();
-                    resources.add_image(
-                        image_key,
-                        ImageDescriptor::new(
-                            cb_plane.width as u32,
-                            cb_plane.height as u32,
-                            ImageFormat::A8,
-                            true,
-                        ),
-                        External(ExternalImageData {
-                            id: EXTERNAL_VIDEO_IMAGE_ID,
-                            channel_index: 1,
-                            image_type: ExternalImageType::ExternalBuffer,
-                        }),
-                        None,
-                    );
-                }
-            }
-
-            match self.cr_channel_key {
-                Some(ref image_key) => {
-                    let cr_plane = frame.cr_plane();
-                    resources.update_image(
-                        *image_key,
-                        ImageDescriptor::new(
-                            cr_plane.width as u32,
-                            cr_plane.height as u32,
-                            ImageFormat::A8,
-                            true,
-                        ),
-                        External(ExternalImageData {
-                            id: EXTERNAL_VIDEO_IMAGE_ID,
-                            channel_index: 2,
-                            image_type: ExternalImageType::ExternalBuffer,
-                        }),
-                        None,
-                    );
-                }
-                None => {
-                    let image_key = api.generate_image_key();
-                    self.cr_channel_key = Some(image_key.clone());
-                    let cr_plane = frame.cr_plane();
-                    resources.add_image(
-                        image_key,
-                        ImageDescriptor::new(
-                            cr_plane.width as u32,
-                            cr_plane.height as u32,
-                            ImageFormat::A8,
-                            true,
-                        ),
-                        External(ExternalImageData {
-                            id: EXTERNAL_VIDEO_IMAGE_ID,
-                            channel_index: 2,
-                            image_type: ExternalImageType::ExternalBuffer,
-                        }),
-                        None,
-                    );
-                }
-            }
+            create_or_update_planar_image(
+                api,
+                resources,
+                &mut self.y_channel_key,
+                frame.y_plane(),
+                0,
+            );
+            create_or_update_planar_image(
+                api,
+                resources,
+                &mut self.cb_channel_key,
+                frame.cb_plane(),
+                1,
+            );
+            create_or_update_planar_image(
+                api,
+                resources,
+                &mut self.cr_channel_key,
+                frame.cr_plane(),
+                2,
+            );
 
             let aspect_ratio = frame.picture.width as f32 / frame.picture.height as f32;
             let render_size = LayoutSize::new(
