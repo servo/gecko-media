@@ -1,5 +1,7 @@
 # Gecko Media Rust Crate
 
+[![Build Status](https://travis-ci.org/servo/gecko-media.svg?branch=master)](https://travis-ci.org/servo/gecko-media)
+
 Firefox's Media stack in a Rust crate.
 
 Build with `cargo build`.
