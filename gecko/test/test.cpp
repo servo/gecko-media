@@ -523,8 +523,8 @@ private:
 void
 TestGeckoDecoder()
 {
-  GeckoMediaDecoderOwner owner;
-  MediaDecoderInit decoderInit(&owner,
+  RefPtr<GeckoMediaDecoderOwner> owner = new GeckoMediaDecoderOwner();
+  MediaDecoderInit decoderInit(owner,
                                0.001,  // volume
                                true,  // mPreservesPitch
                                1.0,   // mPlaybackRate
@@ -540,8 +540,8 @@ TestGeckoDecoder()
 
   decoder->Play();
 
-  SpinEventLoopUntil([decoder, &owner]() { return decoder->IsEnded() || owner.HasError(); });
-  MOZ_ASSERT(!owner.HasError());
+  SpinEventLoopUntil([decoder, &owner]() { return decoder->IsEnded() || owner->HasError(); });
+  MOZ_ASSERT(!owner->HasError());
   decoder->Shutdown();
 }
 

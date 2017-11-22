@@ -357,7 +357,7 @@ public:
   }
 private:
   nsTArray<GeckoPlanarYCbCrImage> mImages;
-  GeckoMediaDecoderOwner* mOwner;
+  RefPtr<GeckoMediaDecoderOwner> mOwner;
 };
 
 StaticMutex sImageMutex;

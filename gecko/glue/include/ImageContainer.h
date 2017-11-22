@@ -694,7 +694,7 @@ private:
 
   static mozilla::Atomic<uint32_t> sGenerationCounter;
 
-  GeckoMediaDecoderOwner* mOwner;
+  RefPtr<GeckoMediaDecoderOwner> mOwner;
 };
 
 class AutoLockImage
