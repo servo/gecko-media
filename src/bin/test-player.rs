@@ -206,6 +206,28 @@ impl App {
 
 impl ui::Example for App {
 
+    fn needs_repaint(&mut self) -> bool {
+
+        if let Ok(v) = self.frame_receiver.try_recv() {
+            self.frame_queue = v;
+        }
+
+        let time_now = TimeStamp(time::precise_time_ns());
+        while self.frame_queue.len() > 1 && self.frame_queue[0].time_stamp > time_now {
+            self.frame_queue.remove(0);
+        }
+
+        if self.frame_queue.len() > 0 {
+            if self.last_frame_id != self.frame_queue[0].frame_id {
+                self.last_frame_id = self.frame_queue[0].frame_id;
+                self.current_frame_sender.send(self.frame_queue[0].clone()).unwrap();
+                return true;
+            }
+        }
+
+        false
+    }
+
     fn render(
         &mut self,
         api: &RenderApi,
@@ -227,23 +249,8 @@ impl ui::Example for App {
             Vec::new(),
         );
 
-        if let Ok(v) = self.frame_receiver.try_recv() {
-            self.frame_queue = v;
-        }
-
-        let time_now = TimeStamp(time::precise_time_ns());
-        while self.frame_queue.len() > 1 && self.frame_queue[0].time_stamp > time_now {
-            // println!("now={} dropping {}", time_now, self.frame_queue[0].time_stamp);
-            self.frame_queue.remove(0);
-        }
 
         if self.frame_queue.len() > 0 {
-
-            if self.last_frame_id != self.frame_queue[0].frame_id {
-                self.last_frame_id = self.frame_queue[0].frame_id;
-                self.current_frame_sender.send(self.frame_queue[0].clone()).unwrap();
-            }
-
             // Assume dimensions of first frame.
             let frame = &self.frame_queue[0];
 

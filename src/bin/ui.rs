@@ -59,6 +59,7 @@ pub trait Example {
         None
     }
     fn init(&mut self, window_proxy: glutin::WindowProxy) {}
+    fn needs_repaint(&mut self) -> bool { true }
 }
 
 pub fn main_wrapper(example: &mut Example, options: Option<webrender::RendererOptions>) {
@@ -67,6 +68,7 @@ pub fn main_wrapper(example: &mut Example, options: Option<webrender::RendererOp
     let window = glutin::WindowBuilder::new()
         .with_title("Gecko Media Player")
         .with_multitouch()
+        .with_vsync()
         .with_gl(glutin::GlRequest::GlThenGles {
             opengl_version: (3, 2),
             opengles_version: (3, 0),
@@ -122,26 +124,7 @@ pub fn main_wrapper(example: &mut Example, options: Option<webrender::RendererOp
     let mut layout_size = LayoutSize::new(width as f32, height as f32);
     let mut builder = DisplayListBuilder::new(pipeline_id, layout_size);
     let mut resources = ResourceUpdates::new();
-
-    example.render(
-        &api,
-        &mut builder,
-        &mut resources,
-        layout_size,
-        pipeline_id,
-        document_id,
-    );
-    api.set_display_list(
-        document_id,
-        epoch,
-        Some(root_background_color),
-        LayoutSize::new(width as f32, height as f32),
-        builder.finalize(),
-        true,
-        resources,
-    );
     api.set_root_pipeline(document_id, pipeline_id);
-    api.generate_frame(document_id, None);
 
     'outer: for event in window.wait_events() {
         let mut events = Vec::new();
@@ -151,11 +134,13 @@ pub fn main_wrapper(example: &mut Example, options: Option<webrender::RendererOp
             events.push(event);
         }
 
+        let mut resized = false;
         for event in events {
             match event {
                 glutin::Event::Closed |
                 glutin::Event::KeyboardInput(_, _, Some(glutin::VirtualKeyCode::Escape)) => break 'outer,
                 glutin::Event::Resized(width, height) => {
+                    resized = true;
                     let (width, height) = window.get_inner_size_pixels().unwrap();
                     let size = DeviceUintSize::new(width, height);
                     api.set_window_parameters(
@@ -169,6 +154,10 @@ pub fn main_wrapper(example: &mut Example, options: Option<webrender::RendererOp
                 _ => if example.on_event(event, &api, document_id) {
                 },
             }
+        }
+
+        if !example.needs_repaint() && !resized {
+            continue;
         }
 
         let (width, height) = window.get_inner_size_pixels().unwrap();
