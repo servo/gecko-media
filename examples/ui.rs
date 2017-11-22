@@ -26,8 +26,7 @@ impl RenderNotifier for Notifier {
     }
 
     fn wake_up(&self) {
-        #[cfg(not(target_os = "android"))]
-        self.window_proxy.wakeup_event_loop();
+        #[cfg(not(target_os = "android"))] self.window_proxy.wakeup_event_loop();
     }
 
     fn new_document_ready(&self, _: DocumentId, _scrolled: bool, _composite_needed: bool) {

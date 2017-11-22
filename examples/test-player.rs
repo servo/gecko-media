@@ -80,13 +80,19 @@ impl PlayerWrapper {
             fn seek_started(&self) {}
             fn seek_completed(&self) {}
             fn update_current_images(&self, images: Vec<PlanarYCbCrImage>) {
-                self.sender.send(PlayerEvent::UpdateCurrentImages(images)).unwrap();
+                self.sender
+                    .send(PlayerEvent::UpdateCurrentImages(images))
+                    .unwrap();
             }
             fn buffered(&self, ranges: Vec<Range<f64>>) {
-                self.sender.send(PlayerEvent::BufferedRanges(ranges)).unwrap();
+                self.sender
+                    .send(PlayerEvent::BufferedRanges(ranges))
+                    .unwrap();
             }
             fn seekable(&self, ranges: Vec<Range<f64>>) {
-                self.sender.send(PlayerEvent::SeekableRanges(ranges)).unwrap();
+                self.sender
+                    .send(PlayerEvent::SeekableRanges(ranges))
+                    .unwrap();
             }
         }
 
@@ -109,7 +115,9 @@ impl PlayerWrapper {
                 match receiver.recv().unwrap() {
                     PlayerEvent::Ended => {
                         println!("Ended");
-                        unsafe { CLOSE_WINDOW = true; };
+                        unsafe {
+                            CLOSE_WINDOW = true;
+                        };
                         break;
                     }
                     PlayerEvent::Error => {
