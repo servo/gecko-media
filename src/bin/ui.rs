@@ -9,6 +9,7 @@ use gleam::gl;
 use glutin;
 use webrender;
 use webrender::api::*;
+use time;
 
 struct Notifier {
     window_proxy: glutin::WindowProxy,
@@ -126,6 +127,9 @@ pub fn main_wrapper(example: &mut Example, options: Option<webrender::RendererOp
     let mut resources = ResourceUpdates::new();
     api.set_root_pipeline(document_id, pipeline_id);
 
+    let mut counter = 0;
+    let start_time = time::precise_time_s();
+
     'outer: for event in window.wait_events() {
         let mut events = Vec::new();
         events.push(event);
@@ -187,7 +191,12 @@ pub fn main_wrapper(example: &mut Example, options: Option<webrender::RendererOp
         let (width, height) = window.get_inner_size_pixels().unwrap();
         renderer.render(DeviceUintSize::new(width, height)).unwrap();
         window.swap_buffers().ok();
+        counter += 1;
     }
 
     renderer.deinit();
+    let duration = time::precise_time_s() - start_time;
+    let fps = (counter as f64) / duration;
+    println!("Rendered {} frames in {} seconds; {} fps",
+        counter, duration, fps)
 }
