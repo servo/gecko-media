@@ -447,10 +447,17 @@ ImageContainer::NotifyOwnerOfNewImages()
     img->mPicY = data->mPicY;
     img->mPicWidth = data->mPicSize.width;
     img->mPicHeight = data->mPicSize.height;
-
-    uint64_t rustTime = RustServices::TimeNow();
-    img->mTimeStamp = rustTime + (owningImage.mTimeStamp - TimeStamp::Now()).ToMicroseconds() * 1000.0;
     img->mFrameID = owningImage.mFrameID;
+
+    // Calculate a TimeStamp in the external frame of reference.
+    // Note the OwningImage can have a null TimeStamp if we're
+    // in the middle of shutting down. TimeStamp arithmetic asserts
+    // if performed on a null TimeStamp, so guard against having
+    // a null TimeStamp here.
+    uint64_t rustTime = RustServices::TimeNow();
+    TimeStamp now = TimeStamp::Now();
+    TimeStamp frameTime = !owningImage.mTimeStamp.IsNull() ? owningImage.mTimeStamp : now;
+    img->mTimeStamp = rustTime + (frameTime - now).ToMicroseconds() * 1000.0;
 
     {
       StaticMutexAutoLock lock(sImageMutex);
