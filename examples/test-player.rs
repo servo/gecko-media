@@ -34,6 +34,7 @@ enum PlayerEvent {
     Ended,
     AsyncEvent(CString),
     MetadataLoaded(Metadata),
+    StartPlayback,
     BufferedRanges(Vec<Range<f64>>),
     SeekableRanges(Vec<Range<f64>>),
     UpdateCurrentImages(Vec<PlanarYCbCrImage>),
@@ -102,9 +103,7 @@ impl PlayerWrapper {
                 .unwrap()
                 .create_blob_player(bytes, mime, sink)
                 .unwrap();
-            player.play();
             player.set_volume(1.0);
-            let mut metadata_loaded = false;
             loop {
                 match receiver.recv().unwrap() {
                     PlayerEvent::Ended => {
@@ -122,13 +121,13 @@ impl PlayerWrapper {
                         println!("Event received: {:?}", name);
                     }
                     PlayerEvent::MetadataLoaded(metadata) => {
-                        metadata_loaded = true;
                         println!("MetadataLoaded; duration: {:?}", metadata.duration);
                     }
+                    PlayerEvent::StartPlayback => {
+                        player.play();
+                    }
                     PlayerEvent::UpdateCurrentImages(images) => {
-                        if metadata_loaded {
-                            frame_sender.send(images).unwrap();
-                        }
+                        frame_sender.send(images).unwrap();
                     }
                     PlayerEvent::BreakOutOfEventLoop => {
                         break;
@@ -159,6 +158,9 @@ impl PlayerWrapper {
         // and its reference to the GeckoMedia object have been dropped by the
         // time our main function calls GeckoMedia::Shutdown().
         self.shutdown_receiver.recv().unwrap();
+    }
+    pub fn play(&self) {
+        self.sender.send(PlayerEvent::StartPlayback).unwrap();
     }
 }
 
@@ -202,10 +204,11 @@ struct App {
     cb_channel_key: Option<ImageKey>,
     cr_channel_key: Option<ImageKey>,
     last_frame_id: u32,
+    player_wrapper: PlayerWrapper,
 }
 
 impl App {
-    fn new() -> (App, mpsc::Sender<Vec<PlanarYCbCrImage>>) {
+    fn new(bytes: Vec<u8>, mime: &'static str) -> App {
         // Channel for frames to pass between Gecko and player.
         let (frame_sender, frame_receiver) = mpsc::channel();
         // Channel for the current frame to be sent between the main
@@ -215,6 +218,7 @@ impl App {
             current_frame_receiver: current_frame_receiver,
             current_image: None,
         });
+
         let app = App {
             image_handler: Some(handler),
             frame_receiver: frame_receiver,
@@ -224,8 +228,16 @@ impl App {
             cb_channel_key: None,
             cr_channel_key: None,
             last_frame_id: 0,
+            player_wrapper: PlayerWrapper::new(bytes, mime, frame_sender),
         };
-        (app, frame_sender)
+
+        app
+    }
+    fn shutdown(&self) {
+        self.player_wrapper.shutdown();
+    }
+    fn play(&self) {
+        self.player_wrapper.play();
     }
 }
 
@@ -372,7 +384,6 @@ impl ui::Example for App {
                 YuvColorSpace::Rec601,
                 ImageRendering::Auto,
             );
-
         }
 
         builder.pop_stacking_context();
@@ -411,9 +422,11 @@ impl ui::Example for App {
                 }
             }
         });
+        // Now that the UI is showing we can render video frames.
+        // So start playback.
+        self.player_wrapper.play();
     }
 }
-
 
 fn main() {
     let args: Vec<_> = env::args().collect();
@@ -444,10 +457,9 @@ fn main() {
     let mut bytes = vec![];
     file.read_to_end(&mut bytes).unwrap();
 
-    let (mut app, frame_sender) = App::new();
+    let mut app = App::new(bytes, mime);
 
-    let player = PlayerWrapper::new(bytes, mime, frame_sender);
     ui::main_wrapper(&mut app, None);
-    player.shutdown();
+    app.shutdown();
     GeckoMedia::shutdown().unwrap();
 }
