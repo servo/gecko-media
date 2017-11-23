@@ -16,11 +16,9 @@ GeckoMediaDecoderOwner::GeckoMediaDecoderOwner(PlayerCallbackObject aCallback)
 {
 }
 
-GeckoMediaDecoderOwner::~GeckoMediaDecoderOwner()
+GeckoMediaDecoderOwner::GeckoMediaDecoderOwner()
 {
-  if (mCallback.mContext && mCallback.mFree) {
-    (*mCallback.mFree)(mCallback.mContext);
-  }
+
 }
 
 void
@@ -214,10 +212,6 @@ GeckoMediaDecoderOwner::GetVideoFrameContainer()
     new layers::ImageContainer(this);
   mVideoFrameContainer =
     new VideoFrameContainer(this, container.forget());
-
-  // TODO: I need to call VideoFrameContainer::ForgetElement()
-  // TODO: I need to remove ImageContainer's reference to `this`.
-
   return mVideoFrameContainer;
 }
 
@@ -289,6 +283,20 @@ GeckoMediaDecoderOwner::NotifySeekable() const
     (*mCallback.mNotifySeekable)(mCallback.mContext, size, ranges);
     delete [] ranges;
   }
+}
+
+void
+GeckoMediaDecoderOwner::Shutdown()
+{
+  if (mVideoFrameContainer) {
+    mVideoFrameContainer->ForgetElement();
+    mVideoFrameContainer = nullptr;
+  }
+  mDecoder = nullptr;
+  if (mCallback.mContext && mCallback.mFree) {
+    (*mCallback.mFree)(mCallback.mContext);
+  }
+  mCallback = {0};
 }
 
 } // namespace mozilla

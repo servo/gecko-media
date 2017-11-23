@@ -14,7 +14,7 @@ pub extern "C" fn GeckoMedia_Rust_TimeNow() -> u64 {
 }
 
 /// Holds a timestamp value expressing monotonic time as nanoseconds.
-#[derive(Debug, PartialEq, PartialOrd)]
+#[derive(Debug, PartialEq, PartialOrd, Clone)]
 pub struct TimeStamp(pub u64);
 
 // This impl is inspired from:

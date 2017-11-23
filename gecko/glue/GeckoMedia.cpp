@@ -167,12 +167,6 @@ GeckoMedia_QueueRustRunnable(RustRunnable aRunnable)
   MOZ_ASSERT(NS_SUCCEEDED(rv));
 }
 
-void
-GeckoMedia_FreeImage(GeckoPlanarYCbCrImage image)
-{
-  (*image.mFree)(image.mContext);
-}
-
 class RustVecU8BufferMediaResource : public BufferMediaResource
 {
 public:
@@ -193,12 +187,12 @@ private:
 struct Player
 {
   Player(size_t aId, PlayerCallbackObject aCallback)
-    : mDecoderOwner(MakeUnique<GeckoMediaDecoderOwner>(aCallback))
+    : mDecoderOwner(new GeckoMediaDecoderOwner(aCallback))
     , mId(aId)
   {
   }
   RefPtr<GeckoMediaDecoder> mDecoder;
-  UniquePtr<GeckoMediaDecoderOwner> mDecoderOwner;
+  RefPtr<GeckoMediaDecoderOwner> mDecoderOwner;
   const size_t mId;
 };
 
@@ -282,6 +276,7 @@ GeckoMedia_Player_Shutdown(size_t aId)
   if (!player) {
     return;
   }
+  player->mDecoderOwner->Shutdown();
   player->mDecoder->Shutdown();
   for (size_t i = 0; i < sPlayers.Length(); i++) {
     if (sPlayers[i].mId == aId) {

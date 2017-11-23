@@ -59,17 +59,20 @@ struct GeckoMediaMetadata {
   double mDuration;
 };
 
+enum PlaneType {
+  Y,
+  Cb,
+  Cr
+};
+
 struct GeckoPlanarYCbCrImage {
   // Luminance buffer
-  uint8_t* mYChannel;
   int32_t mYStride;
   int32_t mYWidth;
   int32_t mYHeight;
   int32_t mYSkip;
 
   // Chroma buffers
-  uint8_t* mCbChannel;
-  uint8_t* mCrChannel;
   int32_t mCbCrStride;
   int32_t mCbCrWidth;
   int32_t mCbCrHeight;
@@ -85,8 +88,9 @@ struct GeckoPlanarYCbCrImage {
   uint64_t mTimeStamp;
   uint32_t mFrameID;
 
-  void* mContext;
-  void (*mFree)(void* aContext);
+  void (*mAddRefPixelData)(uint32_t aFrameID);
+  void (*mFreePixelData)(uint32_t aFrameID);
+  const uint8_t* (*mGetPixelData)(uint32_t aFrameID, PlaneType aPlaneType);
 };
 
 struct PlayerCallbackObject

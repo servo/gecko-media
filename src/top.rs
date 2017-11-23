@@ -6,7 +6,7 @@ use CanPlayType;
 use TimeStamp;
 use bindings::*;
 use mse::mediasource::{MediaSource, MediaSourceImpl};
-use player::{Metadata, Plane, PlanarYCbCrImage, Player, PlayerEventSink, Region};
+use player::{Metadata, PlanarYCbCrImage, Player, PlayerEventSink, Region};
 use std::ffi::CStr;
 use std::ffi::CString;
 use std::mem;
@@ -33,17 +33,21 @@ impl GeckoMedia {
             let (msg_sender, msg_receiver) = mpsc::channel();
             let (ok_sender, ok_receiver) = mpsc::channel();
             let msg_sender_clone = msg_sender.clone();
-            Builder::new().name("GeckoMedia".to_owned()).spawn(move || {
-                let thread_observer_object = thread_observer_object(msg_sender_clone);
-                let services = RustServicesFnTable { mGetTimeNowFn: Some(GeckoMedia_Rust_TimeNow) };
-                assert!(
-                    unsafe { GeckoMedia_Initialize(thread_observer_object, services) },
-                    "failed to initialize GeckoMedia"
-                );
-                ok_sender.send(()).unwrap();
-                drop(ok_sender);
-                server_loop(msg_receiver);
-            }).unwrap();
+            Builder::new()
+                .name("GeckoMedia".to_owned())
+                .spawn(move || {
+                    let thread_observer_object = thread_observer_object(msg_sender_clone);
+                    let services =
+                        RustServicesFnTable { mGetTimeNowFn: Some(GeckoMedia_Rust_TimeNow) };
+                    assert!(
+                        unsafe { GeckoMedia_Initialize(thread_observer_object, services) },
+                        "failed to initialize GeckoMedia"
+                    );
+                    ok_sender.send(()).unwrap();
+                    drop(ok_sender);
+                    server_loop(msg_receiver);
+                })
+                .unwrap();
             ok_receiver.recv().unwrap();
             unsafe {
                 SENDER = Box::into_raw(Box::new(Mutex::new(Some(msg_sender))));
@@ -63,10 +67,8 @@ impl GeckoMedia {
     /// finished playing media. Returns Err() if any GeckoMedia or Player
     /// objects remain undropped.
     pub fn shutdown() -> Result<(), ()> {
-        INITIALIZER.call_once(|| {
-            unsafe {
-                SENDER = Box::into_raw(Box::new(Mutex::new(None)));
-            }
+        INITIALIZER.call_once(|| unsafe {
+            SENDER = Box::into_raw(Box::new(Mutex::new(None)));
         });
         let mut sender = unsafe { &*SENDER }.lock().unwrap();
         if OUTSTANDING_HANDLES.load(Ordering::SeqCst) > 0 {
@@ -183,27 +185,36 @@ impl GeckoMedia {
             let wrapper = &*(ptr as *mut Wrapper);
             wrapper.sink.time_update(time);
         }
-        unsafe extern "C" fn update_current_images(ptr: *mut c_void, size: usize,
-                                                   elements: *mut GeckoPlanarYCbCrImage) {
+        unsafe extern "C" fn update_current_images(
+            ptr: *mut c_void,
+            size: usize,
+            elements: *mut GeckoPlanarYCbCrImage,
+        ) {
             let wrapper = &*(ptr as *mut Wrapper);
             let images = to_ffi_planar_ycbycr_images(size, elements);
             wrapper.sink.update_current_images(images);
         }
-        unsafe extern "C" fn notify_buffered(ptr: *mut c_void, size: usize,
-                                             ranges: *mut GeckoMediaTimeInterval) {
+        unsafe extern "C" fn notify_buffered(
+            ptr: *mut c_void,
+            size: usize,
+            ranges: *mut GeckoMediaTimeInterval,
+        ) {
             let wrapper = &*(ptr as *mut Wrapper);
             let ranges = to_ffi_time_ranges(size, ranges);
             wrapper.sink.buffered(ranges);
         }
-        unsafe extern "C" fn notify_seekable(ptr: *mut c_void, size: usize,
-                                             ranges: *mut GeckoMediaTimeInterval) {
+        unsafe extern "C" fn notify_seekable(
+            ptr: *mut c_void,
+            size: usize,
+            ranges: *mut GeckoMediaTimeInterval,
+        ) {
             let wrapper = &*(ptr as *mut Wrapper);
             let ranges = to_ffi_time_ranges(size, ranges);
             wrapper.sink.seekable(ranges);
         }
 
         PlayerCallbackObject {
-            mContext: Box::into_raw(Box::new(Wrapper { sink: sink } )) as *mut c_void,
+            mContext: Box::into_raw(Box::new(Wrapper { sink: sink })) as *mut c_void,
             mPlaybackEnded: Some(playback_ended),
             mDecodeError: Some(decode_error),
             mDurationChanged: Some(duration_changed),
@@ -260,11 +271,11 @@ fn server_loop(receiver: Receiver<GeckoMediaMsg>) {
                 unsafe { GeckoMedia_Shutdown() };
                 sender.send(()).unwrap();
                 break;
-            },
-            GeckoMediaMsg::CanPlayType(mime_type, sender) => {
-                unsafe {
-                    sender.send(GeckoMedia_CanPlayType(mime_type.as_ptr())).unwrap();
-                }
+            }
+            GeckoMediaMsg::CanPlayType(mime_type, sender) => unsafe {
+                sender
+                    .send(GeckoMedia_CanPlayType(mime_type.as_ptr()))
+                    .unwrap();
             },
             GeckoMediaMsg::CallProcessGeckoEvents => {
                 // Process any pending messages in Gecko's main thread
@@ -272,11 +283,15 @@ fn server_loop(receiver: Receiver<GeckoMediaMsg>) {
                 unsafe {
                     GeckoMedia_ProcessEvents();
                 }
-            },
+            }
             #[cfg(test)]
             GeckoMediaMsg::Test => {
-                extern "C" { fn TestGecko(); }
-                unsafe { TestGecko(); }
+                extern "C" {
+                    fn TestGecko();
+                }
+                unsafe {
+                    TestGecko();
+                }
             }
         }
     }
@@ -320,49 +335,38 @@ fn to_ffi_vec(bytes: Vec<u8>) -> RustVecU8Object {
     }
 }
 
-fn to_ffi_planar_ycbycr_images(size: usize, elements: *mut GeckoPlanarYCbCrImage) -> Vec<PlanarYCbCrImage> {
+fn to_ffi_planar_ycbycr_images(
+    size: usize,
+    elements: *mut GeckoPlanarYCbCrImage,
+) -> Vec<PlanarYCbCrImage> {
     let elements = unsafe { slice::from_raw_parts(elements, size) };
-    elements.iter()
-    .map(|&img| -> PlanarYCbCrImage {
-        PlanarYCbCrImage {
-            y_plane: Plane {
-                pixels: img.mYChannel as *const u8,
-                width: img.mYWidth,
-                stride: img.mYStride,
-                height: img.mYHeight,
-                skip: img.mYSkip,
-            },
-            cb_plane: Plane {
-                pixels: img.mCbChannel as *const u8,
-                width: img.mCbCrWidth,
-                stride: img.mCbCrStride,
-                height: img.mCbCrHeight,
-                skip: img.mCbSkip,
-            },
-            cr_plane: Plane {
-                pixels: img.mCrChannel as *const u8,
-                width: img.mCbCrWidth,
-                stride: img.mCbCrStride,
-                height: img.mCbCrHeight,
-                skip: img.mCrSkip,
-            },
-            picture: Region {
-                x: img.mPicX,
-                y: img.mPicY,
-                width: img.mPicWidth,
-                height: img.mPicHeight,
-            },
-            time_stamp: TimeStamp(img.mTimeStamp),
-            frame_id: img.mFrameID,
-            gecko_image: img
-        }
-    })
-    .collect::<Vec<PlanarYCbCrImage>>()
+    elements
+        .iter()
+        .map(|&img| -> PlanarYCbCrImage {
+            PlanarYCbCrImage {
+                picture: Region {
+                    x: img.mPicX,
+                    y: img.mPicY,
+                    width: img.mPicWidth,
+                    height: img.mPicHeight,
+                },
+                time_stamp: TimeStamp(img.mTimeStamp),
+                frame_id: img.mFrameID,
+                gecko_image: img,
+            }
+        })
+        .collect::<Vec<PlanarYCbCrImage>>()
 }
 
 fn to_ffi_time_ranges(size: usize, elements: *mut GeckoMediaTimeInterval) -> Vec<Range<f64>> {
     let ranges = unsafe { slice::from_raw_parts(elements, size) };
-    ranges.iter().map(|&range| -> Range<f64> {
-        Range { start: range.mStart, end: range.mEnd }
-    }).collect::<Vec<Range<f64>>>()
+    ranges
+        .iter()
+        .map(|&range| -> Range<f64> {
+            Range {
+                start: range.mStart,
+                end: range.mEnd,
+            }
+        })
+        .collect::<Vec<Range<f64>>>()
 }
