@@ -135,6 +135,7 @@ add_library(gecko_core OBJECT
   gecko/glue/GeckoMedia.cpp
   gecko/glue/GeckoMediaDecoder.cpp
   gecko/glue/GeckoMediaDecoderOwner.cpp
+  gecko/glue/GeckoMediaSource.cpp
   gecko/glue/ImageContainer.cpp
   gecko/glue/InputEventStatistics.cpp
   gecko/glue/nsDebugImpl.cpp
@@ -145,6 +146,7 @@ add_library(gecko_core OBJECT
   gecko/glue/MediaDecoder.cpp
   gecko/glue/MediaDecoderStateMachine.cpp
   gecko/glue/MediaFormatReader.cpp
+  gecko/glue/MediaSource.cpp
   gecko/glue/MediaStreamGraph.cpp
   gecko/glue/PDMFactory.cpp
   gecko/glue/mozalloc_abort.cpp
