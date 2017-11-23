@@ -43,6 +43,7 @@ struct PlayerWrapper {
     shutdown_receiver: mpsc::Receiver<()>,
     ended_receiver: mpsc::Receiver<()>,
     already_ended: bool,
+    video_dimensions_receiver: mpsc::Receiver<(i32, i32)>,
 }
 
 impl PlayerWrapper {
@@ -97,6 +98,7 @@ impl PlayerWrapper {
 
         let (shutdown_sender, shutdown_receiver) = mpsc::channel();
         let (ended_sender, ended_receiver) = mpsc::channel();
+        let (video_dimensions_sender, video_dimensions_receiver) = mpsc::channel();
         let wrapper_sender = sender.clone();
         thread::spawn(move || {
             let sink = Box::new(Sink { sender });
@@ -122,7 +124,11 @@ impl PlayerWrapper {
                         println!("Event received: {:?}", name);
                     }
                     PlayerEvent::MetadataLoaded(metadata) => {
-                        println!("MetadataLoaded; duration: {:?}", metadata.duration);
+                        println!("MetadataLoaded; duration: {}", metadata.duration);
+                        if let Some(dimensions) = metadata.video_dimensions {
+                            println!("Video dimensions: {:?}", dimensions);
+                            video_dimensions_sender.send(dimensions).unwrap();
+                        }
                     }
                     PlayerEvent::StartPlayback => {
                         player.play();
@@ -157,6 +163,7 @@ impl PlayerWrapper {
             shutdown_receiver,
             ended_receiver,
             already_ended: false,
+            video_dimensions_receiver,
         }
     }
     pub fn shutdown(&self) {
@@ -174,6 +181,12 @@ impl PlayerWrapper {
     }
     pub fn play(&self) {
         self.sender.send(PlayerEvent::StartPlayback).unwrap();
+    }
+    pub fn dimensions_changed(&mut self) -> Option<(i32, i32)> {
+        if let Ok(dimensions) = self.video_dimensions_receiver.try_recv() {
+            return Some(dimensions);
+        }
+        None
     }
 }
 
@@ -310,6 +323,10 @@ impl ui::Example for App {
 
     fn should_close_window(&mut self) -> bool {
         self.player_wrapper.playback_ended()
+    }
+
+    fn video_dimensions(&mut self) -> Option<(i32, i32)> {
+        self.player_wrapper.dimensions_changed()
     }
 
     fn render(

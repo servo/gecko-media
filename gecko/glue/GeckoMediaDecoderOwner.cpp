@@ -69,7 +69,11 @@ GeckoMediaDecoderOwner::MetadataLoaded(const MediaInfo* aInfo,
 {
   // FIXME: serialize aInfo and aTags somehow to callback.
   if (mCallback.mContext && mCallback.mMetadataLoaded) {
-    GeckoMediaMetadata metadata = { 0 };
+    GeckoMediaMetadata metadata = { 0, 0, 0 };
+    if (aInfo->HasVideo()) {
+      metadata.mVideoWidth = aInfo->mVideo.ImageRect().Width();
+      metadata.mVideoHeight = aInfo->mVideo.ImageRect().Height();
+    }
     metadata.mDuration = mDecoder->GetDuration();
     (*mCallback.mMetadataLoaded)(mCallback.mContext, metadata);
   }

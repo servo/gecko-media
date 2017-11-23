@@ -55,6 +55,8 @@ struct GeckoMediaTimeInterval {
 
 struct GeckoMediaMetadata {
   double mDuration;
+  int mVideoWidth;
+  int mVideoHeight;
 };
 
 enum PlaneType {

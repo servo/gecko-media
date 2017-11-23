@@ -159,11 +159,13 @@ impl GeckoMedia {
             let c_str: &CStr = CStr::from_ptr(name);
             wrapper.sink.async_event(c_str.to_str().unwrap());
         }
-        unsafe extern "C" fn metadata_loaded(ptr: *mut c_void, metadata: GeckoMediaMetadata) {
+        unsafe extern "C" fn metadata_loaded(ptr: *mut c_void, gecko_metadata: GeckoMediaMetadata) {
             let wrapper = &*(ptr as *mut Wrapper);
-            wrapper.sink.metadata_loaded(
-                Metadata { duration: metadata.mDuration },
-            );
+            let mut metadata = Metadata { duration: gecko_metadata.mDuration, video_dimensions: None };
+            if gecko_metadata.mVideoWidth != 0 && gecko_metadata.mVideoHeight != 0 {
+                metadata.video_dimensions = Some((gecko_metadata.mVideoWidth, gecko_metadata.mVideoHeight));
+            }
+            wrapper.sink.metadata_loaded(metadata);
         }
         unsafe extern "C" fn duration_changed(ptr: *mut c_void, duration: f64) {
             let wrapper = &*(ptr as *mut Wrapper);
