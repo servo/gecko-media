@@ -19,5 +19,6 @@ A minimalistic player is also available: `cargo run --example test-player -- /pa
     ```
 2. The import script has to be executed like this: `python3 import.py /path/to/mozilla-central gecko/`. The `gecko/src` and `gecko/include` directories content will be removed and the source and header files declared in `data/*.json` will be copied back to those two directories.
 
-3. Fix potential build errors!
+3. The import script will create a subfolder inside `glue_diffs/` named with the upstream revision number you are updating to (i.e. glue_diffs/392049:f41930a869a8/). Inside this subfolder you may find a series of diff files. You need to apply these patches manually to the code inside `gecko/glue`. Some context about why this is needed can be found in this [issue](https://github.com/servo/gecko-media/issues/79).
 
+4. Fix potential build errors!
