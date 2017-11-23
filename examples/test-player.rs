@@ -52,10 +52,8 @@ impl PlayerWrapper {
     ) -> PlayerWrapper {
         let (sender, receiver) = mpsc::channel();
 
-        #[derive(Clone)]
         struct Sink {
             sender: mpsc::Sender<PlayerEvent>,
-            frame_sender: mpsc::Sender<Vec<PlanarYCbCrImage>>,
         }
         impl PlayerEventSink for Sink {
             fn playback_ended(&self) {
@@ -99,14 +97,10 @@ impl PlayerWrapper {
         let (shutdown_sender, shutdown_receiver) = mpsc::channel();
         let wrapper_sender = sender.clone();
         thread::spawn(move || {
-            let sink = Box::new(Sink {
-                sender: sender,
-                frame_sender: frame_sender,
-            });
-            let sink_clone = sink.clone();
+            let sink = Box::new(Sink { sender: sender });
             let player = GeckoMedia::get()
                 .unwrap()
-                .create_blob_player(bytes, mime, sink_clone)
+                .create_blob_player(bytes, mime, sink)
                 .unwrap();
             player.play();
             player.set_volume(1.0);
@@ -133,7 +127,7 @@ impl PlayerWrapper {
                     }
                     PlayerEvent::UpdateCurrentImages(images) => {
                         if metadata_loaded {
-                            sink.frame_sender.send(images).unwrap();
+                            frame_sender.send(images).unwrap();
                         }
                     }
                     PlayerEvent::BreakOutOfEventLoop => {
@@ -148,7 +142,6 @@ impl PlayerWrapper {
                 };
             }
             drop(player);
-            sink.frame_sender.send(vec![]).unwrap();
             shutdown_sender.send(()).unwrap();
         });
 
