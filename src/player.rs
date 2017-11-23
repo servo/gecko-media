@@ -20,8 +20,11 @@ pub struct Player {
 /// Holds useful metadata extracted from a media resource during loading.
 pub struct Metadata {
     /// Duration of the media in seconds, as described either by metadata
-    /// in the container, or an estimate if no better inforation exists.
+    /// in the container, or an estimate if no better information exists.
     pub duration: f64,
+    /// Video image width and height in pixels, as described by metadata in container,
+    /// if the container contains a video track. None otherwise.
+    pub video_dimensions: Option<(i32, i32)>,
 }
 
 /// Holds pixel data and coordinates of a plane of data.

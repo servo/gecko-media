@@ -61,6 +61,9 @@ pub trait Example {
     fn should_close_window(&mut self) -> bool {
         false
     }
+    fn video_dimensions(&mut self) -> Option<(i32, i32)> {
+        None
+    }
 }
 
 pub fn main_wrapper(example: &mut Example, options: Option<webrender::RendererOptions>) {
@@ -77,6 +80,7 @@ pub fn main_wrapper(example: &mut Example, options: Option<webrender::RendererOp
         .build()
         .unwrap();
 
+    window.hide();
     unsafe {
         window.make_current().ok();
     }
@@ -126,6 +130,12 @@ pub fn main_wrapper(example: &mut Example, options: Option<webrender::RendererOp
 
     let mut counter = 0;
     let start_time = time::precise_time_s();
+
+    if let Some(dimensions) = example.video_dimensions() {
+        let (video_width, video_height) = dimensions;
+        window.set_inner_size(video_width as u32, video_height as u32);
+    }
+    window.show();
 
     'outer: for event in window.wait_events() {
         let mut events = Vec::new();
