@@ -3,10 +3,11 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use bindings::GeckoPlanarYCbCrImage;
-use bindings::{GeckoMediaMetadata, GeckoMediaTimeInterval};
-use bindings::{GeckoMedia_Player_CreateBlobPlayer, GeckoMedia_Player_Pause, GeckoMedia_Player_Play};
+use bindings::{GeckoMediaMetadata, GeckoMediaByteIntervalSet, GeckoMediaTimeInterval};
+use bindings::{GeckoMedia_Player_CreateBlobPlayer, GeckoMedia_Player_CreateNetworkPlayer};
+use bindings::{GeckoMedia_Player_Pause, GeckoMedia_Player_Play};
 use bindings::{GeckoMedia_Player_Seek, GeckoMedia_Player_SetVolume};
-use bindings::{PlaneType_Cb, PlaneType_Cr, PlaneType_Y};
+use bindings::{NetworkResourceObject, PlaneType_Cb, PlaneType_Cr, PlaneType_Y};
 use bindings::{PlayerCallbackObject, RustVecU8Object};
 use std::ffi::CStr;
 use std::ffi::CString;
@@ -149,7 +150,6 @@ impl PlanarYCbCrImage {
         let f = img.mGetPixelData.unwrap();
         unsafe { f(img.mFrameID, plane) as *const u8 }
     }
-
     pub fn y_plane(&self) -> Plane {
         let img = &self.gecko_image;
         Plane {
@@ -277,6 +277,28 @@ impl Player {
         })
     }
 
+    pub fn from_network_resource(
+        gecko_media: GeckoMedia,
+        id: usize,
+        resource: Box<NetworkResource>,
+        mime_type: &str,
+        sink: Box<PlayerEventSink>,
+    ) -> Result<Player, ()> {
+        let mime_type = match CString::new(mime_type.as_bytes()) {
+            Ok(mime_type) => mime_type,
+            _ => return Err(()),
+        };
+        let callback = to_ffi_callback(sink);
+        let resource = to_ffi_resource(resource);
+        gecko_media.queue_task(move || unsafe {
+            GeckoMedia_Player_CreateNetworkPlayer(id, resource, mime_type.as_ptr(), callback);
+        });
+        Ok(Player {
+            gecko_media,
+            id,
+        })
+    }
+
     /// Starts playback of the media resource. While playing,
     /// PlayerEventSink::time_update() will be called once per frame,
     /// or every 40 milliseconds if there is no video.
@@ -314,6 +336,27 @@ impl Player {
             GeckoMedia_Player_SetVolume(player_id, volume);
         });
     }
+}
+
+pub trait NetworkResource {
+    /// Attempts to fill buffer with bytes from offset. Reads as many
+    /// bytes as possible, blocks if no bytes are available at offset,
+    /// until bytes become available.
+    fn read_at(&self, offset: u64, buffer: &mut [u8]) -> Result<u32, ()>;
+    /// Directs the implementation to not evict any cached data until
+    /// unpin() is called. The Player calls this during seeking to ensure
+    /// the seek target doesn't disappear.
+    fn pin(&self);
+    /// Directs the implementation that it is now OK to evict cached data.
+    /// Follows a pin() call.
+    fn unpin(&self);
+    /// Returns length of the stream, or None if the stream is unbounded or
+    /// length is unknown.
+    fn len(&self) -> Option<u64>;
+    /// Reads data from a cached range.
+    fn read_from_cache(&self, offset: u64, buffer: &mut [u8]) -> Result<(), ()>;
+    /// Reports the byte ranges that are cached by the implementation.
+    fn cached_ranges(&self) -> Vec<Range<u64>>;
 }
 
 fn to_ffi_callback(callbacks: Box<PlayerEventSink>) -> PlayerCallbackObject {
@@ -399,6 +442,74 @@ fn to_ffi_callback(callbacks: Box<PlayerEventSink>) -> PlayerCallbackObject {
         mNotifyBuffered: Some(notify_buffered),
         mNotifySeekable: Some(notify_seekable),
         mFree: Some(free),
+    }
+}
+
+fn to_ffi_resource(callbacks: Box<NetworkResource>) -> NetworkResourceObject {
+    // Can't cast from *c_void to a Trait, so wrap in a concrete type
+    // when we pass into C++ code.
+    def_gecko_callbacks_ffi_wrapper!(NetworkResource);
+
+    unsafe extern "C" fn read_at(
+        ptr: *mut c_void,
+        offset: u64,
+        bytes: *mut u8,
+        len: u32,
+        out_bytes_read: *mut u32,
+    ) -> bool {
+        let wrapper = &*(ptr as *mut Wrapper);
+        let buffer = slice::from_raw_parts_mut(bytes, len as usize);
+        match wrapper.callbacks.read_at(offset, buffer) {
+            Ok(bytes_read) => {
+                *out_bytes_read = bytes_read;
+                true
+            },
+            Err(_) => false,
+        }
+    }
+    unsafe extern "C" fn pin(ptr: *mut c_void) {
+        let wrapper = &*(ptr as *mut Wrapper);
+        wrapper.callbacks.pin();
+    }
+    unsafe extern "C" fn unpin(ptr: *mut c_void) {
+        let wrapper = &*(ptr as *mut Wrapper);
+        wrapper.callbacks.unpin();
+    }
+    unsafe extern "C" fn length(ptr: *mut c_void) -> i64 {
+        let wrapper = &*(ptr as *mut Wrapper);
+        match wrapper.callbacks.len() {
+            Some(len) if len < i64::max_value() as u64 => len as i64,
+            _ => -1,
+        }
+    }
+    unsafe extern "C" fn read_from_cache(ptr: *mut c_void, offset: u64, bytes: *mut u8, len: u32) -> bool {
+        let wrapper = &*(ptr as *mut Wrapper);
+        let buffer = slice::from_raw_parts_mut(bytes, len as usize);
+        match wrapper.callbacks.read_from_cache(offset, buffer) {
+            Ok(_) => true,
+            Err(_) => false,
+        }
+    }
+    unsafe extern "C" fn cached_ranges(ptr: *mut c_void, interval_set: *mut GeckoMediaByteIntervalSet) {
+        let wrapper = &*(ptr as *mut Wrapper);
+        for range in wrapper.callbacks.cached_ranges() {
+            (*interval_set).mAdd.as_ref().map(|f| {
+                f((*interval_set).mData, range.start, range.end)
+            });
+        }
+    }
+
+    NetworkResourceObject {
+        mReadAt: Some(read_at),
+        mPin: Some(pin),
+        mUnPin: Some(unpin),
+        mLength: Some(length),
+        mReadFromCache: Some(read_from_cache),
+        mCachedRanges: Some(cached_ranges),
+        mFree: Some(free),
+        mData: Box::into_raw(Box::new(Wrapper {
+            callbacks,
+        })) as *mut c_void,
     }
 }
 

@@ -10,9 +10,10 @@
 #include "GeckoMediaDecoder.h"
 #include "GeckoMediaDecoderOwner.h"
 #include "GeckoMediaMacros.h"
-#include "nsTArray.h"
-#include "UniquePtr.h"
 #include "mozilla/RefPtr.h"
+#include "nsTArray.h"
+#include "RustMediaResource.h"
+#include "UniquePtr.h"
 
 using namespace mozilla;
 
@@ -54,11 +55,11 @@ reflector->mDecoderOwner->Shutdown();
 reflector->mDecoder->Shutdown();
 IMPL_GECKO_MEDIA_REFLECTOR_SHUTDOWN_END
 
-void
-GeckoMedia_Player_CreateBlobPlayer(size_t aId,
-                                   RustVecU8Object aMediaData,
-                                   const char* aMimeType,
-                                   PlayerCallbackObject aCallback)
+static void
+CreatePlayer(size_t aId,
+             MediaResource* aResource,
+             const char* aMimeType,
+             PlayerCallbackObject aCallback)
 {
   mozilla::Maybe<MediaContainerType> mime = MakeMediaContainerType(aMimeType);
   if (!mime) {
@@ -78,9 +79,29 @@ GeckoMedia_Player_CreateBlobPlayer(size_t aId,
                                mime.value());
   reflector->mDecoder = new GeckoMediaDecoder(decoderInit);
   reflector->mDecoderOwner->SetDecoder(reflector->mDecoder);
+  reflector->mDecoder->Load(aResource);
+}
+
+void
+GeckoMedia_Player_CreateBlobPlayer(size_t aId,
+                                   RustVecU8Object aMediaData,
+                                   const char* aMimeType,
+                                   PlayerCallbackObject aCallback)
+{
   RefPtr<BufferMediaResource> resource =
     new RustVecU8BufferMediaResource(aMediaData);
-  reflector->mDecoder->Load(resource);
+  CreatePlayer(aId, resource, aMimeType, aCallback);
+}
+
+void
+GeckoMedia_Player_CreateNetworkPlayer(size_t aId,
+                                      NetworkResourceObject aNetworkResource,
+                                      const char* aMimeType,
+                                      PlayerCallbackObject aCallback)
+{
+  RefPtr<MediaResource> resource =
+    new RustMediaResource(aNetworkResource);
+  CreatePlayer(aId, resource, aMimeType, aCallback);
 }
 
 void

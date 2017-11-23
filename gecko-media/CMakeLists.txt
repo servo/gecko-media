@@ -165,6 +165,7 @@ add_library(gecko_core OBJECT
   gecko/glue/nsCRTGlue.cpp
   gecko/glue/Preferences.cpp
   gecko/glue/RustServices.cpp
+  gecko/glue/RustMediaResource.cpp
   gecko/glue/Scheduler.cpp
   gecko/glue/SchedulerGroup.cpp
   gecko/glue/Services.cpp

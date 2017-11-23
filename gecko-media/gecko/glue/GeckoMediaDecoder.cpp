@@ -55,7 +55,7 @@ GeckoMediaDecoder::CreateStateMachine()
 }
 
 nsresult
-GeckoMediaDecoder::Load(BufferMediaResource* aResource)
+GeckoMediaDecoder::Load(MediaResource* aResource)
 {
   MOZ_ASSERT(NS_IsMainThread());
   MOZ_ASSERT(!GetStateMachine());

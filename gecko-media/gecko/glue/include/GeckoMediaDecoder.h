@@ -21,7 +21,7 @@ class GeckoMediaDecoder : public MediaDecoder
 public:
   explicit GeckoMediaDecoder(MediaDecoderInit& aInit);
 
-  nsresult Load(BufferMediaResource* aResource);
+  nsresult Load(MediaResource* aResource);
 
   void Shutdown() override;
 
@@ -45,7 +45,7 @@ public:
   bool IsOwnerPaused() const;
 
 protected:
-  RefPtr<BufferMediaResource> mResource;
+  RefPtr<MediaResource> mResource;
 
 private:
   void PinForSeek() override {}
