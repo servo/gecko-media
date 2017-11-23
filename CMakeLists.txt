@@ -149,6 +149,7 @@ add_library(gecko_core OBJECT
   gecko/glue/MediaSource.cpp
   gecko/glue/MediaStreamGraph.cpp
   gecko/glue/PDMFactory.cpp
+  gecko/glue/Player.cpp
   gecko/glue/mozalloc_abort.cpp
   gecko/glue/nsAppRunner.cpp
   gecko/glue/nsContentTypeParser.cpp
