@@ -18,6 +18,9 @@ with open(os.path.join("data", "objdir_files.json")) as f:
 with open(os.path.join("data", "src_files.json")) as f:
     src_files = json.load(f)
 
+with open(os.path.join("data", "glue_files.json")) as f:
+    glue_files = json.load(f)
+
 def get_obj_dir_path(src_dir):
     if sys.platform == 'darwin':
         obj_dir = "obj-x86_64-apple-darwin%s" % platform.release()
@@ -69,14 +72,20 @@ def remove_previous_copy(src_dir, dst_dir):
     rmtree(dst_dir + "include/")
     rmtree(dst_dir + "src/")
 
-def write_gecko_revision_file(src_dir):
+def get_gecko_revision(src_dir):
     if not os.path.isdir(os.path.join(src_dir, ".hg")):
-        return
+        return None
     result = subprocess.run(['hg', 'log', src_dir, '--limit', '1'], stdout=subprocess.PIPE)
     first_line = result.stdout.splitlines()[0]
     revision = re.match(b'changeset:\s+(.*)', first_line).group(1)
+    return revision.decode('utf-8')
+
+def write_gecko_revision_file(src_dir):
+    revision = get_gecko_revision(src_dir)
+    if revision == None:
+        return
     with open('GECKO_REVISION', 'w') as f:
-        f.write(revision.decode('utf-8') + '\n')
+        f.write(revision + '\n')
 
 def write_unified_cpp_file(dir):
     cpps = sorted([f for f in listdir(dir)
@@ -161,6 +170,35 @@ def check_for_duplicates(dst_dir):
         print("To remove them: rm %s" % ' '.join(duplicates))
     return len(duplicates)
 
+def get_glue_diff(src_dir):
+    new_revision = get_gecko_revision(src_dir)
+    if new_revision == None:
+        print("WARNING: Cannot show diff of glue files. Use a mercurial repo as source dir")
+        return
+
+    with open('GECKO_REVISION') as f:
+        old_revision = f.readline().replace("\n", "")
+
+    if new_revision == old_revision:
+        return
+
+    print("Getting diffs from glue files...")
+
+    new_revision_diffs_dir = "glue_diffs" + os.path.sep + new_revision;
+    rmtree(new_revision_diffs_dir, ignore_errors=True)
+    os.makedirs(new_revision_diffs_dir)
+
+    for (dst, src) in glue_files.items():
+        p = subprocess.Popen(['hg', 'diff', '-r', old_revision, '-r', new_revision, src_dir + src], stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+        stdout, stderr = p.communicate()
+        if len(stderr) > 0:
+            print(stderr)
+            continue
+        if len(stdout) > 0:
+            print("Saving diff for ", src)
+            with open(new_revision_diffs_dir + os.path.sep + src.replace(os.path.sep, "_") + ".diff", "wb") as f:
+                f.write(stdout)
+
 def main(args):
     if len(args) != 2:
         print("Usage: python3 import.py <src_dir> <dst_dir>")
@@ -182,6 +220,9 @@ def main(args):
 
     # Gecko's string classes only build in unified mode...
     write_unified_cpp_file(dst_dir + "src/xpcom/string")
+
+    get_glue_diff(src_dir)
+
     write_gecko_revision_file(src_dir)
     return int(check_for_duplicates(dst_dir))
 
