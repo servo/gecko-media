@@ -26,8 +26,6 @@ use webrender::api::ImageData::*;
 
 mod ui;
 
-static mut CLOSE_WINDOW: bool = false;
-
 enum PlayerEvent {
     BreakOutOfEventLoop,
     Error,
@@ -43,6 +41,8 @@ enum PlayerEvent {
 struct PlayerWrapper {
     sender: mpsc::Sender<PlayerEvent>,
     shutdown_receiver: mpsc::Receiver<()>,
+    ended_receiver: mpsc::Receiver<()>,
+    already_ended: bool,
 }
 
 impl PlayerWrapper {
@@ -96,9 +96,10 @@ impl PlayerWrapper {
         }
 
         let (shutdown_sender, shutdown_receiver) = mpsc::channel();
+        let (ended_sender, ended_receiver) = mpsc::channel();
         let wrapper_sender = sender.clone();
         thread::spawn(move || {
-            let sink = Box::new(Sink { sender: sender });
+            let sink = Box::new(Sink { sender });
             let player = GeckoMedia::get()
                 .unwrap()
                 .create_blob_player(bytes, mime, sink)
@@ -108,9 +109,9 @@ impl PlayerWrapper {
                 match receiver.recv().unwrap() {
                     PlayerEvent::Ended => {
                         println!("Ended");
-                        unsafe {
-                            CLOSE_WINDOW = true;
-                        };
+                        ended_sender.send(()).unwrap();
+                        // Send empty batch of frames to awaken the event loop.
+                        frame_sender.send(vec![]).unwrap();
                         break;
                     }
                     PlayerEvent::Error => {
@@ -140,24 +141,36 @@ impl PlayerWrapper {
                     }
                 };
             }
+            // This drop ensures that the Player object is destroyed before
+            // we send the shutdown notification. The Rust application's main
+            // thread blocks waiting for the confirmation that the Player is
+            // shutdown before shutting down GeckoMedia. If we don't drop
+            // here, the Player may not have shutdown when the main thread
+            // tries to shutdown GeckoMedia, which will assert if there are
+            // Player objects alive.
             drop(player);
             shutdown_sender.send(()).unwrap();
         });
 
         PlayerWrapper {
             sender: wrapper_sender,
-            shutdown_receiver: shutdown_receiver,
+            shutdown_receiver,
+            ended_receiver,
+            already_ended: false,
         }
     }
     pub fn shutdown(&self) {
-        match self.sender.send(PlayerEvent::BreakOutOfEventLoop) {
-            Ok(_) => (),
-            Err(_) => (),
-        }
+        self.sender.send(PlayerEvent::BreakOutOfEventLoop).ok();
         // Block until shutdown is complete. This ensures the Player object
         // and its reference to the GeckoMedia object have been dropped by the
         // time our main function calls GeckoMedia::Shutdown().
         self.shutdown_receiver.recv().unwrap();
+    }
+    pub fn playback_ended(&mut self) -> bool {
+        if let Ok(_) = self.ended_receiver.try_recv() {
+            self.already_ended = true;
+        }
+        self.already_ended
     }
     pub fn play(&self) {
         self.sender.send(PlayerEvent::StartPlayback).unwrap();
@@ -174,9 +187,7 @@ impl webrender::ExternalImageHandler for ImageGenerator {
         if let Ok(v) = self.current_frame_receiver.try_recv() {
             self.current_image = Some(v);
         };
-        if let None = self.current_image {
-            panic!("Don't have a current image!");
-        }
+        assert!(self.current_image.is_some());
         webrender::ExternalImage {
             u0: 0.0,
             v0: 0.0,
@@ -196,9 +207,8 @@ impl webrender::ExternalImageHandler for ImageGenerator {
 const EXTERNAL_VIDEO_IMAGE_ID: ExternalImageId = ExternalImageId(1);
 
 struct App {
-    image_handler: Option<Box<webrender::ExternalImageHandler>>,
     frame_receiver: mpsc::Receiver<Vec<PlanarYCbCrImage>>,
-    current_frame_sender: mpsc::Sender<PlanarYCbCrImage>,
+    current_frame_sender: Option<mpsc::Sender<PlanarYCbCrImage>>,
     frame_queue: Vec<PlanarYCbCrImage>,
     y_channel_key: Option<ImageKey>,
     cb_channel_key: Option<ImageKey>,
@@ -211,79 +221,65 @@ impl App {
     fn new(bytes: Vec<u8>, mime: &'static str) -> App {
         // Channel for frames to pass between Gecko and player.
         let (frame_sender, frame_receiver) = mpsc::channel();
-        // Channel for the current frame to be sent between the main
-        // render loop and the external image handler.
-        let (current_frame_sender, current_frame_receiver) = mpsc::channel();
-        let handler = Box::new(ImageGenerator {
-            current_frame_receiver: current_frame_receiver,
-            current_image: None,
-        });
-
-        let app = App {
-            image_handler: Some(handler),
+        App {
             frame_receiver: frame_receiver,
             frame_queue: vec![],
-            current_frame_sender: current_frame_sender,
+            current_frame_sender: None,
             y_channel_key: None,
             cb_channel_key: None,
             cr_channel_key: None,
             last_frame_id: 0,
             player_wrapper: PlayerWrapper::new(bytes, mime, frame_sender),
-        };
-
-        app
+        }
     }
     fn shutdown(&self) {
         self.player_wrapper.shutdown();
     }
-    fn play(&self) {
-        self.player_wrapper.play();
-    }
-}
-
-fn create_or_update_planar_image(
-    api: &RenderApi,
-    resources: &mut ResourceUpdates,
-    image_key: &mut Option<ImageKey>,
-    plane: Plane,
-    channel_index: u8,
-) {
-    match image_key {
-        &mut Some(ref image_key) => {
-            resources.update_image(
-                *image_key,
-                ImageDescriptor::new(
-                    plane.width as u32,
-                    plane.height as u32,
-                    ImageFormat::A8,
-                    true,
-                ),
-                External(ExternalImageData {
-                    id: EXTERNAL_VIDEO_IMAGE_ID,
-                    channel_index: channel_index,
-                    image_type: ExternalImageType::ExternalBuffer,
-                }),
-                None,
-            );
-        }
-        &mut None => {
-            let key = api.generate_image_key();
-            *image_key = Some(key);
-            resources.add_image(
-                key,
-                ImageDescriptor::new(
-                    plane.width as u32,
-                    plane.height as u32,
-                    ImageFormat::A8,
-                    true,
-                ),
-                External(ExternalImageData {
-                    id: EXTERNAL_VIDEO_IMAGE_ID,
-                    channel_index: channel_index,
-                    image_type: ExternalImageType::ExternalBuffer,
-                }),
-                None,
-            );
+    fn create_or_update_planar_image(
+        api: &RenderApi,
+        resources: &mut ResourceUpdates,
+        image_key: Option<ImageKey>,
+        plane: Plane,
+        channel_index: u8,
+    ) -> Option<ImageKey> {
+        match image_key {
+            Some(image_key) => {
+                resources.update_image(
+                    image_key,
+                    ImageDescriptor::new(
+                        plane.width as u32,
+                        plane.height as u32,
+                        ImageFormat::A8,
+                        true,
+                    ),
+                    External(ExternalImageData {
+                        id: EXTERNAL_VIDEO_IMAGE_ID,
+                        channel_index,
+                        image_type: ExternalImageType::ExternalBuffer,
+                    }),
+                    None,
+                );
+                Some(image_key)
+            }
+            None => {
+                let image_key = api.generate_image_key();
+                resources.add_image(
+                    image_key,
+                    ImageDescriptor::new(
+                        plane.width as u32,
+                        plane.height as u32,
+                        ImageFormat::A8,
+                        true,
+                    ),
+                    External(ExternalImageData {
+                        id: EXTERNAL_VIDEO_IMAGE_ID,
+                        channel_index,
+                        image_type: ExternalImageType::ExternalBuffer,
+                    }),
+                    None,
+                );
+                Some(image_key)
+            }
         }
     }
 }
@@ -299,12 +295,12 @@ impl ui::Example for App {
             self.frame_queue.remove(0);
         }
 
-        if self.frame_queue.len() > 0 {
-            if self.last_frame_id != self.frame_queue[0].frame_id {
-                self.last_frame_id = self.frame_queue[0].frame_id;
-                self.current_frame_sender
-                    .send(self.frame_queue[0].clone())
-                    .unwrap();
+        if let Some(first_frame) = self.frame_queue.first() {
+            if self.last_frame_id != first_frame.frame_id {
+                self.last_frame_id = first_frame.frame_id;
+                self.current_frame_sender.as_ref().map(|sender| {
+                    sender.send(first_frame.clone()).unwrap();
+                });
                 return true;
             }
         }
@@ -312,8 +308,8 @@ impl ui::Example for App {
         false
     }
 
-    fn should_close_window(&self) -> bool {
-        unsafe { CLOSE_WINDOW }
+    fn should_close_window(&mut self) -> bool {
+        self.player_wrapper.playback_ended()
     }
 
     fn render(
@@ -337,28 +333,28 @@ impl ui::Example for App {
             Vec::new(),
         );
 
-        if self.frame_queue.len() > 0 {
+        if !self.frame_queue.is_empty() {
             // Assume dimensions of first frame.
             let frame = &self.frame_queue[0];
 
-            create_or_update_planar_image(
+            self.y_channel_key = App::create_or_update_planar_image(
                 api,
                 resources,
-                &mut self.y_channel_key,
+                self.y_channel_key,
                 frame.y_plane(),
                 0,
             );
-            create_or_update_planar_image(
+            self.cb_channel_key = App::create_or_update_planar_image(
                 api,
                 resources,
-                &mut self.cb_channel_key,
+                self.cb_channel_key,
                 frame.cb_plane(),
                 1,
             );
-            create_or_update_planar_image(
+            self.cr_channel_key = App::create_or_update_planar_image(
                 api,
                 resources,
-                &mut self.cr_channel_key,
+                self.cr_channel_key,
                 frame.cr_plane(),
                 2,
             );
@@ -399,7 +395,14 @@ impl ui::Example for App {
     }
 
     fn get_external_image_handler(&mut self) -> Option<Box<webrender::ExternalImageHandler>> {
-        mem::replace(&mut self.image_handler, None)
+        // Channel for the current frame to be sent between the main
+        // render loop and the external image handler.
+        let (current_frame_sender, current_frame_receiver) = mpsc::channel();
+        self.current_frame_sender = Some(current_frame_sender);
+        Some(Box::new(ImageGenerator {
+            current_frame_receiver,
+            current_image: None,
+        }))
     }
 
     fn init(&mut self, window_proxy: glutin::WindowProxy) {
@@ -411,9 +414,8 @@ impl ui::Example for App {
         thread::spawn(move || loop {
             match wrapped_receiver.recv() {
                 Ok(frames) => {
-                    match sender.send(frames) {
-                        Ok(_) => (),
-                        Err(_) => break,
+                    if let Err(_) = sender.send(frames) {
+                        break;
                     }
                     window_proxy.wakeup_event_loop();
                 }
@@ -446,12 +448,11 @@ fn main() {
         Some("mp4") => "video/mp4",
         _ => "",
     };
-    if mime == "" {
-        panic!(
-            "Unknown file type. Currently supported: wav, mp3, m4a, flac and ogg/vorbis files.\
+    assert!(
+        mime != "",
+        "Unknown file type. Currently supported: wav, mp3, m4a, flac and ogg/vorbis files.\
                 Video files supported: mp4."
-        )
-    }
+    );
 
     let mut file = File::open(filename).unwrap();
     let mut bytes = vec![];

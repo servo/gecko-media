@@ -58,7 +58,7 @@ pub trait Example {
     fn needs_repaint(&mut self) -> bool {
         true
     }
-    fn should_close_window(&self) -> bool {
+    fn should_close_window(&mut self) -> bool {
         false
     }
 }
