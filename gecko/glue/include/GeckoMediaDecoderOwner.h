@@ -10,9 +10,10 @@
 #include "GeckoMediaDecoder.h"
 #include "MediaDecoderOwner.h"
 #include "MediaInfo.h"
+#include "Player.h"
+#include "VideoFrameContainer.h"
 #include "mozilla/UniquePtr.h"
 #include "nsAString.h"
-#include "VideoFrameContainer.h"
 
 namespace mozilla {
 
