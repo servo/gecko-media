@@ -23,18 +23,20 @@ enum class MediaSourceReadyState
 
 struct GeckoMediaSourceImpl
 {
-  void *mContext;
-  void (*mFree)(void *);
-  MediaSourceReadyState (*mGetReadyState)(void *);
+  void* mContext;
+  void (*mFree)(void*);
+  MediaSourceReadyState (*mGetReadyState)(void*);
 };
 
 extern "C" {
-void GeckoMedia_MediaSource_Create(size_t aId,
-                                   GeckoMediaSourceImpl aImpl);
+void
+GeckoMedia_MediaSource_Create(size_t aId, GeckoMediaSourceImpl aImpl);
 
-void GeckoMedia_MediaSource_Shutdown(size_t aId);
+void
+GeckoMedia_MediaSource_Shutdown(size_t aId);
 
-bool GeckoMedia_MediaSource_IsTypeSupported(const char *aMimeType);
+bool
+GeckoMedia_MediaSource_IsTypeSupported(const char* aMimeType);
 }
 
 #endif // GeckoMediaSource_h

@@ -20,7 +20,8 @@ class RustVecU8BufferMediaResource : public BufferMediaResource
 {
 public:
   RustVecU8BufferMediaResource(RustVecU8Object aVec)
-      : BufferMediaResource(aVec.mData, aVec.mLength), mRustVecU8(aVec)
+    : BufferMediaResource(aVec.mData, aVec.mLength)
+    , mRustVecU8(aVec)
   {
   }
 
@@ -35,7 +36,8 @@ private:
 struct Player
 {
   Player(size_t aId, PlayerCallbackObject aCallback)
-      : mDecoderOwner(new GeckoMediaDecoderOwner(aCallback)), mId(aId)
+    : mDecoderOwner(new GeckoMediaDecoderOwner(aCallback))
+    , mId(aId)
   {
   }
   RefPtr<GeckoMediaDecoder> mDecoder;
@@ -48,22 +50,22 @@ DEF_GECKO_MEDIA_REFLECTOR_CONTAINER(Player)
 IMPL_GECKO_MEDIA_REFLECTOR_GETTER(Player)
 
 IMPL_GECKO_MEDIA_REFLECTOR_SHUTDOWN_BEGIN(Player, Player)
-  reflector->mDecoderOwner->Shutdown();
-  reflector->mDecoder->Shutdown();
+reflector->mDecoderOwner->Shutdown();
+reflector->mDecoder->Shutdown();
 IMPL_GECKO_MEDIA_REFLECTOR_SHUTDOWN_END
 
-void GeckoMedia_Player_CreateBlobPlayer(size_t aId,
-                                        RustVecU8Object aMediaData,
-                                        const char *aMimeType,
-                                        PlayerCallbackObject aCallback)
+void
+GeckoMedia_Player_CreateBlobPlayer(size_t aId,
+                                   RustVecU8Object aMediaData,
+                                   const char* aMimeType,
+                                   PlayerCallbackObject aCallback)
 {
   mozilla::Maybe<MediaContainerType> mime = MakeMediaContainerType(aMimeType);
-  if (!mime)
-  {
+  if (!mime) {
     return;
   }
 
-  Player *reflector = sReflectors.AppendElement(Player(aId, aCallback));
+  Player* reflector = sReflectors.AppendElement(Player(aId, aCallback));
   MOZ_ASSERT(GetReflector(aId) == reflector);
 
   MediaDecoderInit decoderInit(reflector->mDecoderOwner.get(),
@@ -77,30 +79,34 @@ void GeckoMedia_Player_CreateBlobPlayer(size_t aId,
   reflector->mDecoder = new GeckoMediaDecoder(decoderInit);
   reflector->mDecoderOwner->SetDecoder(reflector->mDecoder);
   RefPtr<BufferMediaResource> resource =
-      new RustVecU8BufferMediaResource(aMediaData);
+    new RustVecU8BufferMediaResource(aMediaData);
   reflector->mDecoder->Load(resource);
 }
 
-void GeckoMedia_Player_Play(size_t aId)
+void
+GeckoMedia_Player_Play(size_t aId)
 {
   IMPL_GECKO_MEDIA_REFLECTOR_GET(Player)
   reflector->mDecoder->Play();
 }
 
-void GeckoMedia_Player_Pause(size_t aId)
+void
+GeckoMedia_Player_Pause(size_t aId)
 {
   IMPL_GECKO_MEDIA_REFLECTOR_GET(Player)
   reflector->mDecoder->Pause();
 }
 
-void GeckoMedia_Player_Seek(size_t aId, double aTimeOffsetSeconds)
+void
+GeckoMedia_Player_Seek(size_t aId, double aTimeOffsetSeconds)
 {
   IMPL_GECKO_MEDIA_REFLECTOR_GET(Player)
   MOZ_ASSERT(reflector->mDecoder);
   reflector->mDecoder->Seek(aTimeOffsetSeconds, SeekTarget::Accurate);
 }
 
-void GeckoMedia_Player_SetVolume(size_t aId, double volume)
+void
+GeckoMedia_Player_SetVolume(size_t aId, double volume)
 {
   IMPL_GECKO_MEDIA_REFLECTOR_GET(Player)
   reflector->mDecoder->SetVolume(volume);

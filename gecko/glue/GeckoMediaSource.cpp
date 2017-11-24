@@ -16,7 +16,8 @@ using mozilla::dom::MediaSource;
 struct GeckoMediaSource
 {
   GeckoMediaSource(size_t aId, GeckoMediaSourceImpl aImpl)
-      : mMediaSource(MakeUnique<MediaSource>(aImpl)), mId(aId)
+    : mMediaSource(MakeUnique<MediaSource>(aImpl))
+    , mId(aId)
   {
   }
 
@@ -26,7 +27,8 @@ struct GeckoMediaSource
 
 IMPL_GECKO_MEDIA_REFLECTOR(GeckoMediaSource, MediaSource, GeckoMediaSourceImpl)
 
-bool GeckoMedia_MediaSource_IsTypeSupported(const char *aMimeType)
+bool
+GeckoMedia_MediaSource_IsTypeSupported(const char* aMimeType)
 {
   return MediaSource::IsTypeSupported(aMimeType);
 }

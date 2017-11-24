@@ -13,15 +13,17 @@ struct GeckoMediaSourceBufferList;
 
 struct GeckoMediaSourceBufferListImpl
 {
-  void *mContext;
-  void (*mFree)(void *);
+  void* mContext;
+  void (*mFree)(void*);
 };
 
 extern "C" {
-void GeckoMedia_SourceBufferList_Create(size_t aId,
-                                        GeckoMediaSourceBufferListImpl aImpl);
+void
+GeckoMedia_SourceBufferList_Create(size_t aId,
+                                   GeckoMediaSourceBufferListImpl aImpl);
 
-void GeckoMedia_SourceBufferList_Shutdown(size_t aId);
+void
+GeckoMedia_SourceBufferList_Shutdown(size_t aId);
 }
 
 #endif // GeckoMediaSourceBufferList_h_

@@ -16,7 +16,10 @@ using mozilla::dom::SourceBufferList;
 struct GeckoMediaSourceBufferList
 {
   GeckoMediaSourceBufferList(size_t aId, GeckoMediaSourceBufferListImpl aImpl)
-      : mSourceBufferList(MakeUnique<SourceBufferList>(aImpl)), mId(aId) {}
+    : mSourceBufferList(MakeUnique<SourceBufferList>(aImpl))
+    , mId(aId)
+  {
+  }
 
   UniquePtr<SourceBufferList> mSourceBufferList;
   const size_t mId;

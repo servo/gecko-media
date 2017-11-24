@@ -16,10 +16,15 @@ using mozilla::dom::SourceBuffer;
 struct GeckoMediaSourceBuffer
 {
   GeckoMediaSourceBuffer(size_t aId, GeckoMediaSourceBufferImpl aImpl)
-      : mSourceBuffer(MakeUnique<SourceBuffer>(aImpl)), mId(aId) {}
+    : mSourceBuffer(MakeUnique<SourceBuffer>(aImpl))
+    , mId(aId)
+  {
+  }
 
   UniquePtr<SourceBuffer> mSourceBuffer;
   const size_t mId;
 };
 
-IMPL_GECKO_MEDIA_REFLECTOR(GeckoMediaSourceBuffer, SourceBuffer, GeckoMediaSourceBufferImpl)
+IMPL_GECKO_MEDIA_REFLECTOR(GeckoMediaSourceBuffer,
+                           SourceBuffer,
+                           GeckoMediaSourceBufferImpl)
