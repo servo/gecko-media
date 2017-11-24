@@ -11,9 +11,18 @@ namespace mozilla
 namespace dom
 {
 
-SourceBuffer::SourceBuffer() {}
+SourceBuffer::SourceBuffer(GeckoMediaSourceBufferImpl aImpl)
+    : mImpl(aImpl)
+{
+}
 
-SourceBuffer::~SourceBuffer() {}
+SourceBuffer::~SourceBuffer()
+{
+  if (mImpl.mContext && mImpl.mFree)
+  {
+    (*mImpl.mFree)(mImpl.mContext);
+  }
+}
 
 } // namespace dom
 } // namespace mozilla

@@ -7,14 +7,21 @@
 #ifndef mozilla_dom_SourceBuffer_h_
 #define mozilla_dom_SourceBuffer_h_
 
-namespace mozilla {
-namespace dom {
+#include "GeckoMediaSourceBuffer.h"
+
+namespace mozilla
+{
+namespace dom
+{
 
 class SourceBuffer final
 {
 public:
-    SourceBuffer();
-    ~SourceBuffer();
+  SourceBuffer(GeckoMediaSourceBufferImpl aImpl);
+  ~SourceBuffer();
+
+private:
+  GeckoMediaSourceBufferImpl mImpl;
 };
 
 } // namespace dom

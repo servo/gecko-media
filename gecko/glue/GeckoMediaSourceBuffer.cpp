@@ -5,56 +5,21 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "GeckoMediaSourceBuffer.h"
-#include "SourceBuffer.h"
 
-#include "nsTArray.h"
+#include "GeckoMediaMacros.h"
+#include "SourceBuffer.h"
 #include "UniquePtr.h"
+
+using namespace mozilla;
+using mozilla::dom::SourceBuffer;
 
 struct GeckoMediaSourceBuffer
 {
-  GeckoMediaSource(size_t aId, GeckoMediaSourceBufferImpl aImpl)
-      : mSourceBuffer, mId(aId) {}
+  GeckoMediaSourceBuffer(size_t aId, GeckoMediaSourceBufferImpl aImpl)
+      : mSourceBuffer(MakeUnique<SourceBuffer>(aImpl)), mId(aId) {}
 
   UniquePtr<SourceBuffer> mSourceBuffer;
   const size_t mId;
 };
 
-static nsTArray<GeckoMediaSourceBuffer> sSourceBuffers;
-
-static GeckoMediaSourceBuffer *GetSourceBuffer(size_t aId)
-{
-  for (GeckoMediaSourceBuffer &sourceBuffer : sSourceBuffers)
-  {
-    if (sourceBuffer.mId == aId)
-    {
-      return &sourceBuffer;
-    }
-  }
-  return nullptr;
-}
-
-void GeckoMedia_SourceBuffer_Create(size_t aId,
-                                    GeckoMediaSourceBufferImpl aImpl)
-{
-  GeckoMediaSourceBuffer *sourceBuffer =
-      sSourceBuffers.AppendElement(GeckoMediaSourceBuffer(aId, aImpl));
-  MOZ_ASSERT(GetSourceBuffer(aId) == sourceBuffer);
-}
-
-void GeckoMedia_SourceBuffer_Shutdown(size_t aId)
-{
-  GeckoMediaSourceBuffer *sourceBuffer = GetSourceBuffer(aId);
-  if (NS_WARN_IF(!sourceBuffer))
-  {
-    return;
-  }
-
-  for (size_t i = 0; i < sSourceBuffers.Length(); i++)
-  {
-    if (sSourceBuffers[i].mId == aId)
-    {
-      sSourceBuffers.RemoveElementAt(i);
-      break;
-    }
-  }
-}
+IMPL_GECKO_MEDIA_REFLECTOR(GeckoMediaSourceBuffer, SourceBuffer, GeckoMediaSourceBufferImpl)
