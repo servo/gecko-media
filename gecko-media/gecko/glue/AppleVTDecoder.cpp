@@ -37,7 +37,7 @@ AppleVTDecoder::AppleVTDecoder(const VideoInfo& aConfig,
   , mTaskQueue(aTaskQueue)
   , mMaxRefFrames(H264::ComputeMaxRefFrames(aConfig.mExtraData))
   , mImageContainer(aImageContainer)
-#ifdef MOZ_WIDGET_UIKIT
+#if defined(MOZ_WIDGET_UIKIT) || defined(GECKO_MEDIA_CRATE)
   , mUseSoftwareImages(true)
 #else
   , mUseSoftwareImages(false)
