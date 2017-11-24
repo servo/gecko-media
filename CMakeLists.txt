@@ -137,6 +137,7 @@ add_library(gecko_core OBJECT
   gecko/glue/GeckoMediaDecoderOwner.cpp
   gecko/glue/GeckoMediaSource.cpp
   gecko/glue/GeckoMediaSourceBuffer.cpp
+  gecko/glue/GeckoMediaSourceBufferList.cpp
   gecko/glue/ImageContainer.cpp
   gecko/glue/InputEventStatistics.cpp
   gecko/glue/nsDebugImpl.cpp
@@ -168,6 +169,7 @@ add_library(gecko_core OBJECT
   gecko/glue/SchedulerGroup.cpp
   gecko/glue/Services.cpp
   gecko/glue/SourceBuffer.cpp
+  gecko/glue/SourceBufferList.cpp
   gecko/glue/Telemetry.cpp
   gecko/glue/ThreadEventQueue.cpp
   gecko/glue/ThreadAnnotation.cpp
