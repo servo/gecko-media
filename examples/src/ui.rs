@@ -170,7 +170,7 @@ pub fn main_wrapper(example: &mut Example, options: Option<webrender::RendererOp
             continue;
         }
 
-        let (width, height) = window.get_inner_size_pixels().unwrap();
+        let (width, height) = window.get_inner_size().unwrap();
         let layout_size = LayoutSize::new(width as f32, height as f32);
         let mut builder = DisplayListBuilder::new(pipeline_id, layout_size);
         let mut resources = ResourceUpdates::new();
