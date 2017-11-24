@@ -63,10 +63,10 @@ void GeckoMedia_Player_CreateBlobPlayer(size_t aId,
     return;
   }
 
-  Player *player = sReflectors.AppendElement(Player(aId, aCallback));
-  MOZ_ASSERT(GetReflector(aId) == player);
+  Player *reflector = sReflectors.AppendElement(Player(aId, aCallback));
+  MOZ_ASSERT(GetReflector(aId) == reflector);
 
-  MediaDecoderInit decoderInit(player->mDecoderOwner.get(),
+  MediaDecoderInit decoderInit(reflector->mDecoderOwner.get(),
                                1.0,   // volume
                                true,  // mPreservesPitch
                                1.0,   // mPlaybackRate
@@ -74,11 +74,11 @@ void GeckoMedia_Player_CreateBlobPlayer(size_t aId,
                                false, // mHasSuspendTaint
                                false, // mLooping
                                mime.value());
-  player->mDecoder = new GeckoMediaDecoder(decoderInit);
-  player->mDecoderOwner->SetDecoder(player->mDecoder);
+  reflector->mDecoder = new GeckoMediaDecoder(decoderInit);
+  reflector->mDecoderOwner->SetDecoder(reflector->mDecoder);
   RefPtr<BufferMediaResource> resource =
       new RustVecU8BufferMediaResource(aMediaData);
-  player->mDecoder->Load(resource);
+  reflector->mDecoder->Load(resource);
 }
 
 void GeckoMedia_Player_Play(size_t aId)
