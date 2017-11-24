@@ -271,7 +271,10 @@ impl Player {
         gecko_media.queue_task(move || unsafe {
             GeckoMedia_Player_CreateBlobPlayer(id, media_data, mime_type.as_ptr(), callback);
         });
-        Ok(Player { gecko_media, id })
+        Ok(Player {
+            gecko_media,
+            id,
+        })
     }
 
     /// Starts playback of the media resource. While playing,
@@ -339,8 +342,7 @@ fn to_ffi_callback(callbacks: Box<PlayerEventSink>) -> PlayerCallbackObject {
             video_dimensions: None,
         };
         if gecko_metadata.mVideoWidth != 0 && gecko_metadata.mVideoHeight != 0 {
-            metadata.video_dimensions =
-                Some((gecko_metadata.mVideoWidth, gecko_metadata.mVideoHeight));
+            metadata.video_dimensions = Some((gecko_metadata.mVideoWidth, gecko_metadata.mVideoHeight));
         }
         wrapper.callbacks.metadata_loaded(metadata);
     }
@@ -364,36 +366,26 @@ fn to_ffi_callback(callbacks: Box<PlayerEventSink>) -> PlayerCallbackObject {
         let wrapper = &*(ptr as *mut Wrapper);
         wrapper.callbacks.time_update(time);
     }
-    unsafe extern "C" fn update_current_images(
-        ptr: *mut c_void,
-        size: usize,
-        elements: *mut GeckoPlanarYCbCrImage,
-    ) {
+    unsafe extern "C" fn update_current_images(ptr: *mut c_void, size: usize, elements: *mut GeckoPlanarYCbCrImage) {
         let wrapper = &*(ptr as *mut Wrapper);
         let images = to_ffi_planar_ycbycr_images(size, elements);
         wrapper.callbacks.update_current_images(images);
     }
-    unsafe extern "C" fn notify_buffered(
-        ptr: *mut c_void,
-        size: usize,
-        ranges: *mut GeckoMediaTimeInterval,
-    ) {
+    unsafe extern "C" fn notify_buffered(ptr: *mut c_void, size: usize, ranges: *mut GeckoMediaTimeInterval) {
         let wrapper = &*(ptr as *mut Wrapper);
         let ranges = to_ffi_time_ranges(size, ranges);
         wrapper.callbacks.buffered(ranges);
     }
-    unsafe extern "C" fn notify_seekable(
-        ptr: *mut c_void,
-        size: usize,
-        ranges: *mut GeckoMediaTimeInterval,
-    ) {
+    unsafe extern "C" fn notify_seekable(ptr: *mut c_void, size: usize, ranges: *mut GeckoMediaTimeInterval) {
         let wrapper = &*(ptr as *mut Wrapper);
         let ranges = to_ffi_time_ranges(size, ranges);
         wrapper.callbacks.seekable(ranges);
     }
 
     PlayerCallbackObject {
-        mContext: Box::into_raw(Box::new(Wrapper { callbacks })) as *mut c_void,
+        mContext: Box::into_raw(Box::new(Wrapper {
+            callbacks,
+        })) as *mut c_void,
         mPlaybackEnded: Some(playback_ended),
         mDecodeError: Some(decode_error),
         mDurationChanged: Some(duration_changed),
@@ -427,10 +419,7 @@ fn to_ffi_vec(bytes: Vec<u8>) -> RustVecU8Object {
     }
 }
 
-fn to_ffi_planar_ycbycr_images(
-    size: usize,
-    elements: *mut GeckoPlanarYCbCrImage,
-) -> Vec<PlanarYCbCrImage> {
+fn to_ffi_planar_ycbycr_images(size: usize, elements: *mut GeckoPlanarYCbCrImage) -> Vec<PlanarYCbCrImage> {
     let elements = unsafe { slice::from_raw_parts(elements, size) };
     elements
         .iter()

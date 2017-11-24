@@ -33,8 +33,9 @@ impl GeckoMedia {
                 .name("GeckoMedia".to_owned())
                 .spawn(move || {
                     let thread_observer_object = thread_observer_object(msg_sender_clone);
-                    let services =
-                        RustServicesFnTable { mGetTimeNowFn: Some(GeckoMedia_Rust_TimeNow) };
+                    let services = RustServicesFnTable {
+                        mGetTimeNowFn: Some(GeckoMedia_Rust_TimeNow),
+                    };
                     assert!(
                         unsafe { GeckoMedia_Initialize(thread_observer_object, services) },
                         "failed to initialize GeckoMedia"
@@ -51,11 +52,13 @@ impl GeckoMedia {
         });
         let sender = unsafe { &*SENDER }.lock().unwrap();
         match sender.clone() {
-            Some(sender) => Ok(GeckoMedia { sender }),
+            Some(sender) => Ok(GeckoMedia {
+                sender,
+            }),
             None => {
                 OUTSTANDING_HANDLES.fetch_sub(1, Ordering::SeqCst);
                 Err(())
-            }
+            },
         }
     }
 
@@ -123,10 +126,7 @@ impl GeckoMedia {
         Player::new(handle, id, media_data, mime_type, sink)
     }
 
-    pub fn create_media_source(
-        &self,
-        media_source_impl: Box<MediaSourceImpl>,
-    ) -> Result<MediaSource, ()> {
+    pub fn create_media_source(&self, media_source_impl: Box<MediaSourceImpl>) -> Result<MediaSource, ()> {
         let handle = GeckoMedia::get()?;
         let id = NEXT_MEDIA_SOURCE_ID.fetch_add(1, Ordering::SeqCst);
         Ok(MediaSource::new(handle, id, media_source_impl))
@@ -165,7 +165,7 @@ fn server_loop(receiver: Receiver<GeckoMediaMsg>) {
                 unsafe { GeckoMedia_Shutdown() };
                 sender.send(()).unwrap();
                 break;
-            }
+            },
             GeckoMediaMsg::CanPlayType(mime_type, sender) => unsafe {
                 sender
                     .send(GeckoMedia_CanPlayType(mime_type.as_ptr()))
@@ -177,7 +177,7 @@ fn server_loop(receiver: Receiver<GeckoMediaMsg>) {
                 unsafe {
                     GeckoMedia_ProcessEvents();
                 }
-            }
+            },
             #[cfg(test)]
             GeckoMediaMsg::Test => {
                 extern "C" {
@@ -186,7 +186,7 @@ fn server_loop(receiver: Receiver<GeckoMediaMsg>) {
                 unsafe {
                     TestGecko();
                 }
-            }
+            },
         }
     }
 }

@@ -47,7 +47,9 @@ fn to_ffi_callbacks(callbacks: Box<MediaSourceImpl>) -> GeckoMediaSourceImpl {
     }
 
     GeckoMediaSourceImpl {
-        mContext: Box::into_raw(Box::new(Wrapper { callbacks })) as *mut c_void,
+        mContext: Box::into_raw(Box::new(Wrapper {
+            callbacks,
+        })) as *mut c_void,
         mFree: Some(free),
         mGetReadyState: Some(get_ready_state),
     }

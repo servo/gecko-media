@@ -23,7 +23,9 @@ pub fn to_ffi_callbacks(callbacks: Box<SourceBufferImpl>) -> GeckoMediaSourceBuf
     def_gecko_callbacks_ffi_wrapper!(SourceBufferImpl);
 
     GeckoMediaSourceBufferImpl {
-        mContext: Box::into_raw(Box::new(Wrapper { callbacks })) as *mut c_void,
+        mContext: Box::into_raw(Box::new(Wrapper {
+            callbacks,
+        })) as *mut c_void,
         mFree: Some(free),
     }
 }

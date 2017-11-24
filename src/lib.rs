@@ -29,8 +29,7 @@ pub mod bindings {
 
 #[doc(inline)]
 pub use bindings::CanPlayTypeResult as CanPlayType;
-pub use mse::mediasource::{MediaSource as GeckoMediaSource,
-                           MediaSourceImpl as GeckoMediaSourceImpl };
+pub use mse::mediasource::{MediaSource as GeckoMediaSource, MediaSourceImpl as GeckoMediaSourceImpl};
 pub use player::{Metadata, PlanarYCbCrImage, Plane, Player, PlayerEventSink, Region};
 pub use top::GeckoMedia;
 pub use timestamp::TimeStamp;
@@ -123,7 +122,9 @@ mod tests {
                 self.sender.send(Status::Seekable(ranges)).unwrap();
             }
         }
-        let sink = Box::new(Sink { sender: sender });
+        let sink = Box::new(Sink {
+            sender: sender,
+        });
         let mut file = File::open(path).unwrap();
         let mut bytes = vec![];
         file.read_to_end(&mut bytes).unwrap();
@@ -144,12 +145,12 @@ mod tests {
                 Status::Ended => {
                     ok = true;
                     break;
-                }
+                },
                 Status::Error => {
                     ok = false;
                     break;
-                }
-                _ => {}
+                },
+                _ => {},
             };
         }
         assert!(ok);
@@ -173,18 +174,18 @@ mod tests {
                     reached_metadata_loaded = true;
                     duration = metadata.duration;
                     assert!(duration > 0.0);
-                }
+                },
                 Status::LoadedData => {
                     reached_loaded_data = true;
                     assert!(reached_metadata_loaded);
                     player.seek(duration / 2.0);
-                }
+                },
                 Status::TimeUpdate(time) => {
                     current_time = time;
-                }
+                },
                 Status::SeekStarted => {
                     reached_seek_started = true;
-                }
+                },
                 Status::SeekComplete => {
                     reached_seek_complete = true;
                     assert!(reached_seek_started);
@@ -193,23 +194,23 @@ mod tests {
                     let delta = (current_time - duration / 2.0).abs();
                     assert!(delta < 0.0001);
                     player.play();
-                }
+                },
                 Status::Ended => {
                     reached_ended = true;
                     break;
-                }
+                },
                 Status::Error => {
                     reached_error = true;
                     break;
-                }
-                Status::UpdateImages(_images) => {}
+                },
+                Status::UpdateImages(_images) => {},
                 Status::Buffered(_ranges) => {
                     reached_buffered = true;
-                }
+                },
                 Status::Seekable(_ranges) => {
                     reached_seekable = true;
-                }
-                _ => {}
+                },
+                _ => {},
             };
         }
         assert!(reached_metadata_loaded);
@@ -268,7 +269,9 @@ mod tests {
         }
         impl MediaSourceImpl {
             pub fn new(dom_object: Rc<MediaSourceDummyDomObject>) -> Self {
-                MediaSourceImpl { dom_object }
+                MediaSourceImpl {
+                    dom_object,
+                }
             }
         }
         impl GeckoMediaSourceImpl for MediaSourceImpl {
@@ -283,8 +286,7 @@ mod tests {
         }
         let media_source_dom = Rc::new(MediaSourceDummyDomObject::new());
         let media_source_impl = Box::new(MediaSourceImpl::new(media_source_dom.clone()));
-        let gecko_media_source =
-            Rc::new(gecko_media.create_media_source(media_source_impl).unwrap());
+        let gecko_media_source = Rc::new(gecko_media.create_media_source(media_source_impl).unwrap());
         media_source_dom.set_gecko_media_source(Rc::downgrade(&gecko_media_source));
         assert_eq!(media_source_dom.is_type_supported("bogus/bogus"), false);
         assert_eq!(
