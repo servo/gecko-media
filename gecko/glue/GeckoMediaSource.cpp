@@ -16,8 +16,7 @@ using mozilla::dom::MediaSource;
 struct GeckoMediaSource
 {
   GeckoMediaSource(size_t aId, GeckoMediaSourceImpl aImpl)
-    : mMediaSource(MakeUnique<MediaSource>(aImpl))
-    , mId(aId)
+      : mMediaSource(MakeUnique<MediaSource>(aImpl)), mId(aId)
   {
   }
 
@@ -27,44 +26,46 @@ struct GeckoMediaSource
 
 static nsTArray<GeckoMediaSource> sMediaSources;
 
-static GeckoMediaSource*
+static GeckoMediaSource *
 GetMediaSource(size_t aId)
 {
-  for (GeckoMediaSource& mediaSource : sMediaSources) {
-    if (mediaSource.mId == aId) {
+  for (GeckoMediaSource &mediaSource : sMediaSources)
+  {
+    if (mediaSource.mId == aId)
+    {
       return &mediaSource;
     }
   }
   return nullptr;
 }
 
-void
-GeckoMedia_MediaSource_Create(size_t aId,
-                              GeckoMediaSourceImpl aImpl)
+void GeckoMedia_MediaSource_Create(size_t aId,
+                                   GeckoMediaSourceImpl aImpl)
 {
-  GeckoMediaSource* mediaSource =
-    sMediaSources.AppendElement(GeckoMediaSource(aId, aImpl));
+  GeckoMediaSource *mediaSource =
+      sMediaSources.AppendElement(GeckoMediaSource(aId, aImpl));
   MOZ_ASSERT(GetMediaSource(aId) == mediaSource);
 }
 
-void
-GeckoMedia_MediaSource_Shutdown(size_t aId)
+void GeckoMedia_MediaSource_Shutdown(size_t aId)
 {
-  GeckoMediaSource* mediaSource = GetMediaSource(aId);
-  if (NS_WARN_IF(!mediaSource)) {
+  GeckoMediaSource *mediaSource = GetMediaSource(aId);
+  if (NS_WARN_IF(!mediaSource))
+  {
     return;
   }
 
-  for (size_t i = 0; i < sMediaSources.Length(); i++) {
-    if (sMediaSources[i].mId == aId) {
+  for (size_t i = 0; i < sMediaSources.Length(); i++)
+  {
+    if (sMediaSources[i].mId == aId)
+    {
       sMediaSources.RemoveElementAt(i);
       break;
     }
   }
 }
 
-bool
-GeckoMedia_MediaSource_IsTypeSupported(const char* aMimeType)
+bool GeckoMedia_MediaSource_IsTypeSupported(const char *aMimeType)
 {
   return MediaSource::IsTypeSupported(aMimeType);
 }

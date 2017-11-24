@@ -9,8 +9,10 @@
 
 #include "GeckoMediaSource.h"
 
-namespace mozilla {
-namespace dom {
+namespace mozilla
+{
+namespace dom
+{
 
 class MediaSource final
 {
@@ -20,7 +22,8 @@ public:
 
   MediaSourceReadyState ReadyState();
 
-  static bool IsTypeSupported(const char* aType);
+  static bool IsTypeSupported(const char *aType);
+
 private:
   GeckoMediaSourceImpl mImpl;
 };

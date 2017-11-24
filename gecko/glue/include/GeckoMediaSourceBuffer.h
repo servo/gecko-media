@@ -11,16 +11,17 @@
 
 struct GeckoMediaSourceBuffer;
 
-struct GeckoMediaSourceBufferImpl {
+struct GeckoMediaSourceBufferImpl
+{
   void *mContext;
   void (*mFree)(void *);
 };
 
 extern "C" {
-  void GeckoMedia_SourceBuffer_Create(size_t aId,
-                                      GeckoMediaSourceBufferImpl aImpl);
+void GeckoMedia_SourceBuffer_Create(size_t aId,
+                                    GeckoMediaSourceBufferImpl aImpl);
 
-  void GeckoMedia_SourceBuffer_Shutdown(size_t aId);
+void GeckoMedia_SourceBuffer_Shutdown(size_t aId);
 }
 
 #endif // GeckoMediaSourceBuffer_h_

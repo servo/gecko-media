@@ -6,8 +6,10 @@
 
 #include "SourceBuffer.h"
 
-namespace mozilla {
-namespace dom {
+namespace mozilla
+{
+namespace dom
+{
 
 SourceBuffer::SourceBuffer() {}
 

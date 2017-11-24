@@ -10,7 +10,8 @@
 #include "nsTArray.h"
 #include "UniquePtr.h"
 
-struct GeckoMediaSourceBuffer {
+struct GeckoMediaSourceBuffer
+{
   GeckoMediaSource(size_t aId, GeckoMediaSourceBufferImpl aImpl)
       : mSourceBuffer, mId(aId) {}
 
@@ -20,9 +21,12 @@ struct GeckoMediaSourceBuffer {
 
 static nsTArray<GeckoMediaSourceBuffer> sSourceBuffers;
 
-static GeckoMediaSourceBuffer *GetSourceBuffer(size_t aId) {
-  for (GeckoMediaSourceBuffer &sourceBuffer : sSourceBuffers) {
-    if (sourceBuffer.mId == aId) {
+static GeckoMediaSourceBuffer *GetSourceBuffer(size_t aId)
+{
+  for (GeckoMediaSourceBuffer &sourceBuffer : sSourceBuffers)
+  {
+    if (sourceBuffer.mId == aId)
+    {
       return &sourceBuffer;
     }
   }
@@ -30,20 +34,25 @@ static GeckoMediaSourceBuffer *GetSourceBuffer(size_t aId) {
 }
 
 void GeckoMedia_SourceBuffer_Create(size_t aId,
-                                    GeckoMediaSourceBufferImpl aImpl) {
+                                    GeckoMediaSourceBufferImpl aImpl)
+{
   GeckoMediaSourceBuffer *sourceBuffer =
       sSourceBuffers.AppendElement(GeckoMediaSourceBuffer(aId, aImpl));
   MOZ_ASSERT(GetSourceBuffer(aId) == sourceBuffer);
 }
 
-void GeckoMedia_SourceBuffer_Shutdown(size_t aId) {
+void GeckoMedia_SourceBuffer_Shutdown(size_t aId)
+{
   GeckoMediaSourceBuffer *sourceBuffer = GetSourceBuffer(aId);
-  if (NS_WARN_IF(!sourceBuffer)) {
+  if (NS_WARN_IF(!sourceBuffer))
+  {
     return;
   }
 
-  for (size_t i = 0; i < sSourceBuffers.Length(); i++) {
-    if (sSourceBuffers[i].mId == aId) {
+  for (size_t i = 0; i < sSourceBuffers.Length(); i++)
+  {
+    if (sSourceBuffers[i].mId == aId)
+    {
       sSourceBuffers.RemoveElementAt(i);
       break;
     }

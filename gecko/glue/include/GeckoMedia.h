@@ -11,19 +11,20 @@
 
 struct ThreadObserverVtable
 {
-  void (*mOnDispatchedEvent)(void* aData);
-  void (*mFree)(void* aData);
+  void (*mOnDispatchedEvent)(void *aData);
+  void (*mFree)(void *aData);
 };
 
 struct ThreadObserverObject
 {
-  void* mData;
-  const ThreadObserverVtable* mVtable;
+  void *mData;
+  const ThreadObserverVtable *mVtable;
 };
 
 typedef uint64_t (*RustGetTimeNowFn_t)();
 
-struct RustServicesFnTable {
+struct RustServicesFnTable
+{
   RustGetTimeNowFn_t mGetTimeNowFn;
 };
 
@@ -36,26 +37,22 @@ enum CanPlayTypeResult
 
 struct RustRunnable
 {
-  void* mData;
-  void (*mFunction)(void* aData);
+  void *mData;
+  void (*mFunction)(void *aData);
 };
 
 extern "C" {
-bool
-GeckoMedia_Initialize(ThreadObserverObject aObject,
-                      RustServicesFnTable aRustServices);
+bool GeckoMedia_Initialize(ThreadObserverObject aObject,
+                           RustServicesFnTable aRustServices);
 
-void
-GeckoMedia_Shutdown();
+void GeckoMedia_Shutdown();
 
 CanPlayTypeResult
-GeckoMedia_CanPlayType(const char* aMimeType);
+GeckoMedia_CanPlayType(const char *aMimeType);
 
-void
-GeckoMedia_ProcessEvents();
+void GeckoMedia_ProcessEvents();
 
-void
-GeckoMedia_QueueRustRunnable(RustRunnable aRunnable);
+void GeckoMedia_QueueRustRunnable(RustRunnable aRunnable);
 }
 
 #endif // GeckoMedia_h_

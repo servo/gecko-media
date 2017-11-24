@@ -19,8 +19,7 @@ class RustVecU8BufferMediaResource : public BufferMediaResource
 {
 public:
   RustVecU8BufferMediaResource(RustVecU8Object aVec)
-    : BufferMediaResource(aVec.mData, aVec.mLength)
-    , mRustVecU8(aVec)
+      : BufferMediaResource(aVec.mData, aVec.mLength), mRustVecU8(aVec)
   {
   }
 
@@ -35,8 +34,7 @@ private:
 struct Player
 {
   Player(size_t aId, PlayerCallbackObject aCallback)
-    : mDecoderOwner(new GeckoMediaDecoderOwner(aCallback))
-    , mId(aId)
+      : mDecoderOwner(new GeckoMediaDecoderOwner(aCallback)), mId(aId)
   {
   }
   RefPtr<GeckoMediaDecoder> mDecoder;
@@ -46,29 +44,31 @@ struct Player
 
 static nsTArray<Player> sPlayers;
 
-static Player*
+static Player *
 GetPlayer(size_t aId)
 {
-  for (Player& player : sPlayers) {
-    if (player.mId == aId) {
+  for (Player &player : sPlayers)
+  {
+    if (player.mId == aId)
+    {
       return &player;
     }
   }
   return nullptr;
 }
 
-void
-GeckoMedia_Player_CreateBlobPlayer(size_t aId,
-                                   RustVecU8Object aMediaData,
-                                   const char* aMimeType,
-                                   PlayerCallbackObject aCallback)
+void GeckoMedia_Player_CreateBlobPlayer(size_t aId,
+                                        RustVecU8Object aMediaData,
+                                        const char *aMimeType,
+                                        PlayerCallbackObject aCallback)
 {
   mozilla::Maybe<MediaContainerType> mime = MakeMediaContainerType(aMimeType);
-  if (!mime) {
+  if (!mime)
+  {
     return;
   }
 
-  Player* player = sPlayers.AppendElement(Player(aId, aCallback));
+  Player *player = sPlayers.AppendElement(Player(aId, aCallback));
   MOZ_ASSERT(GetPlayer(aId) == player);
 
   MediaDecoderInit decoderInit(player->mDecoderOwner.get(),
@@ -82,63 +82,65 @@ GeckoMedia_Player_CreateBlobPlayer(size_t aId,
   player->mDecoder = new GeckoMediaDecoder(decoderInit);
   player->mDecoderOwner->SetDecoder(player->mDecoder);
   RefPtr<BufferMediaResource> resource =
-    new RustVecU8BufferMediaResource(aMediaData);
+      new RustVecU8BufferMediaResource(aMediaData);
   player->mDecoder->Load(resource);
 }
 
-void
-GeckoMedia_Player_Play(size_t aId)
+void GeckoMedia_Player_Play(size_t aId)
 {
-  Player* player = GetPlayer(aId);
-  if (!player) {
+  Player *player = GetPlayer(aId);
+  if (!player)
+  {
     return;
   }
   player->mDecoder->Play();
 }
 
-void
-GeckoMedia_Player_Pause(size_t aId)
+void GeckoMedia_Player_Pause(size_t aId)
 {
-  Player* player = GetPlayer(aId);
-  if (!player) {
+  Player *player = GetPlayer(aId);
+  if (!player)
+  {
     return;
   }
   player->mDecoder->Pause();
 }
 
-void
-GeckoMedia_Player_Seek(size_t aId, double aTimeOffsetSeconds)
+void GeckoMedia_Player_Seek(size_t aId, double aTimeOffsetSeconds)
 {
-  Player* player = GetPlayer(aId);
-  if (!player) {
+  Player *player = GetPlayer(aId);
+  if (!player)
+  {
     return;
   }
   MOZ_ASSERT(player->mDecoder);
   player->mDecoder->Seek(aTimeOffsetSeconds, SeekTarget::Accurate);
 }
 
-void
-GeckoMedia_Player_Shutdown(size_t aId)
+void GeckoMedia_Player_Shutdown(size_t aId)
 {
-  Player* player = GetPlayer(aId);
-  if (!player) {
+  Player *player = GetPlayer(aId);
+  if (!player)
+  {
     return;
   }
   player->mDecoderOwner->Shutdown();
   player->mDecoder->Shutdown();
-  for (size_t i = 0; i < sPlayers.Length(); i++) {
-    if (sPlayers[i].mId == aId) {
+  for (size_t i = 0; i < sPlayers.Length(); i++)
+  {
+    if (sPlayers[i].mId == aId)
+    {
       sPlayers.RemoveElementAt(i);
       break;
     }
   }
 }
 
-void
-GeckoMedia_Player_SetVolume(size_t aId, double volume)
+void GeckoMedia_Player_SetVolume(size_t aId, double volume)
 {
-  Player* player = GetPlayer(aId);
-  if (!player) {
+  Player *player = GetPlayer(aId);
+  if (!player)
+  {
     return;
   }
   player->mDecoder->SetVolume(volume);
