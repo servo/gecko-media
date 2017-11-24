@@ -15,6 +15,8 @@ extern crate mime;
 #[allow(unused_extern_crates)]
 extern crate mp4parse_capi;
 
+#[macro_use]
+mod macros;
 pub mod mime_parser_glue;
 pub mod mse;
 pub mod player;
