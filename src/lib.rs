@@ -29,7 +29,8 @@ pub mod bindings {
 
 #[doc(inline)]
 pub use bindings::CanPlayTypeResult as CanPlayType;
-pub use mse::mediasource::{MediaSource as GeckoMediaSource, MediaSourceImpl as GeckoMediaSourceImpl};
+pub use mse::mediasource::{MediaSource as GeckoMediaSource,
+                           MediaSourceImpl as GeckoMediaSourceImpl};
 pub use player::{Metadata, PlanarYCbCrImage, Plane, Player, PlayerEventSink, Region};
 pub use top::GeckoMedia;
 pub use timestamp::TimeStamp;
@@ -246,8 +247,7 @@ mod tests {
                 }
             }
 
-            pub fn set_gecko_media_source(&self,
-                                          gecko_media_source: Weak<GeckoMediaSource>) {
+            pub fn set_gecko_media_source(&self, gecko_media_source: Weak<GeckoMediaSource>) {
                 *self.gecko_media_source.borrow_mut() = Some(gecko_media_source);
             }
 
@@ -262,16 +262,13 @@ mod tests {
                     panic!("GeckoMediaSource not set");
                 }
             }
-
         }
         struct MediaSourceImpl {
             dom_object: Rc<MediaSourceDummyDomObject>,
         }
         impl MediaSourceImpl {
             pub fn new(dom_object: Rc<MediaSourceDummyDomObject>) -> Self {
-                MediaSourceImpl {
-                    dom_object,
-                }
+                MediaSourceImpl { dom_object }
             }
         }
         impl GeckoMediaSourceImpl for MediaSourceImpl {
@@ -286,7 +283,8 @@ mod tests {
         }
         let media_source_dom = Rc::new(MediaSourceDummyDomObject::new());
         let media_source_impl = Box::new(MediaSourceImpl::new(media_source_dom.clone()));
-        let gecko_media_source = Rc::new(gecko_media.create_media_source(media_source_impl).unwrap());
+        let gecko_media_source =
+            Rc::new(gecko_media.create_media_source(media_source_impl).unwrap());
         media_source_dom.set_gecko_media_source(Rc::downgrade(&gecko_media_source));
         assert_eq!(media_source_dom.is_type_supported("bogus/bogus"), false);
         assert_eq!(

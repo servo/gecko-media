@@ -255,11 +255,13 @@ def_gecko_media_struct!(Player);
 impl_drop_gecko_media_struct!(Player, GeckoMedia_Player_Shutdown);
 
 impl Player {
-    pub fn new(gecko_media: GeckoMedia,
-               id: usize,
-               media_data: Vec<u8>,
-               mime_type: &str,
-               sink: Box<PlayerEventSink>) -> Result<Player, ()> {
+    pub fn new(
+        gecko_media: GeckoMedia,
+        id: usize,
+        media_data: Vec<u8>,
+        mime_type: &str,
+        sink: Box<PlayerEventSink>,
+    ) -> Result<Player, ()> {
         let callback = to_ffi_callback(sink);
         let media_data = to_ffi_vec(media_data);
         let mime_type = match CString::new(mime_type.as_bytes()) {
@@ -269,10 +271,7 @@ impl Player {
         gecko_media.queue_task(move || unsafe {
             GeckoMedia_Player_CreateBlobPlayer(id, media_data, mime_type.as_ptr(), callback);
         });
-        Ok(Player {
-            gecko_media,
-            id
-        })
+        Ok(Player { gecko_media, id })
     }
 
     /// Starts playback of the media resource. While playing,
@@ -335,9 +334,13 @@ fn to_ffi_callback(callbacks: Box<PlayerEventSink>) -> PlayerCallbackObject {
     }
     unsafe extern "C" fn metadata_loaded(ptr: *mut c_void, gecko_metadata: GeckoMediaMetadata) {
         let wrapper = &*(ptr as *mut Wrapper);
-        let mut metadata = Metadata { duration: gecko_metadata.mDuration, video_dimensions: None };
+        let mut metadata = Metadata {
+            duration: gecko_metadata.mDuration,
+            video_dimensions: None,
+        };
         if gecko_metadata.mVideoWidth != 0 && gecko_metadata.mVideoHeight != 0 {
-            metadata.video_dimensions = Some((gecko_metadata.mVideoWidth, gecko_metadata.mVideoHeight));
+            metadata.video_dimensions =
+                Some((gecko_metadata.mVideoWidth, gecko_metadata.mVideoHeight));
         }
         wrapper.callbacks.metadata_loaded(metadata);
     }
