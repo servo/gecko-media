@@ -1,0 +1,12 @@
+[package]
+name = "examples"
+version = "0.1.0"
+license = "MPL-2.0"
+authors = ["Chris Pearce <cpearce@mozilla.com>", "Philippe Normand <philn@igalia.com>"]
+
+[dependencies]
+gecko-media = { path = "../gecko-media" }
+webrender = { git = "https://github.com/servo/webrender/" }
+gleam = "0.4.8"
+servo-glutin = "0.12"
+time = "0.1.17"

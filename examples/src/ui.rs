@@ -3,11 +3,12 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 // Copied from WebRender's boilerplate.rs.
+extern crate gleam;
+extern crate glutin;
+extern crate time;
+extern crate webrender;
 
 use gleam::gl;
-use glutin;
-use time;
-use webrender;
 use webrender::api::*;
 
 struct Notifier {

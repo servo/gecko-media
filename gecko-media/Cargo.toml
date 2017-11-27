@@ -1,0 +1,29 @@
+[package]
+name = "gecko-media"
+version = "0.1.0"
+license = "MPL-2.0"
+authors = ["Chris Pearce <cpearce@mozilla.com>", "Philippe Normand <philn@igalia.com>"]
+
+[lib]
+doctest = false
+name = "gecko_media"
+
+[target.'cfg(unix)'.dependencies]
+cubeb-pulse = { git = "https://github.com/djg/cubeb-pulse-rs", branch = "dev", features = ["pulse-dlopen"]}
+
+[build-dependencies]
+bindgen = "0.31.0"
+walkdir = "1.0"
+cmake = "0.1.26"
+
+[dependencies]
+mime = "0.3.5"
+libc = "0.2.32"
+mp4parse_capi = "0.9.0"
+encoding_c = "0.8.0"
+time = "0.1.17"
+
+[features]
+default = ["audio-sample-type-f32"]
+audio-sample-type-s16 = []
+audio-sample-type-f32 = []
