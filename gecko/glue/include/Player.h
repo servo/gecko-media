@@ -4,8 +4,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
- #ifndef Player_h_
- #define Player_h_
+#ifndef Player_h_
+#define Player_h_
 
 #include <stddef.h>
 #include <stdint.h>
@@ -17,24 +17,28 @@ struct RustVecU8Object
   void (*mFree)(uint8_t* mData, size_t aLength);
 };
 
-struct GeckoMediaTimeInterval {
+struct GeckoMediaTimeInterval
+{
   double mStart;
   double mEnd;
 };
 
-struct GeckoMediaMetadata {
+struct GeckoMediaMetadata
+{
   double mDuration;
   int mVideoWidth;
   int mVideoHeight;
 };
 
-enum PlaneType {
+enum PlaneType
+{
   Y,
   Cb,
   Cr
 };
 
-struct GeckoPlanarYCbCrImage {
+struct GeckoPlanarYCbCrImage
+{
   // Luminance buffer
   int32_t mYStride;
   int32_t mYWidth;

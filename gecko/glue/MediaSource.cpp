@@ -16,7 +16,7 @@
 #include "mozilla/Preferences.h"
 #include "nsThreadManager.h"
 
-mozilla::LogModule* GetMediaSourceLog()
+mozilla::LogModule *GetMediaSourceLog()
 {
   static mozilla::LazyLogModule sLogModule("MediaSource");
   return sLogModule;
@@ -24,7 +24,8 @@ mozilla::LogModule* GetMediaSourceLog()
 
 #define MSE_DEBUG(arg, ...) MOZ_LOG(GetMediaSourceLog(), mozilla::LogLevel::Debug, ("MediaSource(%p)::%s: " arg, this, __func__, ##__VA_ARGS__))
 
-namespace mozilla {
+namespace mozilla
+{
 
 // Returns true if we should enable MSE webm regardless of preferences.
 // 1. If MP4/H264 isn't supported:
@@ -35,11 +36,11 @@ namespace mozilla {
 // 2. If H264 hardware acceleration is not available.
 // 3. The CPU is considered to be fast enough
 static bool
-IsWebMForced(DecoderDoctorDiagnostics* aDiagnostics)
+IsWebMForced(DecoderDoctorDiagnostics *aDiagnostics)
 {
   bool mp4supported =
-    DecoderTraits::IsMP4SupportedType(MediaContainerType(MEDIAMIMETYPE("video/mp4")),
-                                      aDiagnostics);
+      DecoderTraits::IsMP4SupportedType(MediaContainerType(MEDIAMIMETYPE("video/mp4")),
+                                        aDiagnostics);
   /* TODO (gecko-media) This requires importing mozilla/gfx/gfxVars.h and
    *                    dependencies
   bool hwsupported = gfx::gfxVars::CanUseHardwareVideoDecoding();
@@ -53,16 +54,18 @@ IsWebMForced(DecoderDoctorDiagnostics* aDiagnostics)
   return !mp4supported;
 }
 
-namespace dom {
+namespace dom
+{
 
 MediaSource::MediaSource(GeckoMediaSourceImpl aImpl)
-  : mImpl(aImpl)
+    : mImpl(aImpl)
 {
 }
 
 MediaSource::~MediaSource()
 {
-  if (mImpl.mContext && mImpl.mFree) {
+  if (mImpl.mContext && mImpl.mFree)
+  {
     (*mImpl.mFree)(mImpl.mContext);
   }
 }
@@ -71,57 +74,64 @@ MediaSourceReadyState
 MediaSource::ReadyState()
 {
   MOZ_ASSERT(NS_IsMainThread());
-  if (NS_WARN_IF(!mImpl.mContext || !mImpl.mGetReadyState)) {
-      return MediaSourceReadyState::Unknown;
+  if (NS_WARN_IF(!mImpl.mContext || !mImpl.mGetReadyState))
+  {
+    return MediaSourceReadyState::Unknown;
   }
 
   return (*mImpl.mGetReadyState)(mImpl.mContext);
 }
 
 /* static */
-bool
-MediaSource::IsTypeSupported(const char* aType)
+bool MediaSource::IsTypeSupported(const char *aType)
 {
   auto containerType = MakeMediaContainerType(aType);
-  if (containerType.isNothing()) {
+  if (containerType.isNothing())
+  {
     return false;
   }
 
-  if (DecoderTraits::CanHandleContainerType(containerType.value(), nullptr)
-      == CANPLAY_NO) {
+  if (DecoderTraits::CanHandleContainerType(containerType.value(), nullptr) == CANPLAY_NO)
+  {
     return false;
   }
 
   // Now we know that this media type could be played.
   // MediaSource imposes extra restrictions, and some prefs.
-  const MediaMIMEType& mimeType = containerType->Type();
+  const MediaMIMEType &mimeType = containerType->Type();
 
   if (mimeType == MEDIAMIMETYPE("video/mp4") ||
-      mimeType == MEDIAMIMETYPE("audio/mp4")) {
-    if (!Preferences::GetBool("media.mediasource.mp4.enabled", false)) {
+      mimeType == MEDIAMIMETYPE("audio/mp4"))
+  {
+    if (!Preferences::GetBool("media.mediasource.mp4.enabled", false))
+    {
       return false;
     }
     return true;
   }
 
-  if (mimeType == MEDIAMIMETYPE("video/webm")) {
+  if (mimeType == MEDIAMIMETYPE("video/webm"))
+  {
     if (!(Preferences::GetBool("media.mediasource.webm.enabled", false) ||
           containerType->ExtendedType().Codecs().Contains(
-            NS_LITERAL_STRING("vp8")) ||
+              NS_LITERAL_STRING("vp8")) ||
 #ifdef MOZ_AV1
           // FIXME: Temporary comparison with the full codecs attribute.
           // See bug 1377015.
           AOMDecoder::IsSupportedCodec(containerType->ExtendedType().Codecs().AsString()) ||
 #endif
-          IsWebMForced(nullptr))) {
+          IsWebMForced(nullptr)))
+    {
       return false;
     }
     return true;
   }
 
-  if (mimeType == MEDIAMIMETYPE("audio/webm")) {
+  if (mimeType == MEDIAMIMETYPE("audio/webm"))
+  {
     if (!(Preferences::GetBool("media.mediasource.webm.enabled", false) ||
-          Preferences::GetBool("media.mediasource.webm.audio.enabled", true))) {
+          Preferences::GetBool("media.mediasource.webm.audio.enabled", true)))
+    {
       return false;
     }
     return true;

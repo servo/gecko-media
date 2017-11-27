@@ -5,3 +5,5 @@
 //! The implementation of the Media Source Extensions API.
 
 pub mod mediasource;
+pub mod sourcebuffer;
+pub mod sourcebufferlist;

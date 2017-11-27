@@ -2,26 +2,18 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use GeckoMedia;
 use bindings::GeckoPlanarYCbCrImage;
 use bindings::{GeckoMediaMetadata, GeckoMediaTimeInterval};
 use bindings::{GeckoMedia_Player_CreateBlobPlayer, GeckoMedia_Player_Pause, GeckoMedia_Player_Play};
-use bindings::{GeckoMedia_Player_Seek, GeckoMedia_Player_SetVolume, GeckoMedia_Player_Shutdown};
+use bindings::{GeckoMedia_Player_Seek, GeckoMedia_Player_SetVolume};
 use bindings::{PlaneType_Cb, PlaneType_Cr, PlaneType_Y};
 use bindings::{PlayerCallbackObject, RustVecU8Object};
 use std::ffi::CStr;
 use std::ffi::CString;
 use std::mem;
 use std::ops::Range;
-use std::os::raw::c_void;
 use std::slice;
 use timestamp::TimeStamp;
-
-/// Plays a media resource.
-pub struct Player {
-    gecko_media: GeckoMedia,
-    id: usize,
-}
 
 /// Holds useful metadata extracted from a media resource during loading.
 pub struct Metadata {
@@ -257,12 +249,19 @@ pub trait PlayerEventSink {
     fn seekable(&self, ranges: Vec<Range<f64>>);
 }
 
+/// Plays a media resource.
+def_gecko_media_struct!(Player);
+
+impl_drop_gecko_media_struct!(Player, GeckoMedia_Player_Shutdown);
+
 impl Player {
-    pub fn new(gecko_media: GeckoMedia,
-               id: usize,
-               media_data: Vec<u8>,
-               mime_type: &str,
-               sink: Box<PlayerEventSink>) -> Result<Player, ()> {
+    pub fn new(
+        gecko_media: GeckoMedia,
+        id: usize,
+        media_data: Vec<u8>,
+        mime_type: &str,
+        sink: Box<PlayerEventSink>,
+    ) -> Result<Player, ()> {
         let callback = to_ffi_callback(sink);
         let media_data = to_ffi_vec(media_data);
         let mime_type = match CString::new(mime_type.as_bytes()) {
@@ -274,7 +273,7 @@ impl Player {
         });
         Ok(Player {
             gecko_media,
-            id
+            id,
         })
     }
 
@@ -317,95 +316,76 @@ impl Player {
     }
 }
 
-impl Drop for Player {
-    fn drop(&mut self) {
-        let player_id = self.id;
-        self.gecko_media.queue_task(move || unsafe {
-            GeckoMedia_Player_Shutdown(player_id);
-        });
-    }
-}
-
-fn to_ffi_callback(sink: Box<PlayerEventSink>) -> PlayerCallbackObject {
+fn to_ffi_callback(callbacks: Box<PlayerEventSink>) -> PlayerCallbackObject {
     // Can't cast from *c_void to a Trait, so wrap in a concrete type
     // when we pass into C++ code.
-    struct Wrapper {
-        sink: Box<PlayerEventSink>,
-    }
-    unsafe extern "C" fn free(ptr: *mut c_void) {
-        drop(Box::from_raw(ptr as *mut Wrapper));
-    }
+
+    def_gecko_callbacks_ffi_wrapper!(PlayerEventSink);
+
     unsafe extern "C" fn decode_error(ptr: *mut c_void) {
         let wrapper = &*(ptr as *mut Wrapper);
-        wrapper.sink.decode_error();
+        wrapper.callbacks.decode_error();
     }
     unsafe extern "C" fn playback_ended(ptr: *mut c_void) {
         let wrapper = &*(ptr as *mut Wrapper);
-        wrapper.sink.playback_ended();
+        wrapper.callbacks.playback_ended();
     }
     unsafe extern "C" fn async_event(ptr: *mut c_void, name: *const i8) {
         let wrapper = &*(ptr as *mut Wrapper);
         let c_str: &CStr = CStr::from_ptr(name);
-        wrapper.sink.async_event(c_str.to_str().unwrap());
+        wrapper.callbacks.async_event(c_str.to_str().unwrap());
     }
     unsafe extern "C" fn metadata_loaded(ptr: *mut c_void, gecko_metadata: GeckoMediaMetadata) {
         let wrapper = &*(ptr as *mut Wrapper);
-        let mut metadata = Metadata { duration: gecko_metadata.mDuration, video_dimensions: None };
+        let mut metadata = Metadata {
+            duration: gecko_metadata.mDuration,
+            video_dimensions: None,
+        };
         if gecko_metadata.mVideoWidth != 0 && gecko_metadata.mVideoHeight != 0 {
             metadata.video_dimensions = Some((gecko_metadata.mVideoWidth, gecko_metadata.mVideoHeight));
         }
-        wrapper.sink.metadata_loaded(metadata);
+        wrapper.callbacks.metadata_loaded(metadata);
     }
     unsafe extern "C" fn duration_changed(ptr: *mut c_void, duration: f64) {
         let wrapper = &*(ptr as *mut Wrapper);
-        wrapper.sink.duration_changed(duration);
+        wrapper.callbacks.duration_changed(duration);
     }
     unsafe extern "C" fn loaded_data(ptr: *mut c_void) {
         let wrapper = &*(ptr as *mut Wrapper);
-        wrapper.sink.loaded_data();
+        wrapper.callbacks.loaded_data();
     }
     unsafe extern "C" fn seek_started(ptr: *mut c_void) {
         let wrapper = &*(ptr as *mut Wrapper);
-        wrapper.sink.seek_started();
+        wrapper.callbacks.seek_started();
     }
     unsafe extern "C" fn seek_completed(ptr: *mut c_void) {
         let wrapper = &*(ptr as *mut Wrapper);
-        wrapper.sink.seek_completed();
+        wrapper.callbacks.seek_completed();
     }
     unsafe extern "C" fn time_update(ptr: *mut c_void, time: f64) {
         let wrapper = &*(ptr as *mut Wrapper);
-        wrapper.sink.time_update(time);
+        wrapper.callbacks.time_update(time);
     }
-    unsafe extern "C" fn update_current_images(
-        ptr: *mut c_void,
-        size: usize,
-        elements: *mut GeckoPlanarYCbCrImage,
-    ) {
+    unsafe extern "C" fn update_current_images(ptr: *mut c_void, size: usize, elements: *mut GeckoPlanarYCbCrImage) {
         let wrapper = &*(ptr as *mut Wrapper);
         let images = to_ffi_planar_ycbycr_images(size, elements);
-        wrapper.sink.update_current_images(images);
+        wrapper.callbacks.update_current_images(images);
     }
-    unsafe extern "C" fn notify_buffered(
-        ptr: *mut c_void,
-        size: usize,
-        ranges: *mut GeckoMediaTimeInterval,
-    ) {
+    unsafe extern "C" fn notify_buffered(ptr: *mut c_void, size: usize, ranges: *mut GeckoMediaTimeInterval) {
         let wrapper = &*(ptr as *mut Wrapper);
         let ranges = to_ffi_time_ranges(size, ranges);
-        wrapper.sink.buffered(ranges);
+        wrapper.callbacks.buffered(ranges);
     }
-    unsafe extern "C" fn notify_seekable(
-        ptr: *mut c_void,
-        size: usize,
-        ranges: *mut GeckoMediaTimeInterval,
-    ) {
+    unsafe extern "C" fn notify_seekable(ptr: *mut c_void, size: usize, ranges: *mut GeckoMediaTimeInterval) {
         let wrapper = &*(ptr as *mut Wrapper);
         let ranges = to_ffi_time_ranges(size, ranges);
-        wrapper.sink.seekable(ranges);
+        wrapper.callbacks.seekable(ranges);
     }
 
     PlayerCallbackObject {
-        mContext: Box::into_raw(Box::new(Wrapper { sink: sink })) as *mut c_void,
+        mContext: Box::into_raw(Box::new(Wrapper {
+            callbacks,
+        })) as *mut c_void,
         mPlaybackEnded: Some(playback_ended),
         mDecodeError: Some(decode_error),
         mDurationChanged: Some(duration_changed),
@@ -439,10 +419,7 @@ fn to_ffi_vec(bytes: Vec<u8>) -> RustVecU8Object {
     }
 }
 
-fn to_ffi_planar_ycbycr_images(
-    size: usize,
-    elements: *mut GeckoPlanarYCbCrImage,
-) -> Vec<PlanarYCbCrImage> {
+fn to_ffi_planar_ycbycr_images(size: usize, elements: *mut GeckoPlanarYCbCrImage) -> Vec<PlanarYCbCrImage> {
     let elements = unsafe { slice::from_raw_parts(elements, size) };
     elements
         .iter()

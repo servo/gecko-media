@@ -23,7 +23,8 @@ struct ThreadObserverObject
 
 typedef uint64_t (*RustGetTimeNowFn_t)();
 
-struct RustServicesFnTable {
+struct RustServicesFnTable
+{
   RustGetTimeNowFn_t mGetTimeNowFn;
 };
 

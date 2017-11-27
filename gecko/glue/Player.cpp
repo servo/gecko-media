@@ -9,6 +9,7 @@
 #include "BufferMediaResource.h"
 #include "GeckoMediaDecoder.h"
 #include "GeckoMediaDecoderOwner.h"
+#include "GeckoMediaMacros.h"
 #include "nsTArray.h"
 #include "UniquePtr.h"
 #include "mozilla/RefPtr.h"
@@ -44,18 +45,14 @@ struct Player
   const size_t mId;
 };
 
-static nsTArray<Player> sPlayers;
+DEF_GECKO_MEDIA_REFLECTOR_CONTAINER(Player)
 
-static Player*
-GetPlayer(size_t aId)
-{
-  for (Player& player : sPlayers) {
-    if (player.mId == aId) {
-      return &player;
-    }
-  }
-  return nullptr;
-}
+IMPL_GECKO_MEDIA_REFLECTOR_GETTER(Player)
+
+IMPL_GECKO_MEDIA_REFLECTOR_SHUTDOWN_BEGIN(Player, Player)
+reflector->mDecoderOwner->Shutdown();
+reflector->mDecoder->Shutdown();
+IMPL_GECKO_MEDIA_REFLECTOR_SHUTDOWN_END
 
 void
 GeckoMedia_Player_CreateBlobPlayer(size_t aId,
@@ -68,10 +65,10 @@ GeckoMedia_Player_CreateBlobPlayer(size_t aId,
     return;
   }
 
-  Player* player = sPlayers.AppendElement(Player(aId, aCallback));
-  MOZ_ASSERT(GetPlayer(aId) == player);
+  Player* reflector = sReflectors.AppendElement(Player(aId, aCallback));
+  MOZ_ASSERT(GetReflector(aId) == reflector);
 
-  MediaDecoderInit decoderInit(player->mDecoderOwner.get(),
+  MediaDecoderInit decoderInit(reflector->mDecoderOwner.get(),
                                1.0,   // volume
                                true,  // mPreservesPitch
                                1.0,   // mPlaybackRate
@@ -79,67 +76,38 @@ GeckoMedia_Player_CreateBlobPlayer(size_t aId,
                                false, // mHasSuspendTaint
                                false, // mLooping
                                mime.value());
-  player->mDecoder = new GeckoMediaDecoder(decoderInit);
-  player->mDecoderOwner->SetDecoder(player->mDecoder);
+  reflector->mDecoder = new GeckoMediaDecoder(decoderInit);
+  reflector->mDecoderOwner->SetDecoder(reflector->mDecoder);
   RefPtr<BufferMediaResource> resource =
     new RustVecU8BufferMediaResource(aMediaData);
-  player->mDecoder->Load(resource);
+  reflector->mDecoder->Load(resource);
 }
 
 void
 GeckoMedia_Player_Play(size_t aId)
 {
-  Player* player = GetPlayer(aId);
-  if (!player) {
-    return;
-  }
-  player->mDecoder->Play();
+  IMPL_GECKO_MEDIA_REFLECTOR_GET(Player)
+  reflector->mDecoder->Play();
 }
 
 void
 GeckoMedia_Player_Pause(size_t aId)
 {
-  Player* player = GetPlayer(aId);
-  if (!player) {
-    return;
-  }
-  player->mDecoder->Pause();
+  IMPL_GECKO_MEDIA_REFLECTOR_GET(Player)
+  reflector->mDecoder->Pause();
 }
 
 void
 GeckoMedia_Player_Seek(size_t aId, double aTimeOffsetSeconds)
 {
-  Player* player = GetPlayer(aId);
-  if (!player) {
-    return;
-  }
-  MOZ_ASSERT(player->mDecoder);
-  player->mDecoder->Seek(aTimeOffsetSeconds, SeekTarget::Accurate);
-}
-
-void
-GeckoMedia_Player_Shutdown(size_t aId)
-{
-  Player* player = GetPlayer(aId);
-  if (!player) {
-    return;
-  }
-  player->mDecoderOwner->Shutdown();
-  player->mDecoder->Shutdown();
-  for (size_t i = 0; i < sPlayers.Length(); i++) {
-    if (sPlayers[i].mId == aId) {
-      sPlayers.RemoveElementAt(i);
-      break;
-    }
-  }
+  IMPL_GECKO_MEDIA_REFLECTOR_GET(Player)
+  MOZ_ASSERT(reflector->mDecoder);
+  reflector->mDecoder->Seek(aTimeOffsetSeconds, SeekTarget::Accurate);
 }
 
 void
 GeckoMedia_Player_SetVolume(size_t aId, double volume)
 {
-  Player* player = GetPlayer(aId);
-  if (!player) {
-    return;
-  }
-  player->mDecoder->SetVolume(volume);
+  IMPL_GECKO_MEDIA_REFLECTOR_GET(Player)
+  reflector->mDecoder->SetVolume(volume);
 }

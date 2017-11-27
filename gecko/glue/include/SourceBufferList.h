@@ -4,31 +4,27 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef mozilla_dom_MediaSource_h_
-#define mozilla_dom_MediaSource_h_
+#ifndef mozilla_dom_SourceBufferList_h_
+#define mozilla_dom_SourceBufferList_h_
 
-#include "GeckoMediaSource.h"
+#include "GeckoMediaSourceBufferList.h"
 
 namespace mozilla
 {
 namespace dom
 {
 
-class MediaSource final
+class SourceBufferList final
 {
 public:
-  MediaSource(GeckoMediaSourceImpl aGeckoMediaSourceImpl);
-  ~MediaSource();
-
-  MediaSourceReadyState ReadyState();
-
-  static bool IsTypeSupported(const char *aType);
+  SourceBufferList(GeckoMediaSourceBufferListImpl aImpl);
+  ~SourceBufferList();
 
 private:
-  GeckoMediaSourceImpl mImpl;
+  GeckoMediaSourceBufferListImpl mImpl;
 };
 
 } // namespace dom
 } // namespace mozilla
 
-#endif // mozilla_dom_MediaSource_h_
+#endif // mozilla_dom_SourceBufferList_h_

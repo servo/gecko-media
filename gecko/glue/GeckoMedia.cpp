@@ -138,7 +138,8 @@ GeckoMedia_CanPlayType(const char* aMimeType)
     return CanPlayTypeResult::No;
   }
 
-  auto canPlay = DecoderTraits::CanHandleContainerType(containerType.value(), nullptr);
+  auto canPlay =
+    DecoderTraits::CanHandleContainerType(containerType.value(), nullptr);
   CanPlayTypeResult result = CanPlayTypeResult::No;
 
   if (canPlay == CANPLAY_MAYBE) {

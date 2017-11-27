@@ -15,6 +15,8 @@ extern crate mime;
 #[allow(unused_extern_crates)]
 extern crate mp4parse_capi;
 
+#[macro_use]
+mod macros;
 pub mod mime_parser_glue;
 pub mod mse;
 pub mod player;
@@ -120,7 +122,9 @@ mod tests {
                 self.sender.send(Status::Seekable(ranges)).unwrap();
             }
         }
-        let sink = Box::new(Sink { sender: sender });
+        let sink = Box::new(Sink {
+            sender: sender,
+        });
         let mut file = File::open(path).unwrap();
         let mut bytes = vec![];
         file.read_to_end(&mut bytes).unwrap();
@@ -141,12 +145,12 @@ mod tests {
                 Status::Ended => {
                     ok = true;
                     break;
-                }
+                },
                 Status::Error => {
                     ok = false;
                     break;
-                }
-                _ => {}
+                },
+                _ => {},
             };
         }
         assert!(ok);
@@ -170,18 +174,18 @@ mod tests {
                     reached_metadata_loaded = true;
                     duration = metadata.duration;
                     assert!(duration > 0.0);
-                }
+                },
                 Status::LoadedData => {
                     reached_loaded_data = true;
                     assert!(reached_metadata_loaded);
                     player.seek(duration / 2.0);
-                }
+                },
                 Status::TimeUpdate(time) => {
                     current_time = time;
-                }
+                },
                 Status::SeekStarted => {
                     reached_seek_started = true;
-                }
+                },
                 Status::SeekComplete => {
                     reached_seek_complete = true;
                     assert!(reached_seek_started);
@@ -190,23 +194,23 @@ mod tests {
                     let delta = (current_time - duration / 2.0).abs();
                     assert!(delta < 0.0001);
                     player.play();
-                }
+                },
                 Status::Ended => {
                     reached_ended = true;
                     break;
-                }
+                },
                 Status::Error => {
                     reached_error = true;
                     break;
-                }
-                Status::UpdateImages(_images) => {}
+                },
+                Status::UpdateImages(_images) => {},
                 Status::Buffered(_ranges) => {
                     reached_buffered = true;
-                }
+                },
                 Status::Seekable(_ranges) => {
                     reached_seekable = true;
-                }
-                _ => {}
+                },
+                _ => {},
             };
         }
         assert!(reached_metadata_loaded);
@@ -244,8 +248,7 @@ mod tests {
                 }
             }
 
-            pub fn set_gecko_media_source(&self,
-                                          gecko_media_source: Weak<GeckoMediaSource>) {
+            pub fn set_gecko_media_source(&self, gecko_media_source: Weak<GeckoMediaSource>) {
                 *self.gecko_media_source.borrow_mut() = Some(gecko_media_source);
             }
 
@@ -260,7 +263,6 @@ mod tests {
                     panic!("GeckoMediaSource not set");
                 }
             }
-
         }
         struct MediaSourceImpl {
             dom_object: Rc<MediaSourceDummyDomObject>,
