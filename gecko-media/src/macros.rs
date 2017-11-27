@@ -18,7 +18,7 @@ macro_rules! impl_new_gecko_media_struct (
         impl $struct {
             pub fn new(gecko_media: GeckoMedia,
                        id: usize,
-                       callbacks: Box<$callbacks>) -> $struct {
+                       callbacks: Rc<$callbacks>) -> $struct {
                 let callbacks = to_ffi_callbacks(callbacks);
                 gecko_media.queue_task(move || unsafe {
                     $create(id, callbacks);
@@ -47,10 +47,10 @@ macro_rules! impl_drop_gecko_media_struct (
 );
 
 macro_rules! def_gecko_callbacks_ffi_wrapper (
-    ($callbacks:ident) => (
+    ($callbacks:ty) => (
         use std::os::raw::c_void;
         struct Wrapper {
-            callbacks: Box<$callbacks>,
+            callbacks: $callbacks,
         }
         unsafe extern "C" fn free(ptr: *mut c_void) {
             drop(Box::from_raw(ptr as *mut Wrapper));

@@ -9,6 +9,7 @@ use player::{NetworkResource, Player, PlayerEventSink};
 use std::ffi::CString;
 use std::ops::Drop;
 use std::os::raw::c_void;
+use std::rc::Weak;
 use std::sync::Mutex;
 use std::sync::atomic::{AtomicUsize, Ordering, ATOMIC_USIZE_INIT};
 use std::sync::mpsc::{self, Receiver, Sender};
@@ -138,10 +139,14 @@ impl GeckoMedia {
         Player::from_network_resource(handle, id, resource, mime_type, sink)
     }
 
-    pub fn create_media_source(media_source_impl: Box<MediaSourceImpl>) -> Result<MediaSource, ()> {
+    pub fn create_media_source(media_source_impl: Weak<MediaSourceImpl>) -> Result<MediaSource, ()> {
         let handle = GeckoMedia::get()?;
         let id = NEXT_MEDIA_SOURCE_ID.fetch_add(1, Ordering::SeqCst);
-        Ok(MediaSource::new(handle, id, media_source_impl))
+        if let Some(media_source_impl) = media_source_impl.upgrade() {
+            Ok(MediaSource::new(handle, id, media_source_impl))
+        } else {
+            panic!("MediaSourceImpl gone")
+        }
     }
 
     #[cfg(test)]

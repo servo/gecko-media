@@ -3,6 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use bindings::GeckoMediaSourceBufferListImpl;
+use std::rc::Rc;
 
 def_gecko_media_struct!(SourceBufferList);
 
@@ -16,11 +17,11 @@ impl_drop_gecko_media_struct!(SourceBufferList, GeckoMedia_SourceBufferList_Shut
 
 pub trait SourceBufferListImpl {}
 
-pub fn to_ffi_callbacks(callbacks: Box<SourceBufferListImpl>) -> GeckoMediaSourceBufferListImpl {
+pub fn to_ffi_callbacks(callbacks: Rc<SourceBufferListImpl>) -> GeckoMediaSourceBufferListImpl {
     // Can't cast from *c_void to a Trait, so wrap in a concrete type
     // when we pass into C++ code.
 
-    def_gecko_callbacks_ffi_wrapper!(SourceBufferListImpl);
+    def_gecko_callbacks_ffi_wrapper!(Rc<SourceBufferListImpl>);
 
     GeckoMediaSourceBufferListImpl {
         mContext: Box::into_raw(Box::new(Wrapper {

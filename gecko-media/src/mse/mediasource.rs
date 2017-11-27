@@ -4,6 +4,7 @@
 
 use bindings::{GeckoMedia_MediaSource_IsTypeSupported, GeckoMediaSourceImpl};
 use std::ffi::CString;
+use std::rc::Rc;
 use std::sync::mpsc;
 
 def_gecko_media_struct!(MediaSource);
@@ -35,11 +36,11 @@ pub trait MediaSourceImpl {
     fn get_ready_state(&self) -> i32;
 }
 
-fn to_ffi_callbacks(callbacks: Box<MediaSourceImpl>) -> GeckoMediaSourceImpl {
+fn to_ffi_callbacks(callbacks: Rc<MediaSourceImpl>) -> GeckoMediaSourceImpl {
     // Can't cast from *c_void to a Trait, so wrap in a concrete type
     // when we pass into C++ code.
 
-    def_gecko_callbacks_ffi_wrapper!(MediaSourceImpl);
+    def_gecko_callbacks_ffi_wrapper!(Rc<MediaSourceImpl>);
 
     unsafe extern "C" fn get_ready_state(ptr: *mut c_void) -> i32 {
         let wrapper = &*(ptr as *mut Wrapper);
