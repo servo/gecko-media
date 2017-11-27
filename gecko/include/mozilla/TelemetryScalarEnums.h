@@ -1,4 +1,4 @@
-/* This file is auto-generated, see gen-scalar-enum.py.  */
+/* This file is auto-generated, see gen_scalar_enum.py.  */
 
 #ifndef mozilla_TelemetryScalarEnums_h
 #define mozilla_TelemetryScalarEnums_h
@@ -94,10 +94,13 @@ enum class ScalarID : uint32_t {
   TELEMETRY_TEST_EXPIRED,
   TELEMETRY_TEST_KEYED_EXPIRED,
   DEVTOOLS_RULES_GRIDINSPECTOR_OPENED,
+  GENERAL_AUTOCONFIG_HAS_FILENAME,
   A11Y_INDICATOR_ACTED_ON,
 #if defined(ACCESSIBILITY)
   A11Y_INSTANTIATORS,
 #endif
+  SW_CORS_RES_FOR_SO_REQ_COUNT,
+  SW_SYNTHESIZED_RES_COUNT,
 #if defined(XP_WIN)
   SANDBOX_NO_JOB,
 #endif

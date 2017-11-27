@@ -17,7 +17,7 @@
 
 namespace mozilla {
 
-using namespace mp4_demuxer;
+using namespace mozilla;
 using media::TimeUnit;
 
 class AutoTaskQueue;

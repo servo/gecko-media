@@ -49,9 +49,6 @@
 #include "mozilla/ipc/BackgroundChild.h"
 #include "mozilla/dom/ScriptSettings.h"
 #include "GeckoProfiler.h"
-#endif
-
-#ifdef MOZ_CRASHREPORTER
 #include "nsServiceManagerUtils.h"
 #include "nsICrashReporter.h"
 #include "mozilla/dom/ContentChild.h"
@@ -506,7 +503,7 @@ nsThread::ThreadFunc(void* aArg)
 
 //-----------------------------------------------------------------------------
 
-#ifdef MOZ_CRASHREPORTER
+#ifndef GECKO_MEDIA_CRATE
 // Tell the crash reporter to save a memory report if our heuristics determine
 // that an OOM failure is likely to occur soon.
 // Memory usage will not be checked more than every 30 seconds or saved more
@@ -1251,7 +1248,7 @@ nsThread::DoMainThreadSpecificProcessing(bool aReallyWait)
   }
 #endif
 
-#ifdef MOZ_CRASHREPORTER
+#ifndef GECKO_MEDIA_CRATE
   if (!ShuttingDown()) {
     SaveMemoryReportNearOOM(ShouldSaveMemoryReport::kMaybeReport);
   }

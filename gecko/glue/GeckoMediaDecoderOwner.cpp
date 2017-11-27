@@ -88,7 +88,7 @@ GeckoMediaDecoderOwner::FirstFrameLoaded()
 }
 
 void
-GeckoMediaDecoderOwner::NetworkError()
+GeckoMediaDecoderOwner::NetworkError(const MediaResult& aError)
 {
 }
 

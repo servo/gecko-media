@@ -50,21 +50,11 @@ pref("media.ffmpeg.low-latency.enabled", false);
 pref("media.gmp.decoder.enabled", false);
 pref("media.gmp.decoder.aac", 0);
 pref("media.gmp.decoder.h264", 0);
-#ifdef MOZ_RAW
-pref("media.raw.enabled", true);
-#endif
 pref("media.ogg.enabled", true);
 pref("media.opus.enabled", true);
 pref("media.wave.enabled", true);
 pref("media.webm.enabled", true);
 pref("media.eme.chromium-api.video-shmems", 6);
-#ifdef MOZ_APPLEMEDIA
-#ifdef MOZ_WIDGET_UIKIT
-pref("media.mp3.enabled", true);
-#endif
-pref("media.apple.mp3.enabled", true);
-pref("media.apple.mp4.enabled", true);
-#endif
 pref("media.gmp.storage.version.expected", 1);
 #ifdef NIGHTLY_BUILD
 pref("media.decoder-doctor.notifications-allowed", "MediaWMFNeeded,MediaWidevineNoWMF,MediaCannotInitializePulseAudio,MediaCannotPlayNoDecoders,MediaUnsupportedLibavcodec,MediaDecodeError");
@@ -82,14 +72,7 @@ pref("media.resume-bkgnd-video-on-tabhover", true);;
 #ifdef MOZ_WEBRTC
 pref("media.navigator.enabled", true);
 pref("media.navigator.video.enabled", true);
-pref("media.navigator.load_adapt", true);
-pref("media.navigator.load_adapt.encoder_only", true);
-pref("media.navigator.load_adapt.measure_interval",1000);
-pref("media.navigator.load_adapt.avg_seconds",3);
-pref("media.navigator.load_adapt.high_load","0.90");
-pref("media.navigator.load_adapt.low_load","0.40");
 pref("media.navigator.video.default_fps",30);
-pref("media.navigator.video.default_minfps",10);
 pref("media.navigator.video.use_remb", true);
 pref("media.navigator.video.use_tmmbr", false);
 pref("media.navigator.audio.use_fec", true);
@@ -108,7 +91,6 @@ pref("media.navigator.video.max_fr", 60);
 pref("media.navigator.video.h264.level", 31); // 0x42E01f - level 3.1
 pref("media.navigator.video.h264.max_br", 0);
 pref("media.navigator.video.h264.max_mbps", 0);
-pref("media.peerconnection.video.h264_enabled", false);
 pref("media.peerconnection.video.vp9_enabled", true);
 pref("media.peerconnection.video.vp9_preferred", false);
 pref("media.getusermedia.aec", 1);
@@ -147,43 +129,32 @@ pref("media.getusermedia.aec_enabled", true);
 pref("media.getusermedia.noise_enabled", true);
 #endif
 pref("media.getusermedia.aec_extended_filter", true);
-pref("media.getusermedia.aec_delay_agnostic", true);
 pref("media.getusermedia.noise", 1);
 pref("media.getusermedia.agc_enabled", false);
 pref("media.getusermedia.agc", 1);
 #if defined(XP_MACOSX)
 pref("media.peerconnection.capture_delay", 50);
-pref("media.getusermedia.playout_delay", 10);
 pref("media.navigator.audio.full_duplex", true);
 #elif defined(XP_WIN)
 pref("media.peerconnection.capture_delay", 50);
-pref("media.getusermedia.playout_delay", 40);
 pref("media.navigator.audio.full_duplex", true);
 #elif defined(ANDROID)
 pref("media.peerconnection.capture_delay", 100);
-pref("media.getusermedia.playout_delay", 100);
 pref("media.navigator.audio.full_duplex", true);
 pref("media.navigator.hardware.vp8_encode.acceleration_enabled", true);
 pref("media.navigator.hardware.vp8_encode.acceleration_remote_enabled", true);
 pref("media.navigator.hardware.vp8_decode.acceleration_enabled", false);
 #elif defined(XP_LINUX) || defined(MOZ_SNDIO)
 pref("media.peerconnection.capture_delay", 70);
-pref("media.getusermedia.playout_delay", 50);
 pref("media.navigator.audio.full_duplex", true);
 #else
 pref("media.peerconnection.capture_delay", 50);
-pref("media.getusermedia.playout_delay", 50);
 pref("media.navigator.audio.full_duplex", false);
 #endif
 pref("media.navigator.mediadatadecoder_enabled", false);
 #endif
 #if !defined(ANDROID)
 pref("media.getusermedia.screensharing.enabled", true);
-#endif
-#ifdef RELEASE_OR_BETA
-pref("media.getusermedia.screensharing.allowed_domains", "webex.com,*.webex.com,ciscospark.com,*.ciscospark.com,projectsquared.com,*.projectsquared.com,*.room.co,room.co,beta.talky.io,talky.io,*.clearslide.com,appear.in,*.appear.in,tokbox.com,*.tokbox.com,*.sso.francetelecom.fr,*.si.francetelecom.fr,*.sso.infra.ftgroup,*.multimedia-conference.orange-business.com,*.espacecollaboration.orange-business.com,free.gotomeeting.com,g2m.me,*.g2m.me,*.mypurecloud.com,*.mypurecloud.com.au,spreed.me,*.spreed.me,*.spreed.com,air.mozilla.org,*.circuit.com,*.yourcircuit.com,circuit.siemens.com,yourcircuit.siemens.com,circuitsandbox.net,*.unify.com,tandi.circuitsandbox.net,*.ericsson.net,*.cct.ericsson.net,*.opentok.com,*.conf.meetecho.com,meet.jit.si,*.meet.jit.si,web.stage.speakeasyapp.net,web.speakeasyapp.net,*.hipchat.me,*.beta-wspbx.com,*.wspbx.com,*.unifiedcloudit.com,*.smartboxuc.com,*.smartbox-uc.com,*.panterranetworks.com,pexipdemo.com,*.pexipdemo.com,pex.me,*.pex.me,*.rd.pexip.com,1click.io,*.1click.io,*.fuze.com,*.fuzemeeting.com,*.thinkingphones.com,gotomeeting.com,*.gotomeeting.com,gotowebinar.com,*.gotowebinar.com,gototraining.com,*.gototraining.com,citrix.com,*.citrix.com,expertcity.com,*.expertcity.com,citrixonline.com,*.citrixonline.com,g2m.me,*.g2m.me,gotomeet.me,*.gotomeet.me,gotomeet.at,*.gotomeet.at,miriadaxdes.miriadax.net,certificacion.miriadax.net,miriadax.net,*.wire.com,sylaps.com,*.sylaps.com,bluejeans.com,*.bluejeans.com,*.a.bluejeans.com,*.bbcollab.com");
-#else
-pref("media.getusermedia.screensharing.allowed_domains", "mozilla.github.io,webex.com,*.webex.com,ciscospark.com,*.ciscospark.com,projectsquared.com,*.projectsquared.com,*.room.co,room.co,beta.talky.io,talky.io,*.clearslide.com,appear.in,*.appear.in,tokbox.com,*.tokbox.com,*.sso.francetelecom.fr,*.si.francetelecom.fr,*.sso.infra.ftgroup,*.multimedia-conference.orange-business.com,*.espacecollaboration.orange-business.com,free.gotomeeting.com,g2m.me,*.g2m.me,*.mypurecloud.com,*.mypurecloud.com.au,spreed.me,*.spreed.me,*.spreed.com,air.mozilla.org,*.circuit.com,*.yourcircuit.com,circuit.siemens.com,yourcircuit.siemens.com,circuitsandbox.net,*.unify.com,tandi.circuitsandbox.net,*.ericsson.net,*.cct.ericsson.net,*.opentok.com,*.conf.meetecho.com,meet.jit.si,*.meet.jit.si,web.stage.speakeasyapp.net,web.speakeasyapp.net,*.hipchat.me,*.beta-wspbx.com,*.wspbx.com,*.unifiedcloudit.com,*.smartboxuc.com,*.smartbox-uc.com,*.panterranetworks.com,pexipdemo.com,*.pexipdemo.com,pex.me,*.pex.me,*.rd.pexip.com,1click.io,*.1click.io,*.fuze.com,*.fuzemeeting.com,*.thinkingphones.com,gotomeeting.com,*.gotomeeting.com,gotowebinar.com,*.gotowebinar.com,gototraining.com,*.gototraining.com,citrix.com,*.citrix.com,expertcity.com,*.expertcity.com,citrixonline.com,*.citrixonline.com,g2m.me,*.g2m.me,gotomeet.me,*.gotomeet.me,gotomeet.at,*.gotomeet.at,miriadaxdes.miriadax.net,certificacion.miriadax.net,miriadax.net,*.wire.com,sylaps.com,*.sylaps.com,bluejeans.com,*.bluejeans.com,*.a.bluejeans.com,*.bbcollab.com");
 #endif
 pref("media.getusermedia.audiocapture.enabled", false);
 pref("media.webvtt.regions.enabled", false);
@@ -212,6 +183,7 @@ pref("media.encoder.webm.enabled", true);
 pref("media.recorder.audio_node.enabled", false);
 pref("media.recorder.video.frame_drops", true);
 pref("media.autoplay.enabled", true);
+pref("media.autoplay.enabled.user-gestures-needed", false);
 pref("media.video-queue.default-size", 10);
 pref("media.video-queue.send-to-compositor-size", 9999);
 pref("media.video_stats.enabled", true);
