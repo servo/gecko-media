@@ -138,7 +138,7 @@ impl GeckoMedia {
         Player::from_network_resource(handle, id, resource, mime_type, sink)
     }
 
-    pub fn create_media_source(&self, media_source_impl: Box<MediaSourceImpl>) -> Result<MediaSource, ()> {
+    pub fn create_media_source(media_source_impl: Box<MediaSourceImpl>) -> Result<MediaSource, ()> {
         let handle = GeckoMedia::get()?;
         let id = NEXT_MEDIA_SOURCE_ID.fetch_add(1, Ordering::SeqCst);
         Ok(MediaSource::new(handle, id, media_source_impl))

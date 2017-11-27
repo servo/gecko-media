@@ -227,7 +227,6 @@ mod tests {
         use std::cell::{Cell, RefCell};
         use std::rc::{Rc, Weak};
 
-        let gecko_media = GeckoMedia::get().unwrap();
         #[derive(Clone, Copy)]
         #[allow(dead_code)]
         enum MediaSourceReadyState {
@@ -286,7 +285,7 @@ mod tests {
         }
         let media_source_dom = Rc::new(MediaSourceDummyDomObject::new());
         let media_source_impl = Box::new(MediaSourceImpl::new(media_source_dom.clone()));
-        let gecko_media_source = Rc::new(gecko_media.create_media_source(media_source_impl).unwrap());
+        let gecko_media_source = Rc::new(GeckoMedia::create_media_source(media_source_impl).unwrap());
         media_source_dom.set_gecko_media_source(Rc::downgrade(&gecko_media_source));
         assert_eq!(media_source_dom.is_type_supported("bogus/bogus"), false);
         assert_eq!(
