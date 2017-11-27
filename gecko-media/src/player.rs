@@ -26,23 +26,7 @@ pub struct Metadata {
     pub video_dimensions: Option<(i32, i32)>,
 }
 
-/// Holds pixel data and coordinates of a plane of data.
-///
-/// skip, enable various output formats from hardware decoder. They
-/// are per-pixel skips in the source image.
-///
-/// For example when image width is 640, stride is 670, skip is 3,
-/// the pixel data looks like:
-///
-///     |<------------------------- stride ----------------------------->|
-///     |<-------------------- width ------------------>|
-///      0   3   6   9   12  15  18  21                659             669
-///     |----------------------------------------------------------------|
-///     |Y___Y___Y___Y___Y___Y___Y___Y...                      |%%%%%%%%%|
-///     |Y___Y___Y___Y___Y___Y___Y___Y...                      |%%%%%%%%%|
-///     |Y___Y___Y___Y___Y___Y___Y___Y...                      |%%%%%%%%%|
-///     |            |<->|
-///                skip
+/// Holds pixel data and coordinates of a non-interleaved plane of data.
 ///
 pub struct Plane {
     pub pixels: *const u8,
@@ -52,9 +36,6 @@ pub struct Plane {
     pub stride: i32,
     /// The height of the plane in lines.
     pub height: i32,
-    /// The skip bytes per pixel. This is the number of bytes to skip between
-    /// each sample. So if skip is 3, bytes {0,3,6,...} contain pixels.
-    pub skip: i32,
 }
 
 impl Plane {
@@ -94,9 +75,6 @@ pub struct Region {
 /// The color format is detected based on the height/width ratios
 /// defined above.
 pub struct PlanarYCbCrImage {
-    // pub y_plane: Plane,
-    // pub cb_plane: Plane,
-    // pub cr_plane: Plane,
     /// The sub-region of the buffer which contains the image to be rendered.
     pub picture: Region,
     /// The time at which this image should be renderd.
@@ -157,7 +135,6 @@ impl PlanarYCbCrImage {
             width: img.mYWidth,
             stride: img.mYStride,
             height: img.mYHeight,
-            skip: img.mYSkip,
         }
     }
 
@@ -168,7 +145,6 @@ impl PlanarYCbCrImage {
             width: img.mCbCrWidth,
             stride: img.mCbCrStride,
             height: img.mCbCrHeight,
-            skip: img.mCbSkip,
         }
     }
 
@@ -179,7 +155,6 @@ impl PlanarYCbCrImage {
             width: img.mCbCrWidth,
             stride: img.mCbCrStride,
             height: img.mCbCrHeight,
-            skip: img.mCrSkip,
         }
     }
 }
