@@ -24,6 +24,7 @@ extern crate webrender;
 use webrender::api::*;
 use webrender::api::ImageData::*;
 
+#[path = "../ui.rs"]
 mod ui;
 
 enum PlayerEvent {
