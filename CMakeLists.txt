@@ -179,6 +179,7 @@ add_library(gecko_core OBJECT
   gecko/src/dom/media/AudioConverter.cpp
   gecko/src/dom/media/AudioSegment.cpp
   gecko/src/dom/media/AudioStream.cpp
+  gecko/src/dom/media/BitReader.cpp
   gecko/src/dom/media/MediaContainerType.cpp
   gecko/src/dom/media/MediaInfo.cpp
   gecko/src/dom/media/MediaMIMETypes.cpp
@@ -192,8 +193,8 @@ add_library(gecko_core OBJECT
   gecko/src/dom/media/ReaderProxy.cpp
   gecko/src/dom/media/SeekJob.cpp
   gecko/src/dom/media/StreamTracks.cpp
-  gecko/src/dom/media/fmp4/MP4Decoder.cpp
-  gecko/src/dom/media/fmp4/MP4Demuxer.cpp
+  gecko/src/dom/media/mp4/MP4Decoder.cpp
+  gecko/src/dom/media/mp4/MP4Demuxer.cpp
   gecko/src/dom/media/mediasink/AudioSink.cpp
   gecko/src/dom/media/mediasink/VideoSink.cpp
   gecko/src/dom/media/mediasink/AudioSinkWrapper.cpp
@@ -202,6 +203,16 @@ add_library(gecko_core OBJECT
   gecko/src/dom/media/mp3/MP3Decoder.cpp
   gecko/src/dom/media/mp3/MP3Demuxer.cpp
   gecko/src/dom/media/mp3/MP3FrameParser.cpp
+  gecko/src/dom/media/mp4/Box.cpp
+  gecko/src/dom/media/mp4/BufferStream.cpp
+  gecko/src/dom/media/mp4/DecoderData.cpp
+  gecko/src/dom/media/mp4/Index.cpp
+  gecko/src/dom/media/mp4/MP4Decoder.cpp
+  gecko/src/dom/media/mp4/MP4Demuxer.cpp
+  gecko/src/dom/media/mp4/MP4Metadata.cpp
+  gecko/src/dom/media/mp4/MoofParser.cpp
+  gecko/src/dom/media/mp4/ResourceStream.cpp
+  gecko/src/dom/media/mp4/SinfParser.cpp
   gecko/src/dom/media/ogg/OpusParser.cpp
   gecko/src/dom/media/ogg/OpusParser.cpp
   gecko/src/dom/media/ogg/OggDecoder.cpp
@@ -212,6 +223,9 @@ add_library(gecko_core OBJECT
   gecko/src/dom/media/flac/FlacDemuxer.cpp
   gecko/src/dom/media/flac/FlacFrameParser.cpp
   gecko/src/dom/media/XiphExtradata.cpp
+  gecko/src/dom/media/platforms/agnostic/bytestreams/Adts.cpp
+  gecko/src/dom/media/platforms/agnostic/bytestreams/AnnexB.cpp
+  gecko/src/dom/media/platforms/agnostic/bytestreams/H264.cpp
   gecko/src/dom/media/platforms/agnostic/BlankDecoderModule.cpp
   gecko/src/dom/media/platforms/agnostic/DummyMediaDataDecoder.cpp
   gecko/src/dom/media/platforms/agnostic/NullDecoderModule.cpp
@@ -230,6 +244,7 @@ add_library(gecko_core OBJECT
   gecko/src/mfbt/Assertions.cpp
   gecko/src/mfbt/ChaosMode.cpp
   gecko/src/mfbt/HashFunctions.cpp
+  gecko/src/mfbt/Poison.cpp
   gecko/src/mfbt/Unused.cpp
   gecko/src/mozglue/misc/ConditionVariable_posix.cpp
   gecko/src/mozglue/misc/Printf.cpp
@@ -352,15 +367,6 @@ target_include_directories(gecko_core PRIVATE
     gecko/include/mozilla/media/libvorbis/include
     gecko/include/mozilla/media/libogg/include
     gecko/include/mozilla/media/libtheora/include
-    gecko/include/mozilla/media/libstagefright/
-    gecko/include/mozilla/media/libstagefright/binding/include
-    gecko/include/mozilla/media/libstagefright/frameworks/av/include
-    gecko/include/mozilla/media/libstagefright/frameworks/av/include/media/stagefright/foundation
-    gecko/include/mozilla/media/libstagefright/frameworks/av/media/libstagefright/
-    gecko/include/mozilla/media/libstagefright/stubs/empty
-    gecko/include/mozilla/media/libstagefright/stubs/include
-    gecko/include/mozilla/media/libstagefright/stubs/include/media/stagefright/foundation
-    gecko/include/mozilla/media/libstagefright/system/core/include
 )
 
 target_compile_definitions(gecko_core PRIVATE
@@ -782,100 +788,6 @@ target_include_directories(theora PRIVATE
 
 
 
-############
-# libstagefright
-############
-add_library(stagefright OBJECT
-  gecko/src/media/libstagefright/binding/Adts.cpp
-  gecko/src/media/libstagefright/binding/AnnexB.cpp
-  gecko/src/media/libstagefright/binding/BitReader.cpp
-  gecko/src/media/libstagefright/binding/Box.cpp
-  gecko/src/media/libstagefright/binding/BufferStream.cpp
-  gecko/src/media/libstagefright/binding/DecoderData.cpp
-  gecko/src/media/libstagefright/binding/H264.cpp
-  gecko/src/media/libstagefright/binding/Index.cpp
-  gecko/src/media/libstagefright/binding/MP4Metadata.cpp
-  gecko/src/media/libstagefright/binding/MoofParser.cpp
-  gecko/src/media/libstagefright/binding/ResourceStream.cpp
-  gecko/src/media/libstagefright/binding/SinfParser.cpp
-  gecko/src/media/libstagefright/frameworks/av/media/libstagefright/DataSource.cpp
-  gecko/src/media/libstagefright/frameworks/av/media/libstagefright/ESDS.cpp
-  gecko/src/media/libstagefright/frameworks/av/media/libstagefright/MPEG4Extractor.cpp
-  gecko/src/media/libstagefright/frameworks/av/media/libstagefright/MediaBuffer.cpp
-  gecko/src/media/libstagefright/frameworks/av/media/libstagefright/MediaDefs.cpp
-  gecko/src/media/libstagefright/frameworks/av/media/libstagefright/MediaSource.cpp
-  gecko/src/media/libstagefright/frameworks/av/media/libstagefright/MetaData.cpp
-  gecko/src/media/libstagefright/frameworks/av/media/libstagefright/SampleIterator.cpp
-  gecko/src/media/libstagefright/frameworks/av/media/libstagefright/SampleTable.cpp
-  gecko/src/media/libstagefright/frameworks/av/media/libstagefright/Utils.cpp
-  gecko/src/media/libstagefright/frameworks/av/media/libstagefright/foundation/AAtomizer.cpp
-  gecko/src/media/libstagefright/frameworks/av/media/libstagefright/foundation/ABitReader.cpp
-  gecko/src/media/libstagefright/frameworks/av/media/libstagefright/foundation/ABuffer.cpp
-  gecko/src/media/libstagefright/frameworks/av/media/libstagefright/foundation/AString.cpp
-  gecko/src/media/libstagefright/frameworks/av/media/libstagefright/foundation/hexdump.cpp
-  # "media/libstagefright/gtest/TestInterval.cpp
-  # "media/libstagefright/gtest/TestMP4Rust.cpp
-  # "media/libstagefright/gtest/TestParser.cpp
-  gecko/src/media/libstagefright/system/core/libutils/RefBase.cpp
-  gecko/src/media/libstagefright/system/core/libutils/SharedBuffer.cpp
-  gecko/src/media/libstagefright/system/core/libutils/Static.cpp
-  gecko/src/media/libstagefright/system/core/libutils/String16.cpp
-  gecko/src/media/libstagefright/system/core/libutils/String8.cpp
-  gecko/src/media/libstagefright/system/core/libutils/Unicode.cpp
-  gecko/src/media/libstagefright/system/core/libutils/VectorImpl.cpp
-)
-
-if(NOT ANDROID)
-  target_compile_definitions(stagefright PRIVATE
-    FAKE_LOG_DEVICE=1
-  )
-  target_sources(stagefright PRIVATE
-    gecko/src/media/libstagefright/system/core/libcutils/strdup16to8.c
-    gecko/src/media/libstagefright/system/core/liblog/fake_log_device.c
-    gecko/src/media/libstagefright/system/core/liblog/logd_write.c
-    gecko/src/media/libstagefright/system/core/liblog/logprint.c
-  )
-endif()
-
-target_include_directories(stagefright PRIVATE
-  gecko/glue/include
-  gecko/glue/include/stl_wrappers
-  gecko/glue/include/system_wrappers
-  gecko/include
-  gecko/include/mozilla/
-  gecko/include/mozilla/media/libstagefright/binding/include
-  gecko/include/mozilla/media/libstagefright/frameworks/av/include
-  gecko/include/mozilla/media/libstagefright/frameworks/av/include/media/stagefright/foundation
-  gecko/include/mozilla/media/libstagefright/frameworks/av/media/libstagefright
-  gecko/include/mozilla/media/libstagefright/stubs/empty
-  gecko/include/mozilla/media/libstagefright/stubs/include
-  gecko/include/mozilla/media/libstagefright/stubs/include/media/stagefright/foundation/
-  gecko/include/mozilla/media/libstagefright/system/core/include
-  gecko/include/nspr
-  gecko/include/system_wrappers
-  gecko/src/media/libstagefright/binding/include
-  gecko/src/media/libstagefright/frameworks/av/include
-  gecko/src/media/libstagefright/frameworks/av/include/media/stagefright/foundation
-  gecko/src/media/libstagefright/frameworks/av/media/libstagefright
-  gecko/src/media/libstagefright/stubs/empty
-  gecko/src/media/libstagefright/stubs/include
-  gecko/src/media/libstagefright/stubs/include/media/stagefright/foundation
-  gecko/src/media/libstagefright/system/core/include
-)
-
-if(MACOS OR LINUX)
-  target_compile_definitions(stagefright PRIVATE
-    HAVE_SYS_UIO_H=
-    off64_t=off_t
-  )
-  target_include_directories(stagefright PRIVATE
-    gecko/src/media/libstagefright/ports/darwin/include
-  )
-endif()
-
-target_compile_options(stagefright PRIVATE -Wno-multichar)
-
-
 
 ##########
 # libsoundtouch
@@ -1058,15 +970,6 @@ target_include_directories(tests PRIVATE
     gecko/include/mozilla/media/libvorbis/include
     gecko/include/mozilla/media/libogg/include
     gecko/include/mozilla/media/libtheora/include
-    gecko/include/mozilla/media/libstagefright/
-    gecko/include/mozilla/media/libstagefright/binding/include
-    gecko/include/mozilla/media/libstagefright/frameworks/av/include
-    gecko/include/mozilla/media/libstagefright/frameworks/av/include/media/stagefright/foundation
-    gecko/include/mozilla/media/libstagefright/frameworks/av/media/libstagefright/
-    gecko/include/mozilla/media/libstagefright/stubs/empty
-    gecko/include/mozilla/media/libstagefright/stubs/include
-    gecko/include/mozilla/media/libstagefright/stubs/include/media/stagefright/foundation
-    gecko/include/mozilla/media/libstagefright/system/core/include
 )
 
 
@@ -1088,7 +991,6 @@ add_library(gecko_media_cmake STATIC
   $<TARGET_OBJECTS:opus>
   $<TARGET_OBJECTS:vorbis>
   $<TARGET_OBJECTS:theora>
-  $<TARGET_OBJECTS:stagefright>
   $<TARGET_OBJECTS:soundtouch>
   $<TARGET_OBJECTS:speex_resampler>
   $<TARGET_OBJECTS:cubeb>

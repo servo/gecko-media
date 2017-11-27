@@ -249,6 +249,18 @@ Preferences::AddBoolVarCache(bool* aVariable,
   return NS_OK;
 }
 
+template<MemoryOrdering Order>
+// static
+nsresult
+Preferences::AddAtomicBoolVarCache(Atomic<bool, Order>* aVariable,
+                                   const char* aPref,
+                                   bool aDefault)
+{
+  NS_ASSERTION(aVariable, "aVariable must not be NULL");
+  *aVariable = Preferences::GetBool(aPref, aDefault);
+  return NS_OK;
+}
+
 // static
 nsresult
 Preferences::AddIntVarCache(int32_t* aVariable,
@@ -257,6 +269,18 @@ Preferences::AddIntVarCache(int32_t* aVariable,
 {
   NS_ASSERTION(aVariable, "aVariable must not be NULL");
   *aVariable = GetInt(aPref, aDefault);
+  return NS_OK;
+}
+
+template<MemoryOrdering Order>
+// static
+nsresult
+Preferences::AddAtomicIntVarCache(Atomic<int32_t, Order>* aVariable,
+                                  const char* aPref,
+                                  int32_t aDefault)
+{
+  NS_ASSERTION(aVariable, "aVariable must not be NULL");
+  *aVariable = Preferences::GetInt(aPref, aDefault);
   return NS_OK;
 }
 
