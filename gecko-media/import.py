@@ -72,13 +72,23 @@ def remove_previous_copy(src_dir, dst_dir):
     rmtree(dst_dir + "include/")
     rmtree(dst_dir + "src/")
 
+def is_mercurial_repo(src_dir):
+    return os.path.isdir(os.path.join(src_dir, ".hg"))
+
 def get_gecko_revision(src_dir):
-    if not os.path.isdir(os.path.join(src_dir, ".hg")):
-        return None
-    result = subprocess.run(['hg', 'log', src_dir, '--limit', '1'], stdout=subprocess.PIPE)
-    first_line = result.stdout.splitlines()[0]
-    revision = re.match(b'changeset:\s+(.*)', first_line).group(1)
-    return revision.decode('utf-8')
+    if is_mercurial_repo(src_dir):
+        result = subprocess.run(['hg', 'id', '-i', src_dir], stdout=subprocess.PIPE)
+        return result.stdout.strip().decode('utf-8')
+    else:
+        result = subprocess.run(['git', 'cinnabar', 'git2hg', 'HEAD'], cwd=src_dir, stdout=subprocess.PIPE)
+        if result.returncode != 0:
+            return None
+
+        revision = result.stdout.strip()
+        if revision == b'0000000000000000000000000000000000000000':
+            return None
+        return revision.decode('utf-8')
+    return None
 
 def write_gecko_revision_file(src_dir):
     revision = get_gecko_revision(src_dir)
@@ -173,31 +183,42 @@ def check_for_duplicates(dst_dir):
 def get_glue_diff(src_dir):
     new_revision = get_gecko_revision(src_dir)
     if new_revision == None:
-        print("WARNING: Cannot show diff of glue files. Use a mercurial repo as source dir")
+        print("WARNING: Cannot show diff of glue files. Use a mercurial or git-cinnabar repo as source dir")
         return
 
     with open('GECKO_REVISION') as f:
-        old_revision = f.readline().replace("\n", "")
+        old_revision = f.readline().strip()
 
     if new_revision == old_revision:
         return
 
     print("Getting diffs from glue files...")
 
-    new_revision_diffs_dir = "glue_diffs" + os.path.sep + new_revision;
+    new_revision_diffs_dir = os.path.join("glue_diffs", new_revision)
     rmtree(new_revision_diffs_dir, ignore_errors=True)
     os.makedirs(new_revision_diffs_dir)
 
-    for (dst, src) in glue_files.items():
-        p = subprocess.Popen(['hg', 'diff', '-r', old_revision, '-r', new_revision, src_dir + src], stderr=subprocess.PIPE, stdout=subprocess.PIPE)
-        stdout, stderr = p.communicate()
-        if len(stderr) > 0:
-            print(stderr)
+    process_args = dict(stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+    use_mercurial = is_mercurial_repo(src_dir)
+    if not use_mercurial:
+        p = subprocess.run(['git', 'cinnabar', 'hg2git', old_revision], cwd=src_dir, stdout=subprocess.PIPE)
+        old_revision = p.stdout.strip().decode('utf-8')
+        process_args['cwd'] = src_dir
+
+    for (dst, src_file) in glue_files.items():
+        file_path = os.path.join(src_dir, src_file)
+        if use_mercurial:
+            p = subprocess.run(['hg', 'diff', '-r', old_revision, '-r', new_revision, file_path], **process_args)
+        else:
+            p = subprocess.run(['git', 'diff', old_revision, '--', file_path], **process_args)
+        if len(p.stderr) > 0:
+            print(p.stderr)
             continue
-        if len(stdout) > 0:
-            print("Saving diff for ", src)
-            with open(new_revision_diffs_dir + os.path.sep + src.replace(os.path.sep, "_") + ".diff", "wb") as f:
-                f.write(stdout)
+        if len(p.stdout) > 0:
+            dst_patch = os.path.join(new_revision_diffs_dir, src_file.replace(os.path.sep, "_")) + ".diff"
+            print("Saving diff for %s to %s" % (src_file, dst_patch))
+            with open(dst_patch, "wb") as f:
+                f.write(p.stdout)
 
 def main(args):
     if len(args) != 2:
