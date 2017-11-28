@@ -12,6 +12,20 @@ macro_rules! def_gecko_media_struct (
     );
 );
 
+macro_rules! impl_gecko_media_struct_constructor (
+    ($fn:ident, $callbacks:ident, $struct:ident, $counter:ident) => (
+        pub fn $fn(callbacks: Weak<$callbacks>) -> Result<$struct, ()> {
+            let handle = GeckoMedia::get()?;
+            let id = $counter.fetch_add(1, Ordering::SeqCst);
+            if let Some(callbacks) = callbacks.upgrade() {
+                Ok($struct::new(handle, id, callbacks))
+            } else {
+                panic!("Callbacks gone")
+            }
+        }
+    );
+);
+
 macro_rules! impl_new_gecko_media_struct (
     ($struct:ident, $callbacks:ident, $create:ident) => (
         use bindings::$create;

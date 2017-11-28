@@ -5,6 +5,8 @@
 use CanPlayType;
 use bindings::*;
 use mse::mediasource::{MediaSource, MediaSourceImpl};
+use mse::sourcebuffer::{SourceBuffer, SourceBufferImpl};
+use mse::sourcebufferlist::{SourceBufferList, SourceBufferListImpl};
 use player::{NetworkResource, Player, PlayerEventSink};
 use std::ffi::CString;
 use std::ops::Drop;
@@ -140,15 +142,28 @@ impl GeckoMedia {
     }
 
     /// Creates a MediaSource instance and its corresponding GeckoMediaSource reflector.
-    pub fn create_media_source(media_source_impl: Weak<MediaSourceImpl>) -> Result<MediaSource, ()> {
-        let handle = GeckoMedia::get()?;
-        let id = NEXT_MEDIA_SOURCE_ID.fetch_add(1, Ordering::SeqCst);
-        if let Some(media_source_impl) = media_source_impl.upgrade() {
-            Ok(MediaSource::new(handle, id, media_source_impl))
-        } else {
-            panic!("MediaSourceImpl gone")
-        }
-    }
+    impl_gecko_media_struct_constructor!(
+        create_media_source,
+        MediaSourceImpl,
+        MediaSource,
+        NEXT_MEDIA_SOURCE_ID
+    );
+
+    /// Creates a SourceBuffer instance and its corresponding GeckoMediaSourceBuffer reflector.
+    impl_gecko_media_struct_constructor!(
+        create_source_buffer,
+        SourceBufferImpl,
+        SourceBuffer,
+        NEXT_SOURCE_BUFFER_ID
+    );
+
+    /// Creates a SourceBufferList instance and its corresponding GeckoMediaSourceBufferList reflector.
+    impl_gecko_media_struct_constructor!(
+        create_source_buffer_list,
+        SourceBufferListImpl,
+        SourceBufferList,
+        NEXT_SOURCE_BUFFER_LIST_ID
+    );
 
     /// Check to see whether the MediaSource is capable of creating SourceBuffer
     /// objects for the specified MIME type.
@@ -189,6 +204,8 @@ enum GeckoMediaMsg {
 static OUTSTANDING_HANDLES: AtomicUsize = ATOMIC_USIZE_INIT;
 static NEXT_PLAYER_ID: AtomicUsize = ATOMIC_USIZE_INIT;
 static NEXT_MEDIA_SOURCE_ID: AtomicUsize = ATOMIC_USIZE_INIT;
+static NEXT_SOURCE_BUFFER_ID: AtomicUsize = ATOMIC_USIZE_INIT;
+static NEXT_SOURCE_BUFFER_LIST_ID: AtomicUsize = ATOMIC_USIZE_INIT;
 static mut SENDER: *const Mutex<Option<Sender<GeckoMediaMsg>>> = 0 as *const _;
 static INITIALIZER: Once = sync::ONCE_INIT;
 
