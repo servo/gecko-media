@@ -7,13 +7,15 @@
 #![allow(non_snake_case)]
 
 #[allow(unused_extern_crates)]
-extern crate cubeb_pulse;
+extern crate cubeb_ffi;
 #[allow(unused_extern_crates)]
 extern crate encoding_c;
 extern crate libc;
 extern crate mime;
 #[allow(unused_extern_crates)]
 extern crate mp4parse_capi;
+#[allow(unused_extern_crates)]
+extern crate pulse_ffi;
 
 #[macro_use]
 mod macros;
