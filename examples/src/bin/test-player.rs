@@ -287,12 +287,14 @@ impl App {
             Some(image_key) => {
                 resources.update_image(
                     image_key,
-                    ImageDescriptor::new(
-                        plane.width as u32,
-                        plane.height as u32,
-                        ImageFormat::A8,
-                        true,
-                    ),
+                    ImageDescriptor{
+                        format: ImageFormat::A8,
+                        width: plane.width as u32,
+                        height: plane.height as u32,
+                        stride: Some(plane.stride as u32),
+                        offset: 0,
+                        is_opaque: true,
+                    },
                     External(ExternalImageData {
                         id: EXTERNAL_VIDEO_IMAGE_ID,
                         channel_index,
@@ -306,12 +308,14 @@ impl App {
                 let image_key = api.generate_image_key();
                 resources.add_image(
                     image_key,
-                    ImageDescriptor::new(
-                        plane.width as u32,
-                        plane.height as u32,
-                        ImageFormat::A8,
-                        true,
-                    ),
+                    ImageDescriptor{
+                        format: ImageFormat::A8,
+                        width: plane.width as u32,
+                        height: plane.height as u32,
+                        stride: Some(plane.stride as u32),
+                        offset: 0,
+                        is_opaque: true,
+                    },
                     External(ExternalImageData {
                         id: EXTERNAL_VIDEO_IMAGE_ID,
                         channel_index,
