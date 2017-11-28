@@ -3,9 +3,11 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 extern crate gecko_media;
+extern crate rand;
 
 use gecko_media::{GeckoMedia, Metadata, PlayerEventSink};
 use gecko_media::{PlanarYCbCrImage, Plane, TimeStamp};
+use rand::{thread_rng, Rng};
 use std::env;
 use std::ffi::CString;
 use std::fs::File;
@@ -34,6 +36,8 @@ enum PlayerEvent {
     AsyncEvent(CString),
     MetadataLoaded(Metadata),
     StartPlayback,
+    PausePlayback,
+    Seek(f64),
     BufferedRanges(Vec<Range<f64>>),
     SeekableRanges(Vec<Range<f64>>),
     UpdateCurrentImages(Vec<PlanarYCbCrImage>),
@@ -108,6 +112,7 @@ impl PlayerWrapper {
                 .create_blob_player(bytes, mime, sink)
                 .unwrap();
             player.set_volume(1.0);
+            let mut duration = 0.0;
             loop {
                 match receiver.recv().unwrap() {
                     PlayerEvent::Ended => {
@@ -126,6 +131,7 @@ impl PlayerWrapper {
                     }
                     PlayerEvent::MetadataLoaded(metadata) => {
                         println!("MetadataLoaded; duration: {}", metadata.duration);
+                        duration = metadata.duration;
                         if let Some(dimensions) = metadata.video_dimensions {
                             println!("Video dimensions: {:?}", dimensions);
                             video_dimensions_sender.send(dimensions).unwrap();
@@ -133,6 +139,9 @@ impl PlayerWrapper {
                     }
                     PlayerEvent::StartPlayback => {
                         player.play();
+                    }
+                    PlayerEvent::PausePlayback => {
+                        player.pause();
                     }
                     PlayerEvent::UpdateCurrentImages(images) => {
                         frame_sender.send(images).unwrap();
@@ -145,6 +154,9 @@ impl PlayerWrapper {
                     }
                     PlayerEvent::SeekableRanges(ranges) => {
                         println!("Seekable ranges: {:?}", ranges);
+                    }
+                    PlayerEvent::Seek(position) => {
+                        player.seek(position * duration);
                     }
                 };
             }
@@ -183,11 +195,17 @@ impl PlayerWrapper {
     pub fn play(&self) {
         self.sender.send(PlayerEvent::StartPlayback).unwrap();
     }
+    pub fn pause(&self) {
+        self.sender.send(PlayerEvent::PausePlayback).unwrap();
+    }
     pub fn dimensions_changed(&mut self) -> Option<(i32, i32)> {
         if let Ok(dimensions) = self.video_dimensions_receiver.try_recv() {
             return Some(dimensions);
         }
         None
+    }
+    pub fn seek(&self, position: f64) {
+        self.sender.send(PlayerEvent::Seek(position)).unwrap();
     }
 }
 
@@ -229,6 +247,7 @@ struct App {
     cr_channel_key: Option<ImageKey>,
     last_frame_id: u32,
     player_wrapper: PlayerWrapper,
+    playing: bool,
 }
 
 impl App {
@@ -244,6 +263,7 @@ impl App {
             cr_channel_key: None,
             last_frame_id: 0,
             player_wrapper: PlayerWrapper::new(bytes, mime, frame_sender),
+            playing: false,
         }
     }
     fn shutdown(&self) {
@@ -405,10 +425,29 @@ impl ui::Example for App {
 
     fn on_event(
         &mut self,
-        _event: glutin::Event,
+        event: glutin::Event,
         _api: &RenderApi,
         _document_id: DocumentId,
     ) -> bool {
+        match event {
+            glutin::Event::KeyboardInput(glutin::ElementState::Pressed,
+                                         _,
+                                         Some(glutin::VirtualKeyCode::S)) => {
+                let pos = thread_rng().next_f64();
+                self.player_wrapper.seek(pos);
+            }
+            glutin::Event::KeyboardInput(glutin::ElementState::Pressed,
+                                         _,
+                                         Some(glutin::VirtualKeyCode::Space)) => {
+                self.playing = !self.playing;
+                if self.playing {
+                    self.player_wrapper.play();
+                } else {
+                    self.player_wrapper.pause();
+                }
+            }
+            _ => {}
+        }
         true
     }
 
@@ -444,6 +483,7 @@ impl ui::Example for App {
         });
         // Now that the UI is showing we can render video frames.
         // So start playback.
+        self.playing = true;
         self.player_wrapper.play();
     }
 }

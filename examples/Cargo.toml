@@ -10,3 +10,4 @@ webrender = { git = "https://github.com/servo/webrender/" }
 gleam = "0.4.8"
 servo-glutin = "0.12"
 time = "0.1.17"
+rand = "0.3.14"
