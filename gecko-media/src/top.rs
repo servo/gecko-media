@@ -139,6 +139,7 @@ impl GeckoMedia {
         Player::from_network_resource(handle, id, resource, mime_type, sink)
     }
 
+    /// Creates a MediaSource instance and its corresponding GeckoMediaSource reflector.
     pub fn create_media_source(media_source_impl: Weak<MediaSourceImpl>) -> Result<MediaSource, ()> {
         let handle = GeckoMedia::get()?;
         let id = NEXT_MEDIA_SOURCE_ID.fetch_add(1, Ordering::SeqCst);
@@ -146,6 +147,22 @@ impl GeckoMedia {
             Ok(MediaSource::new(handle, id, media_source_impl))
         } else {
             panic!("MediaSourceImpl gone")
+        }
+    }
+
+    /// Check to see whether the MediaSource is capable of creating SourceBuffer
+    /// objects for the specified MIME type.
+    pub fn is_type_supported(&self, mime_type: &str) -> bool {
+        if let Ok(mime_type) = CString::new(mime_type.as_bytes()) {
+            let (sender, receiver) = mpsc::channel();
+            self.queue_task(move || unsafe {
+                sender
+                    .send(GeckoMedia_MediaSource_IsTypeSupported(mime_type.as_ptr()))
+                    .unwrap();
+            });
+            receiver.recv().unwrap()
+        } else {
+            false
         }
     }
 

@@ -256,10 +256,6 @@ mod tests {
                     gecko_media_source: GeckoMedia::create_media_source(weak_impl).unwrap(),
                 }
             }
-
-            pub fn is_type_supported(&self, mime_type: &str) -> bool {
-                self.gecko_media_source.is_type_supported(mime_type)
-            }
         }
         struct MediaSourceImpl {
             pub values: Rc<MediaSourceValues>,
@@ -275,23 +271,26 @@ mod tests {
             }
         }
 
-        let media_source_dom = MediaSourceDom::new();
-        assert_eq!(media_source_dom.is_type_supported("bogus/bogus"), false);
+        let _ =  MediaSourceDom::new();
+
+        let gecko_media = GeckoMedia::get().unwrap();
+
+        assert_eq!(gecko_media.is_type_supported("bogus/bogus"), false);
         assert_eq!(
-            media_source_dom.is_type_supported("audio/mp4; codecs=\"bogus\""),
+            gecko_media.is_type_supported("audio/mp4; codecs=\"bogus\""),
             false
         );
-        assert_eq!(media_source_dom.is_type_supported("video/mp4"), true);
-        assert_eq!(media_source_dom.is_type_supported("audio/mp4"), true);
-        assert_eq!(media_source_dom.is_type_supported("audio/webm"), false);
-        assert_eq!(media_source_dom.is_type_supported("audio/mp3"), false);
-        assert_eq!(media_source_dom.is_type_supported("audio/flac"), false);
-        assert_eq!(media_source_dom.is_type_supported("audio/ogg"), false);
+        assert_eq!(gecko_media.is_type_supported("video/mp4"), true);
+        assert_eq!(gecko_media.is_type_supported("audio/mp4"), true);
+        assert_eq!(gecko_media.is_type_supported("audio/webm"), false);
+        assert_eq!(gecko_media.is_type_supported("audio/mp3"), false);
+        assert_eq!(gecko_media.is_type_supported("audio/flac"), false);
+        assert_eq!(gecko_media.is_type_supported("audio/ogg"), false);
         assert_eq!(
-            media_source_dom.is_type_supported("audio/ogg; codecs=\"vorbis\""),
+            gecko_media.is_type_supported("audio/ogg; codecs=\"vorbis\""),
             false
         );
-        assert_eq!(media_source_dom.is_type_supported("audio/wav"), false);
+        assert_eq!(gecko_media.is_type_supported("audio/wav"), false);
     }
 
     #[test]
