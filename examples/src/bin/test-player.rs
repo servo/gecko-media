@@ -2,11 +2,18 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+extern crate futures;
 extern crate gecko_media;
+extern crate gleam;
+extern crate glutin;
+extern crate hyper;
 extern crate rand;
+extern crate time;
+extern crate tokio_core;
+extern crate webrender;
 
 use gecko_media::{GeckoMedia, Metadata, PlayerEventSink};
-use gecko_media::{PlanarYCbCrImage, Plane, TimeStamp};
+use gecko_media::{PlanarYCbCrImage, Plane, Player, TimeStamp};
 use rand::{thread_rng, Rng};
 use std::env;
 use std::ffi::CString;
@@ -17,17 +24,15 @@ use std::ops::Range;
 use std::path::Path;
 use std::sync::mpsc;
 use std::thread;
-
-extern crate gleam;
-extern crate glutin;
-extern crate time;
-extern crate webrender;
-
 use webrender::api::*;
 use webrender::api::ImageData::*;
 
 #[path = "../ui.rs"]
 mod ui;
+#[path = "../network_resource.rs"]
+mod network_resource;
+
+use network_resource::DownloadController;
 
 enum PlayerEvent {
     BreakOutOfEventLoop,
@@ -52,11 +57,10 @@ struct PlayerWrapper {
 }
 
 impl PlayerWrapper {
-    pub fn new(
-        bytes: Vec<u8>,
-        mime: &'static str,
-        frame_sender: mpsc::Sender<Vec<PlanarYCbCrImage>>,
-    ) -> PlayerWrapper {
+    pub fn new<F>(player_creator: F, frame_sender: mpsc::Sender<Vec<PlanarYCbCrImage>>) -> PlayerWrapper
+    where
+        F: FnOnce(Box<PlayerEventSink>) -> Player,
+    {
         let (sender, receiver) = mpsc::channel();
 
         struct Sink {
@@ -67,6 +71,7 @@ impl PlayerWrapper {
                 self.sender.send(PlayerEvent::Ended).unwrap();
             }
             fn decode_error(&self) {
+                println!("Decode error!");
                 self.sender.send(PlayerEvent::Error).unwrap();
             }
             fn async_event(&self, name: &str) {
@@ -105,12 +110,11 @@ impl PlayerWrapper {
         let (ended_sender, ended_receiver) = mpsc::channel();
         let (video_dimensions_sender, video_dimensions_receiver) = mpsc::channel();
         let wrapper_sender = sender.clone();
+        let sink = Box::new(Sink {
+            sender,
+        });
+        let player = player_creator(sink);
         thread::spawn(move || {
-            let sink = Box::new(Sink { sender });
-            let player = GeckoMedia::get()
-                .unwrap()
-                .create_blob_player(bytes, mime, sink)
-                .unwrap();
             player.set_volume(1.0);
             let mut duration = 0.0;
             loop {
@@ -121,14 +125,14 @@ impl PlayerWrapper {
                         // Send empty batch of frames to awaken the event loop.
                         frame_sender.send(vec![]).unwrap();
                         break;
-                    }
+                    },
                     PlayerEvent::Error => {
                         println!("Error");
                         break;
-                    }
+                    },
                     PlayerEvent::AsyncEvent(name) => {
                         println!("Event received: {:?}", name);
-                    }
+                    },
                     PlayerEvent::MetadataLoaded(metadata) => {
                         println!("MetadataLoaded; duration: {}", metadata.duration);
                         duration = metadata.duration;
@@ -136,28 +140,28 @@ impl PlayerWrapper {
                             println!("Video dimensions: {:?}", dimensions);
                             video_dimensions_sender.send(dimensions).unwrap();
                         }
-                    }
+                    },
                     PlayerEvent::StartPlayback => {
                         player.play();
-                    }
+                    },
                     PlayerEvent::PausePlayback => {
                         player.pause();
-                    }
+                    },
                     PlayerEvent::UpdateCurrentImages(images) => {
                         frame_sender.send(images).unwrap();
-                    }
+                    },
                     PlayerEvent::BreakOutOfEventLoop => {
                         break;
-                    }
+                    },
                     PlayerEvent::BufferedRanges(ranges) => {
                         println!("Buffered ranges: {:?}", ranges);
-                    }
+                    },
                     PlayerEvent::SeekableRanges(ranges) => {
                         println!("Seekable ranges: {:?}", ranges);
-                    }
+                    },
                     PlayerEvent::Seek(position) => {
                         player.seek(position * duration);
-                    }
+                    },
                 };
             }
             // This drop ensures that the Player object is destroyed before
@@ -251,7 +255,10 @@ struct App {
 }
 
 impl App {
-    fn new(bytes: Vec<u8>, mime: &'static str) -> App {
+    fn new<F>(player_creator: F) -> App
+    where
+        F: FnOnce(Box<PlayerEventSink>) -> Player,
+    {
         // Channel for frames to pass between Gecko and player.
         let (frame_sender, frame_receiver) = mpsc::channel();
         App {
@@ -262,7 +269,7 @@ impl App {
             cb_channel_key: None,
             cr_channel_key: None,
             last_frame_id: 0,
-            player_wrapper: PlayerWrapper::new(bytes, mime, frame_sender),
+            player_wrapper: PlayerWrapper::new(player_creator, frame_sender),
             playing: false,
         }
     }
@@ -294,7 +301,7 @@ impl App {
                     None,
                 );
                 Some(image_key)
-            }
+            },
             None => {
                 let image_key = api.generate_image_key();
                 resources.add_image(
@@ -313,7 +320,7 @@ impl App {
                     None,
                 );
                 Some(image_key)
-            }
+            },
         }
     }
 }
@@ -375,39 +382,20 @@ impl ui::Example for App {
             // Assume dimensions of first frame.
             let frame = &self.frame_queue[0];
 
-            self.y_channel_key = App::create_or_update_planar_image(
-                api,
-                resources,
-                self.y_channel_key,
-                frame.y_plane(),
-                0,
-            );
-            self.cb_channel_key = App::create_or_update_planar_image(
-                api,
-                resources,
-                self.cb_channel_key,
-                frame.cb_plane(),
-                1,
-            );
-            self.cr_channel_key = App::create_or_update_planar_image(
-                api,
-                resources,
-                self.cr_channel_key,
-                frame.cr_plane(),
-                2,
-            );
+            self.y_channel_key =
+                App::create_or_update_planar_image(api, resources, self.y_channel_key, frame.y_plane(), 0);
+            self.cb_channel_key =
+                App::create_or_update_planar_image(api, resources, self.cb_channel_key, frame.cb_plane(), 1);
+            self.cr_channel_key =
+                App::create_or_update_planar_image(api, resources, self.cr_channel_key, frame.cr_plane(), 2);
 
             let aspect_ratio = frame.picture.width as f32 / frame.picture.height as f32;
             let render_size = LayoutSize::new(
                 layout_size.width as f32,
                 layout_size.width as f32 / aspect_ratio,
             );
-            let render_location =
-                LayoutPoint::new(0.0, (layout_size.height - render_size.height) / 2.0);
-            let info = LayoutPrimitiveInfo::with_clip_rect(
-                LayoutRect::new(render_location, render_size),
-                bounds,
-            );
+            let render_location = LayoutPoint::new(0.0, (layout_size.height - render_size.height) / 2.0);
+            let info = LayoutPrimitiveInfo::with_clip_rect(LayoutRect::new(render_location, render_size), bounds);
             builder.push_yuv_image(
                 &info,
                 YuvData::PlanarYCbCr(
@@ -423,30 +411,21 @@ impl ui::Example for App {
         builder.pop_stacking_context();
     }
 
-    fn on_event(
-        &mut self,
-        event: glutin::Event,
-        _api: &RenderApi,
-        _document_id: DocumentId,
-    ) -> bool {
+    fn on_event(&mut self, event: glutin::Event, _api: &RenderApi, _document_id: DocumentId) -> bool {
         match event {
-            glutin::Event::KeyboardInput(glutin::ElementState::Pressed,
-                                         _,
-                                         Some(glutin::VirtualKeyCode::S)) => {
+            glutin::Event::KeyboardInput(glutin::ElementState::Pressed, _, Some(glutin::VirtualKeyCode::S)) => {
                 let pos = thread_rng().next_f64();
                 self.player_wrapper.seek(pos);
-            }
-            glutin::Event::KeyboardInput(glutin::ElementState::Pressed,
-                                         _,
-                                         Some(glutin::VirtualKeyCode::Space)) => {
+            },
+            glutin::Event::KeyboardInput(glutin::ElementState::Pressed, _, Some(glutin::VirtualKeyCode::Space)) => {
                 self.playing = !self.playing;
                 if self.playing {
                     self.player_wrapper.play();
                 } else {
                     self.player_wrapper.pause();
                 }
-            }
-            _ => {}
+            },
+            _ => {},
         }
         true
     }
@@ -475,10 +454,10 @@ impl ui::Example for App {
                         break;
                     }
                     window_proxy.wakeup_event_loop();
-                }
+                },
                 Err(_) => {
                     break;
-                }
+                },
             }
         });
         // Now that the UI is showing we can render video frames.
@@ -493,7 +472,7 @@ fn main() {
     let filename: &str = if args.len() == 2 {
         args[1].as_ref()
     } else {
-        panic!("Usage: test-player file_path")
+        panic!("Usage: test-player file_path|URL")
     };
 
     let path = Path::new(filename);
@@ -512,12 +491,25 @@ fn main() {
                 Video files supported: mp4."
     );
 
-    let mut file = File::open(filename).unwrap();
-    let mut bytes = vec![];
-    file.read_to_end(&mut bytes).unwrap();
-
-    let mut app = App::new(bytes, mime);
-
+    let mut app = if filename.starts_with("http://") {
+        App::new(|sink: Box<PlayerEventSink>| {
+            let downloader = Box::new(DownloadController::new(filename));
+            GeckoMedia::get()
+                .unwrap()
+                .create_network_player(downloader, mime, sink)
+                .unwrap()
+        })
+    } else {
+        App::new(|sink: Box<PlayerEventSink>| {
+            let mut file = File::open(filename).unwrap();
+            let mut bytes = vec![];
+            file.read_to_end(&mut bytes).unwrap();
+            GeckoMedia::get()
+                .unwrap()
+                .create_blob_player(bytes, mime, sink)
+                .unwrap()
+        })
+    };
     ui::main_wrapper(&mut app, None);
     app.shutdown();
     GeckoMedia::shutdown().unwrap();
