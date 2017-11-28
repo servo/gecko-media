@@ -3,3 +3,4 @@
 Cargo.lock
 .vscode/
 glue_diffs/
+*~
