@@ -30,7 +30,7 @@ pub mod bindings {
 #[doc(inline)]
 pub use bindings::CanPlayTypeResult as CanPlayType;
 pub use mse::mediasource::{MediaSource as GeckoMediaSource, MediaSourceImpl as GeckoMediaSourceImpl};
-pub use player::{Metadata, PlanarYCbCrImage, Plane, Player, PlayerEventSink, Region};
+pub use player::{Metadata, NetworkResource, PlanarYCbCrImage, Plane, Player, PlayerEventSink, Region};
 pub use top::GeckoMedia;
 pub use timestamp::TimeStamp;
 

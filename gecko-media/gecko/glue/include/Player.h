@@ -84,12 +84,34 @@ struct PlayerCallbackObject
   void (*mFree)(void*);
 };
 
+struct GeckoMediaByteIntervalSet {
+  void (*mAdd)(void* aData, uint64_t aStart, uint64_t aEnd);
+  void* mData;
+};
+
+struct NetworkResourceObject {
+  bool (*mReadAt)(void* aData, uint64_t aOffset, uint8_t* aBytes, uint32_t aLength, uint32_t* aOutBytesRead);
+  void (*mPin)(void* aData);
+  void (*mUnPin)(void* aData);
+  int64_t (*mLength)(void* aData);
+  bool (*mReadFromCache)(void* aData, uint64_t aOffset, uint8_t* aBytes, uint32_t aLength);
+  void (*mCachedRanges)(void* aData, GeckoMediaByteIntervalSet*);
+  void (*mFree)(void*);
+  void* mData;
+};
+
 extern "C" {
 void
 GeckoMedia_Player_CreateBlobPlayer(size_t aId,
                                    RustVecU8Object aMediaData,
                                    const char* aMimeType,
                                    PlayerCallbackObject aCallback);
+
+void
+GeckoMedia_Player_CreateNetworkPlayer(size_t aId,
+                                      NetworkResourceObject aMediaData,
+                                      const char* aMimeType,
+                                      PlayerCallbackObject aCallback);
 
 void
 GeckoMedia_Player_Play(size_t aId);

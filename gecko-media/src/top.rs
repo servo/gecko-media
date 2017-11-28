@@ -5,7 +5,7 @@
 use CanPlayType;
 use bindings::*;
 use mse::mediasource::{MediaSource, MediaSourceImpl};
-use player::{Player, PlayerEventSink};
+use player::{NetworkResource, Player, PlayerEventSink};
 use std::ffi::CString;
 use std::ops::Drop;
 use std::os::raw::c_void;
@@ -124,6 +124,18 @@ impl GeckoMedia {
         let handle = GeckoMedia::get()?;
         let id = NEXT_PLAYER_ID.fetch_add(1, Ordering::SeqCst);
         Player::new(handle, id, media_data, mime_type, sink)
+    }
+
+    /// Creates a Player to play from a network resource.
+    pub fn create_network_player(
+        &self,
+        resource: Box<NetworkResource>,
+        mime_type: &str,
+        sink: Box<PlayerEventSink>,
+    ) -> Result<Player, ()> {
+        let handle = GeckoMedia::get()?;
+        let id = NEXT_PLAYER_ID.fetch_add(1, Ordering::SeqCst);
+        Player::from_network_resource(handle, id, resource, mime_type, sink)
     }
 
     pub fn create_media_source(&self, media_source_impl: Box<MediaSourceImpl>) -> Result<MediaSource, ()> {

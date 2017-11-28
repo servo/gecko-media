@@ -17,13 +17,17 @@ struct Notifier {
 
 impl Notifier {
     fn new(window_proxy: glutin::WindowProxy) -> Notifier {
-        Notifier { window_proxy }
+        Notifier {
+            window_proxy,
+        }
     }
 }
 
 impl RenderNotifier for Notifier {
     fn clone(&self) -> Box<RenderNotifier> {
-        Box::new(Notifier { window_proxy: self.window_proxy.clone() })
+        Box::new(Notifier {
+            window_proxy: self.window_proxy.clone(),
+        })
     }
 
     fn wake_up(&self) {
@@ -49,10 +53,7 @@ pub trait Example {
     fn get_external_image_handler(&mut self) -> Option<Box<webrender::ExternalImageHandler>> {
         None
     }
-    fn get_output_image_handler(
-        &mut self,
-        _gl: &gl::Gl,
-    ) -> Option<Box<webrender::OutputImageHandler>> {
+    fn get_output_image_handler(&mut self, _gl: &gl::Gl) -> Option<Box<webrender::OutputImageHandler>> {
         None
     }
     fn init(&mut self, _window_proxy: glutin::WindowProxy) {}
@@ -87,12 +88,8 @@ pub fn main_wrapper(example: &mut Example, options: Option<webrender::RendererOp
     }
 
     let gl = match gl::GlType::default() {
-        gl::GlType::Gl => unsafe {
-            gl::GlFns::load_with(|symbol| window.get_proc_address(symbol) as *const _)
-        },
-        gl::GlType::Gles => unsafe {
-            gl::GlesFns::load_with(|symbol| window.get_proc_address(symbol) as *const _)
-        },
+        gl::GlType::Gl => unsafe { gl::GlFns::load_with(|symbol| window.get_proc_address(symbol) as *const _) },
+        gl::GlType::Gles => unsafe { gl::GlesFns::load_with(|symbol| window.get_proc_address(symbol) as *const _) },
     };
 
     println!("OpenGL version {}", gl.get_string(gl::VERSION));
@@ -154,9 +151,7 @@ pub fn main_wrapper(example: &mut Example, options: Option<webrender::RendererOp
         for event in events {
             match event {
                 glutin::Event::Closed |
-                glutin::Event::KeyboardInput(_, _, Some(glutin::VirtualKeyCode::Escape)) => {
-                    break 'outer
-                }
+                glutin::Event::KeyboardInput(_, _, Some(glutin::VirtualKeyCode::Escape)) => break 'outer,
                 glutin::Event::Resized(width, height) => {
                     resized = true;
                     let size = DeviceUintSize::new(width, height);
@@ -166,7 +161,7 @@ pub fn main_wrapper(example: &mut Example, options: Option<webrender::RendererOp
                         DeviceUintRect::new(DeviceUintPoint::new(0, 0), size),
                         window.hidpi_factor(),
                     );
-                }
+                },
                 _ => if example.on_event(event, &api, document_id) {},
             }
         }
