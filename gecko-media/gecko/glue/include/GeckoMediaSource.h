@@ -12,6 +12,9 @@
 
 struct GeckoMediaSource;
 
+namespace mozilla {
+namespace dom {
+
 enum class MediaSourceReadyState
 {
   Closed = 0,
@@ -21,11 +24,14 @@ enum class MediaSourceReadyState
   EndGuard_
 };
 
+} // namespace dom
+} // namespace mozilla
+
 struct GeckoMediaSourceImpl
 {
   void* mContext;
   void (*mFree)(void*);
-  MediaSourceReadyState (*mGetReadyState)(void*);
+  mozilla::dom::MediaSourceReadyState (*mGetReadyState)(void*);
 };
 
 extern "C" {

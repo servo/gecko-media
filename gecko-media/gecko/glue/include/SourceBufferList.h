@@ -8,6 +8,8 @@
 #define mozilla_dom_SourceBufferList_h_
 
 #include "GeckoMediaSourceBufferList.h"
+#include "nsISupportsImpl.h"
+#include "SourceBuffer.h"
 
 namespace mozilla
 {
@@ -17,10 +19,21 @@ namespace dom
 class SourceBufferList final
 {
 public:
+  NS_INLINE_DECL_REFCOUNTING(SourceBufferList)
+
   SourceBufferList(GeckoMediaSourceBufferListImpl aImpl);
-  ~SourceBufferList();
+
+  SourceBuffer* IndexedGetter(uint32_t aIndex, bool& aFound) {
+    /* TODO get from mImpl */
+    aFound = false;
+    return new SourceBuffer(GeckoMediaSourceBufferImpl());
+  }
+
+  int32_t Length() { return 0; /* TODO get from mImpl */ }
 
 private:
+  ~SourceBufferList();
+
   GeckoMediaSourceBufferListImpl mImpl;
 };
 
