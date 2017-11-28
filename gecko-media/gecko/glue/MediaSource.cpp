@@ -64,10 +64,19 @@ MediaSource::MediaSource(GeckoMediaSourceImpl aImpl)
 
 MediaSource::~MediaSource()
 {
-  if (mImpl.mContext && mImpl.mFree)
-  {
-    (*mImpl.mFree)(mImpl.mContext);
+  if (!NS_WARN_IF(mImpl.mContext || mImpl.mFree)) {
+    return;
   }
+  (*mImpl.mFree)(mImpl.mContext);
+}
+
+double
+MediaSource::Duration()
+{
+  if (!NS_WARN_IF(!mImpl.mContext || !mImpl.mGetDuration)) {
+    return 0;
+  }
+  return (*mImpl.mGetDuration)(mImpl.mContext);
 }
 
 MediaSourceReadyState

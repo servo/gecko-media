@@ -18,6 +18,8 @@ impl MediaSource {}
 pub trait MediaSourceImpl {
     /// MediaSource ready state getter.
     fn get_ready_state(&self) -> i32;
+    /// MediaSource duration getter.
+    fn get_duration(&self) -> f64;
 }
 
 fn to_ffi_callbacks(callbacks: Rc<MediaSourceImpl>) -> GeckoMediaSourceImpl {
@@ -30,6 +32,10 @@ fn to_ffi_callbacks(callbacks: Rc<MediaSourceImpl>) -> GeckoMediaSourceImpl {
         let wrapper = &*(ptr as *mut Wrapper);
         wrapper.callbacks.get_ready_state()
     }
+    unsafe extern "C" fn get_duration(ptr: *mut c_void) -> f64 {
+        let wrapper = &*(ptr as *mut Wrapper);
+        wrapper.callbacks.get_duration()
+    }
 
     GeckoMediaSourceImpl {
         mContext: Box::into_raw(Box::new(Wrapper {
@@ -37,5 +43,6 @@ fn to_ffi_callbacks(callbacks: Rc<MediaSourceImpl>) -> GeckoMediaSourceImpl {
         })) as *mut c_void,
         mFree: Some(free),
         mGetReadyState: Some(get_ready_state),
+        mGetDuration: Some(get_duration),
     }
 }

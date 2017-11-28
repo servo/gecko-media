@@ -28,11 +28,7 @@ public:
     return list;
   }
 
-  double Duration()
-  {
-    // TODO get from mImpl
-    return 0;
-  }
+  double Duration();
 
   MediaSourceReadyState ReadyState();
 

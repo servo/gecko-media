@@ -32,6 +32,7 @@ struct GeckoMediaSourceImpl
   void* mContext;
   void (*mFree)(void*);
   mozilla::dom::MediaSourceReadyState (*mGetReadyState)(void*);
+  double (*mGetDuration)(void*);
 };
 
 extern "C" {
