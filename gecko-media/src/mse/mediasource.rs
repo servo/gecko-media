@@ -2,9 +2,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use bindings::{GeckoMedia_MediaSource_IsTypeSupported, GeckoMediaSourceImpl};
-use std::ffi::CString;
-use std::sync::mpsc;
+use bindings::GeckoMediaSourceImpl;
+use std::rc::Rc;
 
 def_gecko_media_struct!(MediaSource);
 
@@ -12,21 +11,7 @@ impl_new_gecko_media_struct!(MediaSource, MediaSourceImpl, GeckoMedia_MediaSourc
 
 impl_drop_gecko_media_struct!(MediaSource, GeckoMedia_MediaSource_Shutdown);
 
-impl MediaSource {
-    pub fn is_type_supported(&self, mime_type: &str) -> bool {
-        if let Ok(mime_type) = CString::new(mime_type.as_bytes()) {
-            let (sender, receiver) = mpsc::channel();
-            self.gecko_media.queue_task(move || unsafe {
-                sender
-                    .send(GeckoMedia_MediaSource_IsTypeSupported(mime_type.as_ptr()))
-                    .unwrap();
-            });
-            receiver.recv().unwrap()
-        } else {
-            false
-        }
-    }
-}
+impl MediaSource {}
 
 /// Users of MediaSource pass in an implementation of this trait when creating
 /// MediaSource objects.
@@ -35,11 +20,11 @@ pub trait MediaSourceImpl {
     fn get_ready_state(&self) -> i32;
 }
 
-fn to_ffi_callbacks(callbacks: Box<MediaSourceImpl>) -> GeckoMediaSourceImpl {
+fn to_ffi_callbacks(callbacks: Rc<MediaSourceImpl>) -> GeckoMediaSourceImpl {
     // Can't cast from *c_void to a Trait, so wrap in a concrete type
     // when we pass into C++ code.
 
-    def_gecko_callbacks_ffi_wrapper!(MediaSourceImpl);
+    def_gecko_callbacks_ffi_wrapper!(Rc<MediaSourceImpl>);
 
     unsafe extern "C" fn get_ready_state(ptr: *mut c_void) -> i32 {
         let wrapper = &*(ptr as *mut Wrapper);

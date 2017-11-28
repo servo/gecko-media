@@ -363,7 +363,7 @@ fn to_ffi_callback(callbacks: Box<PlayerEventSink>) -> PlayerCallbackObject {
     // Can't cast from *c_void to a Trait, so wrap in a concrete type
     // when we pass into C++ code.
 
-    def_gecko_callbacks_ffi_wrapper!(PlayerEventSink);
+    def_gecko_callbacks_ffi_wrapper!(Box<PlayerEventSink>);
 
     unsafe extern "C" fn decode_error(ptr: *mut c_void) {
         let wrapper = &*(ptr as *mut Wrapper);
@@ -448,7 +448,8 @@ fn to_ffi_callback(callbacks: Box<PlayerEventSink>) -> PlayerCallbackObject {
 fn to_ffi_resource(callbacks: Box<NetworkResource>) -> NetworkResourceObject {
     // Can't cast from *c_void to a Trait, so wrap in a concrete type
     // when we pass into C++ code.
-    def_gecko_callbacks_ffi_wrapper!(NetworkResource);
+
+    def_gecko_callbacks_ffi_wrapper!(Box<NetworkResource>);
 
     unsafe extern "C" fn read_at(
         ptr: *mut c_void,

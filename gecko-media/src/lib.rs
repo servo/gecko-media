@@ -224,10 +224,7 @@ mod tests {
     }
 
     fn test_media_source() {
-        use std::cell::{Cell, RefCell};
-        use std::rc::{Rc, Weak};
-
-        let gecko_media = GeckoMedia::get().unwrap();
+        use std::rc::Rc;
         #[derive(Clone, Copy)]
         #[allow(dead_code)]
         enum MediaSourceReadyState {
@@ -236,47 +233,36 @@ mod tests {
             Ended,
             Unknown,
         }
-        struct MediaSourceDummyDomObject {
-            pub ready_state: Cell<MediaSourceReadyState>,
-            gecko_media_source: RefCell<Option<Weak<GeckoMediaSource>>>,
+        struct MediaSourceValues {
+            pub ready_state: MediaSourceReadyState,
         }
-        impl MediaSourceDummyDomObject {
+        struct MediaSourceDom {
+            pub values: Rc<MediaSourceValues>,
+            pub media_source_impl: Rc<MediaSourceImpl>,
+            pub gecko_media_source: GeckoMediaSource,
+        }
+        impl MediaSourceDom {
             pub fn new() -> Self {
-                MediaSourceDummyDomObject {
-                    ready_state: Cell::new(MediaSourceReadyState::Closed),
-                    gecko_media_source: RefCell::new(None),
-                }
-            }
-
-            pub fn set_gecko_media_source(&self, gecko_media_source: Weak<GeckoMediaSource>) {
-                *self.gecko_media_source.borrow_mut() = Some(gecko_media_source);
-            }
-
-            pub fn is_type_supported(&self, mime_type: &str) -> bool {
-                if let Some(ref gecko_media_source) = *self.gecko_media_source.borrow() {
-                    if let Some(gecko_media_source) = gecko_media_source.upgrade() {
-                        gecko_media_source.is_type_supported(mime_type)
-                    } else {
-                        panic!("GeckoMediaSource gone");
-                    }
-                } else {
-                    panic!("GeckoMediaSource not set");
+                let values = Rc::new(MediaSourceValues {
+                    ready_state: MediaSourceReadyState::Closed,
+                });
+                let media_source_impl = Rc::new(MediaSourceImpl {
+                    values: values.clone(),
+                });
+                let weak_impl = Rc::downgrade(&media_source_impl);
+                Self {
+                    values,
+                    media_source_impl,
+                    gecko_media_source: GeckoMedia::create_media_source(weak_impl).unwrap(),
                 }
             }
         }
         struct MediaSourceImpl {
-            dom_object: Rc<MediaSourceDummyDomObject>,
-        }
-        impl MediaSourceImpl {
-            pub fn new(dom_object: Rc<MediaSourceDummyDomObject>) -> Self {
-                MediaSourceImpl {
-                    dom_object,
-                }
-            }
+            pub values: Rc<MediaSourceValues>,
         }
         impl GeckoMediaSourceImpl for MediaSourceImpl {
             fn get_ready_state(&self) -> i32 {
-                match self.dom_object.ready_state.get() {
+                match self.values.ready_state {
                     MediaSourceReadyState::Closed => 0,
                     MediaSourceReadyState::Open => 1,
                     MediaSourceReadyState::Ended => 2,
@@ -284,26 +270,27 @@ mod tests {
                 }
             }
         }
-        let media_source_dom = Rc::new(MediaSourceDummyDomObject::new());
-        let media_source_impl = Box::new(MediaSourceImpl::new(media_source_dom.clone()));
-        let gecko_media_source = Rc::new(gecko_media.create_media_source(media_source_impl).unwrap());
-        media_source_dom.set_gecko_media_source(Rc::downgrade(&gecko_media_source));
-        assert_eq!(media_source_dom.is_type_supported("bogus/bogus"), false);
+
+        let _ =  MediaSourceDom::new();
+
+        let gecko_media = GeckoMedia::get().unwrap();
+
+        assert_eq!(gecko_media.is_type_supported("bogus/bogus"), false);
         assert_eq!(
-            media_source_dom.is_type_supported("audio/mp4; codecs=\"bogus\""),
+            gecko_media.is_type_supported("audio/mp4; codecs=\"bogus\""),
             false
         );
-        assert_eq!(media_source_dom.is_type_supported("video/mp4"), true);
-        assert_eq!(media_source_dom.is_type_supported("audio/mp4"), true);
-        assert_eq!(media_source_dom.is_type_supported("audio/webm"), false);
-        assert_eq!(media_source_dom.is_type_supported("audio/mp3"), false);
-        assert_eq!(media_source_dom.is_type_supported("audio/flac"), false);
-        assert_eq!(media_source_dom.is_type_supported("audio/ogg"), false);
+        assert_eq!(gecko_media.is_type_supported("video/mp4"), true);
+        assert_eq!(gecko_media.is_type_supported("audio/mp4"), true);
+        assert_eq!(gecko_media.is_type_supported("audio/webm"), false);
+        assert_eq!(gecko_media.is_type_supported("audio/mp3"), false);
+        assert_eq!(gecko_media.is_type_supported("audio/flac"), false);
+        assert_eq!(gecko_media.is_type_supported("audio/ogg"), false);
         assert_eq!(
-            media_source_dom.is_type_supported("audio/ogg; codecs=\"vorbis\""),
+            gecko_media.is_type_supported("audio/ogg; codecs=\"vorbis\""),
             false
         );
-        assert_eq!(media_source_dom.is_type_supported("audio/wav"), false);
+        assert_eq!(gecko_media.is_type_supported("audio/wav"), false);
     }
 
     #[test]
