@@ -28,14 +28,8 @@ fn to_ffi_callbacks(callbacks: Rc<MediaSourceImpl>) -> GeckoMediaSourceImpl {
 
     def_gecko_callbacks_ffi_wrapper!(Rc<MediaSourceImpl>);
 
-    unsafe extern "C" fn get_ready_state(ptr: *mut c_void) -> i32 {
-        let wrapper = &*(ptr as *mut Wrapper);
-        wrapper.callbacks.get_ready_state()
-    }
-    unsafe extern "C" fn get_duration(ptr: *mut c_void) -> f64 {
-        let wrapper = &*(ptr as *mut Wrapper);
-        wrapper.callbacks.get_duration()
-    }
+    impl_simple_ffi_callback_wrapper!(get_ready_state, i32);
+    impl_simple_ffi_callback_wrapper!(get_duration, f64);
 
     GeckoMediaSourceImpl {
         mContext: Box::into_raw(Box::new(Wrapper {
