@@ -710,18 +710,13 @@ CopyPlane(uint8_t *aDst, const uint8_t *aSrc,
     // Fast path: planar input.
     memcpy(aDst, aSrc, aSize.height * aStride);
   } else {
-    int32_t height = aSize.height;
-    int32_t width = aSize.width;
-    for (int y = 0; y < height; ++y) {
-      const uint8_t *src = aSrc;
-      uint8_t *dst = aDst;
-      // Slow path
-      for (int x = 0; x < width; ++x) {
-        *dst++ = *src++;
-        src += aSkip;
+    for (int i = 0; i < aSize.height; i++) {
+      const uint8_t* rowSrc = aSrc + aStride * i;
+      for (int j = 0; j < aSize.width; j++) {
+        *aDst = *rowSrc;
+        aDst++;
+        rowSrc += aSkip + 1;
       }
-      aSrc += aStride;
-      aDst += aStride;
     }
   }
 }
