@@ -37,3 +37,8 @@
 #define MacIOSurface GeckoMedia_MacIOSurface
 #define MacIOSurfaceLib GeckoMedia_MacIOSurfaceLib
 #define GetContextType GeckoMedia_GetContextType
+
+#define mozPoisonValueInit GeckoMedia_mozPoisonValueInit
+#define gMozillaPoisonSize GeckoMedia_gMozillaPoisonSize
+#define gMozillaPoisonBase GeckoMedia_gMozillaPoisonBase
+#define gMozillaPoisonValue GeckoMedia_gMozillaPoisonValue
