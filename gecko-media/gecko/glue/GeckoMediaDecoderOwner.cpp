@@ -71,8 +71,8 @@ GeckoMediaDecoderOwner::MetadataLoaded(const MediaInfo* aInfo,
   if (mCallback.mContext && mCallback.mMetadataLoaded) {
     GeckoMediaMetadata metadata = { 0, 0, 0 };
     if (aInfo->HasVideo()) {
-      metadata.mVideoWidth = aInfo->mVideo.ImageRect().Width();
-      metadata.mVideoHeight = aInfo->mVideo.ImageRect().Height();
+      metadata.mVideoWidth = aInfo->mVideo.mDisplay.width;
+      metadata.mVideoHeight = aInfo->mVideo.mDisplay.height;
     }
     metadata.mDuration = mDecoder->GetDuration();
     (*mCallback.mMetadataLoaded)(mCallback.mContext, metadata);
