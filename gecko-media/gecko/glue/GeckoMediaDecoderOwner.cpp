@@ -71,8 +71,8 @@ GeckoMediaDecoderOwner::MetadataLoaded(const MediaInfo* aInfo,
   if (mCallback.mContext && mCallback.mMetadataLoaded) {
     GeckoMediaMetadata metadata = { 0, 0, 0 };
     if (aInfo->HasVideo()) {
-      metadata.mVideoWidth = aInfo->mVideo.ImageRect().Width();
-      metadata.mVideoHeight = aInfo->mVideo.ImageRect().Height();
+      metadata.mVideoWidth = aInfo->mVideo.mDisplay.width;
+      metadata.mVideoHeight = aInfo->mVideo.mDisplay.height;
     }
     metadata.mDuration = mDecoder->GetDuration();
     (*mCallback.mMetadataLoaded)(mCallback.mContext, metadata);
@@ -293,6 +293,14 @@ void
 GeckoMediaDecoderOwner::Shutdown()
 {
   if (mVideoFrameContainer) {
+    // The ImageContainer keeps a list of the images that it sends out to Rust,
+    // so that if we shutdown, we can deallocate and neuter the images
+    // proactively. If we don't do this, we can end up with crashes if Rust
+    // code on another thread tries to use images after we've shutdown.
+    auto imageContainer = mVideoFrameContainer->GetImageContainer();
+    if (imageContainer) {
+      imageContainer->DeallocateExportedImages();
+    }
     mVideoFrameContainer->ForgetElement();
     mVideoFrameContainer = nullptr;
   }

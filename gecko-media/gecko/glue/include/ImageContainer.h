@@ -622,6 +622,9 @@ public:
 
   // void DropImageClient();
 
+  void DeallocateExportedImages();
+  void RecordImageDropped(size_t aFrameID);
+
 private:
   typedef mozilla::RecursiveMutex RecursiveMutex;
 
@@ -694,7 +697,10 @@ private:
 
   static mozilla::Atomic<uint32_t> sGenerationCounter;
 
+  void RecordImageExported(size_t aFrameID);
+
   RefPtr<GeckoMediaDecoderOwner> mOwner;
+  nsTArray<size_t> mExportedImages;
 };
 
 class AutoLockImage
