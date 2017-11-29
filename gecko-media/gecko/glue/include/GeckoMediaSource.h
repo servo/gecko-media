@@ -47,6 +47,9 @@ GeckoMedia_MediaSource_IsTypeSupported(const char* aMimeType);
 
 void
 GeckoMedia_MediaSource_DurationChange(size_t aId, const double aDuration);
+
+void
+GeckoMedia_MediaSource_DecoderEnded(size_t aId, const bool aEnded);
 }
 
 #endif // GeckoMediaSource_h

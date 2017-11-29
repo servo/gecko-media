@@ -2,7 +2,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use bindings::{GeckoMediaSourceImpl, GeckoMedia_MediaSource_DurationChange};
+use bindings::GeckoMediaSourceImpl;
+use bindings::{GeckoMedia_MediaSource_DecoderEnded, GeckoMedia_MediaSource_DurationChange};
 use std::rc::Rc;
 
 def_gecko_media_struct!(MediaSource);
@@ -16,6 +17,13 @@ impl MediaSource {
         let id = self.id;
         self.gecko_media.queue_task(move || unsafe {
             GeckoMedia_MediaSource_DurationChange(id, duration);
+        });
+    }
+
+    pub fn decoder_ended(&self, ended: bool) {
+        let id = self.id;
+        self.gecko_media.queue_task(move || unsafe {
+            GeckoMedia_MediaSource_DecoderEnded(id, ended);
         });
     }
 }

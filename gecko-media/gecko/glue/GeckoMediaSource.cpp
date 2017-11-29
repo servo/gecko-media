@@ -40,3 +40,11 @@ GeckoMedia_MediaSource_DurationChange(size_t aId, const double aDuration)
 
   reflector->mMediaSource->DurationChange(aDuration);
 }
+
+void
+GeckoMedia_MediaSource_DecoderEnded(size_t aId, const bool aEnded)
+{
+  IMPL_GECKO_MEDIA_REFLECTOR_GET(GeckoMediaSource)
+
+  reflector->mMediaSource->DecoderEnded(aEnded);
+}

@@ -46,6 +46,8 @@ public:
                                media::TimeUnit::Zero());
   }
 
+  void DecoderEnded(const bool aEnded);
+
 private:
   GeckoMediaSourceImpl mImpl;
 
