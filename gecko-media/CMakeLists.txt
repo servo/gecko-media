@@ -375,6 +375,7 @@ target_include_directories(gecko_core PRIVATE
     gecko/include/mozilla/media/libvorbis/include
     gecko/include/mozilla/media/libogg/include
     gecko/include/mozilla/media/libtheora/include
+    gecko/include/mozilla/media/libtremor/include
 )
 
 target_compile_definitions(gecko_core PRIVATE
@@ -681,42 +682,77 @@ target_include_directories(opus PRIVATE
 )
 
 
+############
+# libtremor
+############
 
+if (ANDROID)
+  set(tremor_srcs
+    gecko/src/media/libtremor/lib/tremor_block.c
+    gecko/src/media/libtremor/lib/tremor_codebook.c
+    gecko/src/media/libtremor/lib/tremor_floor0.c
+    gecko/src/media/libtremor/lib/tremor_floor1.c
+    gecko/src/media/libtremor/lib/tremor_info.c
+    gecko/src/media/libtremor/lib/tremor_mapping0.c
+    gecko/src/media/libtremor/lib/tremor_mdct.c
+    gecko/src/media/libtremor/lib/tremor_registry.c
+    gecko/src/media/libtremor/lib/tremor_res012.c
+    gecko/src/media/libtremor/lib/tremor_sharedbook.c
+    gecko/src/media/libtremor/lib/tremor_synthesis.c
+    gecko/src/media/libtremor/lib/tremor_window.c
+  )
+
+  add_library(tremor OBJECT ${tremor_srcs})
+
+  if (ARM)
+    target_compile_definitions(tremor PRIVATE
+      _ARM_ASSEM_=
+    )
+  endif()
+
+  target_include_directories(tremor PRIVATE
+    gecko/include/mozilla/media/libtremor/lib
+    gecko/include/mozilla/media/libtremor/include/tremor
+    gecko/include/mozilla/media/libogg/include
+  )
+endif()
 
 ############
 # libvorbis
 ############
-set(vorbis_srcs
-  gecko/src/media/libvorbis/lib/vorbis_analysis.c
-  gecko/src/media/libvorbis/lib/vorbis_bitrate.c
-  gecko/src/media/libvorbis/lib/vorbis_block.c
-  gecko/src/media/libvorbis/lib/vorbis_codebook.c
-  gecko/src/media/libvorbis/lib/vorbis_envelope.c
-  gecko/src/media/libvorbis/lib/vorbis_floor0.c
-  gecko/src/media/libvorbis/lib/vorbis_floor1.c
-  gecko/src/media/libvorbis/lib/vorbis_info.c
-  gecko/src/media/libvorbis/lib/vorbis_lookup.c
-  gecko/src/media/libvorbis/lib/vorbis_lpc.c
-  gecko/src/media/libvorbis/lib/vorbis_lsp.c
-  gecko/src/media/libvorbis/lib/vorbis_mapping0.c
-  gecko/src/media/libvorbis/lib/vorbis_mdct.c
-  gecko/src/media/libvorbis/lib/vorbis_psy.c
-  gecko/src/media/libvorbis/lib/vorbis_registry.c
-  gecko/src/media/libvorbis/lib/vorbis_res0.c
-  gecko/src/media/libvorbis/lib/vorbis_sharedbook.c
-  gecko/src/media/libvorbis/lib/vorbis_smallft.c
-  gecko/src/media/libvorbis/lib/vorbis_synthesis.c
-  gecko/src/media/libvorbis/lib/vorbis_window.c
-  gecko/src/media/libvorbis/lib/vorbisenc.c
-)
+if (NOT ANDROID) 
+  set(vorbis_srcs
+    gecko/src/media/libvorbis/lib/vorbis_analysis.c
+    gecko/src/media/libvorbis/lib/vorbis_bitrate.c
+    gecko/src/media/libvorbis/lib/vorbis_block.c
+    gecko/src/media/libvorbis/lib/vorbis_codebook.c
+    gecko/src/media/libvorbis/lib/vorbis_envelope.c
+    gecko/src/media/libvorbis/lib/vorbis_floor0.c
+    gecko/src/media/libvorbis/lib/vorbis_floor1.c
+    gecko/src/media/libvorbis/lib/vorbis_info.c
+    gecko/src/media/libvorbis/lib/vorbis_lookup.c
+    gecko/src/media/libvorbis/lib/vorbis_lpc.c
+    gecko/src/media/libvorbis/lib/vorbis_lsp.c
+    gecko/src/media/libvorbis/lib/vorbis_mapping0.c
+    gecko/src/media/libvorbis/lib/vorbis_mdct.c
+    gecko/src/media/libvorbis/lib/vorbis_psy.c
+    gecko/src/media/libvorbis/lib/vorbis_registry.c
+    gecko/src/media/libvorbis/lib/vorbis_res0.c
+    gecko/src/media/libvorbis/lib/vorbis_sharedbook.c
+    gecko/src/media/libvorbis/lib/vorbis_smallft.c
+    gecko/src/media/libvorbis/lib/vorbis_synthesis.c
+    gecko/src/media/libvorbis/lib/vorbis_window.c
+    gecko/src/media/libvorbis/lib/vorbisenc.c
+  )
 
-add_library(vorbis OBJECT ${vorbis_srcs})
+  add_library(vorbis OBJECT ${vorbis_srcs})
 
-target_include_directories(vorbis PRIVATE
-  gecko/include/mozilla/media/libvorbis/lib
-  gecko/include/mozilla/media/libvorbis/include
-  gecko/include/mozilla/media/libogg/include/
-)
+  target_include_directories(vorbis PRIVATE
+    gecko/include/mozilla/media/libvorbis/lib
+    gecko/include/mozilla/media/libvorbis/include
+    gecko/include/mozilla/media/libogg/include/
+  )
+endif()
 
 ############
 # libtheora
@@ -993,11 +1029,18 @@ if (LINUX OR MACOS)
   set(FFMPEG57_OBJS $<TARGET_OBJECTS:ffmpeg57>)
 endif()
 
+set(VORBIS_OBJS)
+if (ANDROID)
+  set(VORBIS_OBJS $<TARGET_OBJECTS:tremor>)
+else()
+  set(VORBIS_OBJS $<TARGET_OBJECTS:vorbis>)
+endif()
+
 add_library(gecko_media_cmake STATIC
   $<TARGET_OBJECTS:ogg>
   $<TARGET_OBJECTS:gecko_core>
   $<TARGET_OBJECTS:opus>
-  $<TARGET_OBJECTS:vorbis>
+  ${VORBIS_OBJS}
   $<TARGET_OBJECTS:theora>
   $<TARGET_OBJECTS:soundtouch>
   $<TARGET_OBJECTS:speex_resampler>
