@@ -653,10 +653,6 @@ if(ANDROID)
     gecko/src/media/libopus/silk/fixed/arm/warped_autocorrelation_FIX_neon_intr.c
     gecko/src/media/libopus/celt/arm/arm_celt_map.c
     gecko/src/media/libopus/celt/arm/armcpu.c
-    gecko/src/media/libopus/celt/arm/celt_ne10_fft.c
-    gecko/src/media/libopus/celt/arm/celt_ne10_mdct.c
-    gecko/src/media/libopus/celt/arm/celt_neon_intr.c
-    gecko/src/media/libopus/celt/arm/pitch_neon_intr.c
   )
 endif()
 
