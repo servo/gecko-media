@@ -59,11 +59,18 @@ namespace dom
 
 MediaSource::MediaSource(GeckoMediaSourceImpl aImpl)
     : mImpl(aImpl)
+    , mDecoder(nullptr)
 {
 }
 
 MediaSource::~MediaSource()
 {
+  MOZ_ASSERT(NS_IsMainThread());
+
+  if (mDecoder) {
+    mDecoder->DetachMediaSource();
+  }
+
   if (!NS_WARN_IF(mImpl.mContext || mImpl.mFree)) {
     return;
   }
@@ -73,10 +80,23 @@ MediaSource::~MediaSource()
 double
 MediaSource::Duration()
 {
+  MOZ_ASSERT(NS_IsMainThread());
   if (!NS_WARN_IF(!mImpl.mContext || !mImpl.mGetDuration)) {
     return 0;
   }
   return (*mImpl.mGetDuration)(mImpl.mContext);
+}
+
+void
+MediaSource::DurationChange(double aDuration)
+{
+  MOZ_ASSERT(NS_IsMainThread());
+  MSE_DEBUG("DurationChange(aDuration=%f", aDuration);
+
+  // Update the media duration to the new duration and run the HTMLMediaElement
+  // duration change algorithm.
+  // TODO: Implement https://www.w3.org/TR/media-source/#mediasource-attach first
+  // mDecoder->SetMediaSourceDuration(aDuration);
 }
 
 MediaSourceReadyState
@@ -94,6 +114,7 @@ MediaSource::ReadyState()
 /* static */
 bool MediaSource::IsTypeSupported(const char *aType)
 {
+  MOZ_ASSERT(NS_IsMainThread());
   auto containerType = MakeMediaContainerType(aType);
   if (containerType.isNothing())
   {

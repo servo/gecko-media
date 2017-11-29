@@ -8,6 +8,7 @@
 #define mozilla_dom_MediaSource_h_
 
 #include "GeckoMediaSource.h"
+#include "MediaSourceDecoder.h"
 #include "SourceBufferList.h"
 #include "TimeUnits.h"
 
@@ -29,6 +30,7 @@ public:
   }
 
   double Duration();
+  void DurationChange(const double aDuration);
 
   MediaSourceReadyState ReadyState();
 
@@ -46,6 +48,8 @@ public:
 
 private:
   GeckoMediaSourceImpl mImpl;
+
+  RefPtr<MediaSourceDecoder> mDecoder;
 };
 
 } // namespace dom

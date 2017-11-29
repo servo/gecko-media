@@ -44,6 +44,9 @@ GeckoMedia_MediaSource_Shutdown(size_t aId);
 
 bool
 GeckoMedia_MediaSource_IsTypeSupported(const char* aMimeType);
+
+void
+GeckoMedia_MediaSource_DurationChange(size_t aId, const double aDuration);
 }
 
 #endif // GeckoMediaSource_h
