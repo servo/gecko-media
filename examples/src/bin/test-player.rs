@@ -252,6 +252,7 @@ struct App {
     last_frame_id: u32,
     player_wrapper: PlayerWrapper,
     playing: bool,
+    intrinsic_size: Option<(i32, i32)>,
 }
 
 impl App {
@@ -271,6 +272,7 @@ impl App {
             last_frame_id: 0,
             player_wrapper: PlayerWrapper::new(player_creator, frame_sender),
             playing: false,
+            intrinsic_size: None,
         }
     }
     fn shutdown(&self) {
@@ -358,7 +360,11 @@ impl ui::Example for App {
     }
 
     fn video_dimensions(&mut self) -> Option<(i32, i32)> {
-        self.player_wrapper.dimensions_changed()
+        let dimensions = self.player_wrapper.dimensions_changed();
+        if dimensions.is_some() {
+            self.intrinsic_size = dimensions.clone();
+        }
+        self.intrinsic_size.clone()
     }
 
     fn render(
@@ -382,10 +388,12 @@ impl ui::Example for App {
             Vec::new(),
         );
 
-        if !self.frame_queue.is_empty() {
-            // Assume dimensions of first frame.
-            let frame = &self.frame_queue[0];
+        // Note: video_dimensions() mutably borrows, so must call this outside
+        // the loop below.
+        let intrinsic_size = self.video_dimensions();
 
+        if !self.frame_queue.is_empty() {
+            let frame = &self.frame_queue[0];
             self.y_channel_key =
                 App::create_or_update_planar_image(api, resources, self.y_channel_key, frame.y_plane(), 0);
             self.cb_channel_key =
@@ -393,12 +401,36 @@ impl ui::Example for App {
             self.cr_channel_key =
                 App::create_or_update_planar_image(api, resources, self.cr_channel_key, frame.cr_plane(), 2);
 
-            let aspect_ratio = frame.picture.width as f32 / frame.picture.height as f32;
-            let render_size = LayoutSize::new(
+            // We'll render the video at the intrinsic size, i.e. the size
+            // at which the video frame is supposed to be rendered at after
+            // scaling to respect the Pixel Aspect Ratio. If we don't know the
+            // intrinsic size, we'll just use the frame size.
+            let (width, height) = match intrinsic_size {
+                Some((width, height)) => (width, height),
+                None => (frame.picture.width, frame.picture.height),
+            };
+
+            // Resize so that the video is rendered as wide as the window.
+            let aspect_ratio = width as f32 / height as f32;
+            let mut render_size = LayoutSize::new(
                 layout_size.width as f32,
                 layout_size.width as f32 / aspect_ratio,
             );
-            let render_location = LayoutPoint::new(0.0, (layout_size.height - render_size.height) / 2.0);
+            // If the above resize results in the video being taller than the
+            // window, shrink so that the height matches the window. The width
+            // should then be less than the window width.
+            if render_size.height > layout_size.height {
+                let aspect_ratio = render_size.height as f32 / render_size.width as f32;
+                render_size = LayoutSize::new(
+                    layout_size.height / aspect_ratio as f32,
+                    layout_size.height as f32,
+                );
+            }
+            // Render the image centered in the window.
+            let render_location = LayoutPoint::new(
+                (layout_size.width - render_size.width) / 2.0,
+                (layout_size.height - render_size.height) / 2.0
+            );
             let info = LayoutPrimitiveInfo::with_clip_rect(LayoutRect::new(render_location, render_size), bounds);
             builder.push_yuv_image(
                 &info,
