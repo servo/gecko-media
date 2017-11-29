@@ -41,7 +41,7 @@ mod tests {
     use std::fs::File;
     use std::io::prelude::*;
     use std::ops::Range;
-    use std::sync::mpsc;
+    use std::sync::{Mutex, mpsc};
     use {CanPlayType, GeckoMedia, GeckoMediaSource, GeckoMediaSourceImpl};
 
     fn test_can_play_type() {
@@ -80,50 +80,52 @@ mod tests {
     fn create_test_player(path: &str, mime: &str) -> (Player, mpsc::Receiver<Status>) {
         let (sender, receiver) = mpsc::channel();
         struct Sink {
-            sender: mpsc::Sender<Status>,
+            sender: Mutex<mpsc::Sender<Status>>,
         }
         impl PlayerEventSink for Sink {
             fn playback_ended(&self) {
-                self.sender.send(Status::Ended).unwrap();
+                self.sender.lock().unwrap().send(Status::Ended).unwrap();
             }
             fn decode_error(&self) {
-                self.sender.send(Status::Error).unwrap();
+                self.sender.lock().unwrap().send(Status::Error).unwrap();
             }
             fn async_event(&self, name: &str) {
                 self.sender
+                    .lock()
+                    .unwrap()
                     .send(Status::AsyncEvent(CString::new(name).unwrap()))
                     .unwrap();
             }
             fn metadata_loaded(&self, metadata: Metadata) {
-                self.sender.send(Status::MetadataLoaded(metadata)).unwrap();
+                self.sender.lock().unwrap().send(Status::MetadataLoaded(metadata)).unwrap();
             }
             fn duration_changed(&self, duration: f64) {
-                self.sender.send(Status::DurationChanged(duration)).unwrap();
+                self.sender.lock().unwrap().send(Status::DurationChanged(duration)).unwrap();
             }
             fn loaded_data(&self) {
-                self.sender.send(Status::LoadedData).unwrap();
+                self.sender.lock().unwrap().send(Status::LoadedData).unwrap();
             }
             fn time_update(&self, time: f64) {
-                self.sender.send(Status::TimeUpdate(time)).unwrap();
+                self.sender.lock().unwrap().send(Status::TimeUpdate(time)).unwrap();
             }
             fn seek_started(&self) {
-                self.sender.send(Status::SeekStarted).unwrap();
+                self.sender.lock().unwrap().send(Status::SeekStarted).unwrap();
             }
             fn seek_completed(&self) {
-                self.sender.send(Status::SeekComplete).unwrap();
+                self.sender.lock().unwrap().send(Status::SeekComplete).unwrap();
             }
             fn update_current_images(&self, images: Vec<PlanarYCbCrImage>) {
-                self.sender.send(Status::UpdateImages(images)).unwrap();
+                self.sender.lock().unwrap().send(Status::UpdateImages(images)).unwrap();
             }
             fn buffered(&self, ranges: Vec<Range<f64>>) {
-                self.sender.send(Status::Buffered(ranges)).unwrap();
+                self.sender.lock().unwrap().send(Status::Buffered(ranges)).unwrap();
             }
             fn seekable(&self, ranges: Vec<Range<f64>>) {
-                self.sender.send(Status::Seekable(ranges)).unwrap();
+                self.sender.lock().unwrap().send(Status::Seekable(ranges)).unwrap();
             }
         }
         let sink = Box::new(Sink {
-            sender: sender,
+            sender: Mutex::new(sender),
         });
         let mut file = File::open(path).unwrap();
         let mut bytes = vec![];
