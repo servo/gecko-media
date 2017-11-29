@@ -135,6 +135,7 @@ pub fn main_wrapper(example: &mut Example, options: Option<webrender::RendererOp
     }
     window.show();
 
+    let mut window_size = window.get_inner_size_pixels().unwrap();
     'outer: for event in window.wait_events() {
         let mut events = Vec::new();
         events.push(event);
@@ -147,23 +148,32 @@ pub fn main_wrapper(example: &mut Example, options: Option<webrender::RendererOp
             events.push(event);
         }
 
-        let mut resized = false;
         for event in events {
             match event {
                 glutin::Event::Closed |
                 glutin::Event::KeyboardInput(_, _, Some(glutin::VirtualKeyCode::Escape)) => break 'outer,
-                glutin::Event::Resized(width, height) => {
-                    resized = true;
-                    let size = DeviceUintSize::new(width, height);
-                    api.set_window_parameters(
-                        document_id,
-                        size.clone(),
-                        DeviceUintRect::new(DeviceUintPoint::new(0, 0), size),
-                        window.hidpi_factor(),
-                    );
-                },
                 _ => if example.on_event(event, &api, document_id) {},
             }
+        }
+
+        // We need to inform WebRender of window resizes, otherwise it will
+        // clip its painting to what it thinks is the window size.
+        // On MacOS, Glutin doesn't dispatch a Resized event to our handler
+        // above to notify us that the view port has changed. So we need to
+        // check on every frame whether the window size has changed.
+        let mut resized = false;
+        let current_window_size = window.get_inner_size_pixels().unwrap();
+        if current_window_size != window_size {
+            resized = true;
+            window_size = current_window_size;
+            let (width, height) = window_size;
+            api.set_window_parameters(
+                document_id,
+                DeviceUintSize::new(width, height),
+                DeviceUintRect::new(DeviceUintPoint::new(0, 0),
+                                    DeviceUintSize::new(width, height)),
+                window.hidpi_factor(),
+            );
         }
 
         if !example.needs_repaint() && !resized {
