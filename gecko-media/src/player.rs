@@ -340,14 +340,12 @@ fn to_ffi_callback(callbacks: Box<PlayerEventSink>) -> PlayerCallbackObject {
 
     def_gecko_callbacks_ffi_wrapper!(Box<PlayerEventSink>);
 
-    unsafe extern "C" fn decode_error(ptr: *mut c_void) {
-        let wrapper = &*(ptr as *mut Wrapper);
-        wrapper.callbacks.decode_error();
-    }
-    unsafe extern "C" fn playback_ended(ptr: *mut c_void) {
-        let wrapper = &*(ptr as *mut Wrapper);
-        wrapper.callbacks.playback_ended();
-    }
+    impl_simple_ffi_callback_wrapper!(decode_error, ());
+    impl_simple_ffi_callback_wrapper!(playback_ended, ());
+    impl_simple_ffi_callback_wrapper!(loaded_data, ());
+    impl_simple_ffi_callback_wrapper!(seek_started, ());
+    impl_simple_ffi_callback_wrapper!(seek_completed, ());
+
     unsafe extern "C" fn async_event(ptr: *mut c_void, name: *const i8) {
         let wrapper = &*(ptr as *mut Wrapper);
         let c_str: &CStr = CStr::from_ptr(name);
@@ -367,18 +365,6 @@ fn to_ffi_callback(callbacks: Box<PlayerEventSink>) -> PlayerCallbackObject {
     unsafe extern "C" fn duration_changed(ptr: *mut c_void, duration: f64) {
         let wrapper = &*(ptr as *mut Wrapper);
         wrapper.callbacks.duration_changed(duration);
-    }
-    unsafe extern "C" fn loaded_data(ptr: *mut c_void) {
-        let wrapper = &*(ptr as *mut Wrapper);
-        wrapper.callbacks.loaded_data();
-    }
-    unsafe extern "C" fn seek_started(ptr: *mut c_void) {
-        let wrapper = &*(ptr as *mut Wrapper);
-        wrapper.callbacks.seek_started();
-    }
-    unsafe extern "C" fn seek_completed(ptr: *mut c_void) {
-        let wrapper = &*(ptr as *mut Wrapper);
-        wrapper.callbacks.seek_completed();
     }
     unsafe extern "C" fn time_update(ptr: *mut c_void, time: f64) {
         let wrapper = &*(ptr as *mut Wrapper);

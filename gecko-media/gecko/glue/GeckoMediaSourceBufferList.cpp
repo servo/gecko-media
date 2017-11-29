@@ -8,7 +8,6 @@
 
 #include "GeckoMediaMacros.h"
 #include "SourceBufferList.h"
-#include "UniquePtr.h"
 
 using namespace mozilla;
 using mozilla::dom::SourceBufferList;
@@ -16,12 +15,12 @@ using mozilla::dom::SourceBufferList;
 struct GeckoMediaSourceBufferList
 {
   GeckoMediaSourceBufferList(size_t aId, GeckoMediaSourceBufferListImpl aImpl)
-    : mSourceBufferList(MakeUnique<SourceBufferList>(aImpl))
+    : mSourceBufferList(new SourceBufferList(aImpl))
     , mId(aId)
   {
   }
 
-  UniquePtr<SourceBufferList> mSourceBufferList;
+  RefPtr<SourceBufferList> mSourceBufferList;
   const size_t mId;
 };
 

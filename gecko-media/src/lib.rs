@@ -235,6 +235,7 @@ mod tests {
         }
         struct MediaSourceValues {
             pub ready_state: MediaSourceReadyState,
+            pub duration: f64,
         }
         struct MediaSourceDom {
             pub values: Rc<MediaSourceValues>,
@@ -245,6 +246,7 @@ mod tests {
             pub fn new() -> Self {
                 let values = Rc::new(MediaSourceValues {
                     ready_state: MediaSourceReadyState::Closed,
+                    duration: 0.,
                 });
                 let media_source_impl = Rc::new(MediaSourceImpl {
                     values: values.clone(),
@@ -268,6 +270,9 @@ mod tests {
                     MediaSourceReadyState::Ended => 2,
                     MediaSourceReadyState::Unknown => 3,
                 }
+            }
+            fn get_duration(&self) -> f64 {
+                self.values.duration
             }
         }
 

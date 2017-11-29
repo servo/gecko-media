@@ -8,11 +8,11 @@
 #define mozilla_dom_MediaSource_h_
 
 #include "GeckoMediaSource.h"
+#include "SourceBufferList.h"
+#include "TimeUnits.h"
 
-namespace mozilla
-{
-namespace dom
-{
+namespace mozilla {
+namespace dom {
 
 class MediaSource final
 {
@@ -20,9 +20,29 @@ public:
   MediaSource(GeckoMediaSourceImpl aGeckoMediaSourceImpl);
   ~MediaSource();
 
+  SourceBufferList* ActiveSourceBuffers()
+  {
+    // TODO get from mImpl.
+    RefPtr<SourceBufferList> list =
+      new SourceBufferList(GeckoMediaSourceBufferListImpl());
+    return list;
+  }
+
+  double Duration();
+
   MediaSourceReadyState ReadyState();
 
-  static bool IsTypeSupported(const char *aType);
+  static bool IsTypeSupported(const char* aType);
+
+  void Detach() { /* TODO */}
+
+  bool HasLiveSeekableRange() const { return false; /* TODO get from mImpl */ }
+  media::TimeInterval LiveSeekableRange() const
+  {
+    // TODO get from mImpl
+    return media::TimeInterval(media::TimeUnit::Zero(),
+                               media::TimeUnit::Zero());
+  }
 
 private:
   GeckoMediaSourceImpl mImpl;

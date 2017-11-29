@@ -129,6 +129,7 @@ add_library(gecko_core OBJECT
   gecko/glue/AgnosticDecoderModule.cpp
   gecko/glue/Benchmark.cpp
   gecko/glue/CooperativeThreadPool.cpp
+  gecko/glue/ContainerParser.cpp
   gecko/glue/CubebUtils.cpp
   gecko/glue/DecoderTraits.cpp
   gecko/glue/FFmpegRuntimeLinker.cpp
@@ -149,6 +150,7 @@ add_library(gecko_core OBJECT
   gecko/glue/MediaDecoderStateMachine.cpp
   gecko/glue/MediaFormatReader.cpp
   gecko/glue/MediaSource.cpp
+  gecko/glue/MediaSourceDecoder.cpp
   gecko/glue/MediaStreamGraph.cpp
   gecko/glue/PDMFactory.cpp
   gecko/glue/Player.cpp
@@ -174,6 +176,7 @@ add_library(gecko_core OBJECT
   gecko/glue/Telemetry.cpp
   gecko/glue/ThreadEventQueue.cpp
   gecko/glue/ThreadAnnotation.cpp
+  gecko/glue/TrackBuffersManager.cpp
   gecko/glue/VideoSegment.cpp
   gecko/glue/WebAudioUtils.cpp
   gecko/glue/XPCOMInit.cpp
@@ -201,6 +204,10 @@ add_library(gecko_core OBJECT
   gecko/src/dom/media/mediasink/AudioSinkWrapper.cpp
   gecko/src/dom/media/mediasink/DecodedStream.cpp
   gecko/src/dom/media/mediasink/OutputStreamManager.cpp
+  gecko/src/dom/media/mediasource/MediaSourceDemuxer.cpp
+  gecko/src/dom/media/mediasource/MediaSourceUtils.cpp
+  gecko/src/dom/media/mediasource/ResourceQueue.cpp
+  gecko/src/dom/media/mediasource/SourceBufferResource.cpp
   gecko/src/dom/media/mp3/MP3Decoder.cpp
   gecko/src/dom/media/mp3/MP3Demuxer.cpp
   gecko/src/dom/media/mp3/MP3FrameParser.cpp
