@@ -9,7 +9,8 @@ doctest = false
 name = "gecko_media"
 
 [target.'cfg(unix)'.dependencies]
-cubeb-pulse = { git = "https://github.com/djg/cubeb-pulse-rs", branch = "dev", features = ["pulse-dlopen"]}
+cubeb-ffi = {git = "https://github.com/djg/cubeb-pulse-rs", branch = "dev"}
+pulse-ffi = {git = "https://github.com/djg/cubeb-pulse-rs", branch = "dev", features = ["dlopen"]}
 
 [build-dependencies]
 bindgen = "0.31.0"
