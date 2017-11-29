@@ -293,6 +293,14 @@ void
 GeckoMediaDecoderOwner::Shutdown()
 {
   if (mVideoFrameContainer) {
+    // The ImageContainer keeps a list of the images that it sends out to Rust,
+    // so that if we shutdown, we can deallocate and neuter the images
+    // proactively. If we don't do this, we can end up with crashes if Rust
+    // code on another thread tries to use images after we've shutdown.
+    auto imageContainer = mVideoFrameContainer->GetImageContainer();
+    if (imageContainer) {
+      imageContainer->DeallocateExportedImages();
+    }
     mVideoFrameContainer->ForgetElement();
     mVideoFrameContainer = nullptr;
   }

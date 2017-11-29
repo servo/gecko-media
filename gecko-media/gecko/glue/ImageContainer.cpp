@@ -41,7 +41,7 @@
 #include "mozilla/AbstractThread.h"
 #include "GeckoMediaDecoderOwner.h"
 #include "RustServices.h"
-#include "nsRefPtrHashtable.h"
+#include "nsClassHashtable.h"
 #include "mozilla/Assertions.h"
 
 namespace mozilla {
@@ -360,32 +360,46 @@ private:
   RefPtr<GeckoMediaDecoderOwner> mOwner;
 };
 
+struct ExportedImage {
+  ExportedImage(Image* aImage, ImageContainer* aContainer)
+    : mImage(aImage)
+    , mContainer(aContainer)
+  {
+    MOZ_ASSERT(mImage);
+    MOZ_ASSERT(mContainer);
+  }
+  ExportedImage(const ExportedImage& aOther)
+    : mImage(aOther.mImage)
+    , mContainer(aOther.mContainer)
+  {
+  }
+  ExportedImage(ExportedImage&& aOther)
+    : mImage(Move(aOther.mImage))
+    , mContainer(Move(aOther.mContainer))
+  {
+  }
+  RefPtr<Image> mImage;
+  RefPtr<ImageContainer> mContainer;
+  uint32_t mRefCount = 0;
+};
+
 StaticMutex sImageMutex;
-static nsRefPtrHashtable<nsUint32HashKey, Image> sImages;
-static nsDataHashtable<nsUint32HashKey, uint32_t> sImageFFIRefCnt;
+static nsClassHashtable<nsUint32HashKey, ExportedImage> sImages;
 
 void PlanarYCbCrImage_AddRefPixelData(uint32_t aFrameID)
 {
   StaticMutexAutoLock lock(sImageMutex);
-  MOZ_ASSERT(sImages.Contains(aFrameID));
-  MOZ_ASSERT(sImageFFIRefCnt.Contains(aFrameID));
-
-  uint32_t* refcnt = sImageFFIRefCnt.GetValue(aFrameID);
-  MOZ_ASSERT(refcnt && *refcnt);
-  *refcnt += 1;
+  ExportedImage* img = sImages.Get(aFrameID);
+  if (img) {
+    img->mRefCount += 1;
+  }
 }
 
 void PlanarYCbCrImage_FreeData(uint32_t aFrameID) {
   StaticMutexAutoLock lock(sImageMutex);
-  MOZ_ASSERT(sImages.Contains(aFrameID));
-  MOZ_ASSERT(sImageFFIRefCnt.Contains(aFrameID));
-
-  uint32_t* refcnt = sImageFFIRefCnt.GetValue(aFrameID);
-  MOZ_ASSERT(refcnt && *refcnt);
-  *refcnt -= 1;
-
-  if (*refcnt == 0) {
-    sImageFFIRefCnt.Remove(aFrameID);
+  ExportedImage* img = sImages.Get(aFrameID);
+  if (img && img->mRefCount == 0) {
+    img->mContainer->RecordImageDropped(aFrameID);
     sImages.Remove(aFrameID);
   }
 }
@@ -396,10 +410,11 @@ PlanarYCbCrImage_GetPixelData(uint32_t aFrameID, PlaneType aPlaneType)
   RefPtr<Image> img;
   {
     StaticMutexAutoLock lock(sImageMutex);
-    MOZ_ASSERT(sImages.Contains(aFrameID));
-    if (!sImages.Get(aFrameID, getter_AddRefs(img))) {
+    ExportedImage* i = sImages.Get(aFrameID);
+    if (!i) {
       return nullptr;
     }
+    img = i->mImage;
   }
   PlanarYCbCrImage* planarImage = img->AsPlanarYCbCrImage();
   MOZ_ASSERT(planarImage);
@@ -413,6 +428,28 @@ PlanarYCbCrImage_GetPixelData(uint32_t aFrameID, PlaneType aPlaneType)
     case PlaneType::Cr: return data->mCrChannel;
   }
   return nullptr;
+}
+
+void
+ImageContainer::DeallocateExportedImages()
+{
+  StaticMutexAutoLock lock(sImageMutex);
+  for (size_t frameId : mExportedImages) {
+    sImages.Remove(frameId);
+  }
+  mExportedImages.Clear();
+}
+
+void
+ImageContainer::RecordImageExported(size_t aFrameID)
+{
+  mExportedImages.AppendElement(aFrameID);
+}
+
+void
+ImageContainer::RecordImageDropped(size_t aFrameID)
+{
+  mExportedImages.RemoveElement(aFrameID);
 }
 
 void
@@ -462,12 +499,10 @@ ImageContainer::NotifyOwnerOfNewImages()
     {
       StaticMutexAutoLock lock(sImageMutex);
       if (!sImages.Contains(img->mFrameID)) {
-        sImages.Put(img->mFrameID, owningImage.mImage);
-        sImageFFIRefCnt.Put(img->mFrameID, 1);
+        sImages.Put(img->mFrameID, new ExportedImage(owningImage.mImage, this));
+        RecordImageExported(img->mFrameID);
       } else {
-        uint32_t* refcnt = sImageFFIRefCnt.GetValue(img->mFrameID);
-        MOZ_ASSERT(refcnt && *refcnt);
-        *refcnt += 1;
+        sImages.Get(img->mFrameID)->mRefCount += 1;
       }
     }
 
