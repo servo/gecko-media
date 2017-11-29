@@ -12,7 +12,11 @@
  * c++ definitions needed by nscore.h
  */
 #ifndef _XPCOM_CONFIG_H_
+#ifdef ANDROID
+#include "xpcom-config-android.h"
+#else
 #include "xpcom-config.h"
+#endif
 #endif
 
 /* Definitions of functions and operators that allocate memory. */

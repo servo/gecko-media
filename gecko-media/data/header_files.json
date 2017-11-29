@@ -695,7 +695,6 @@
   "nsXPCOMCID.h": "xpcom/build/nsXPCOMCID.h",
   "nsXPCOMCIDInternal.h": "xpcom/build/nsXPCOMCIDInternal.h",
   "nsXPCOMPrivate.h": "xpcom/build/nsXPCOMPrivate.h",
-  "nscore.h": "xpcom/base/nscore.h",
   "nspr.h": "nsprpub/pr/include/nspr.h",
   "nspr/obsolete/probslet.h": "nsprpub/pr/include/obsolete/probslet.h",
   "nspr/obsolete/protypes.h": "nsprpub/pr/include/obsolete/protypes.h",
