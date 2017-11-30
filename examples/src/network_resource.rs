@@ -11,7 +11,7 @@ use hyper::{Client, Request, Method};
 use std::cmp;
 use std::io;
 use std::ops::Range;
-use std::sync::mpsc;
+use std::sync::{Mutex, mpsc};
 use std::thread;
 use tokio_core::reactor::Core;
 
@@ -171,7 +171,7 @@ impl Downloader {
 }
 
 pub struct DownloadController {
-    command_sender: mpsc::Sender<Commands>,
+    command_sender: Mutex<mpsc::Sender<Commands>>,
 }
 
 impl DownloadController {
@@ -251,7 +251,7 @@ impl DownloadController {
         });
 
         DownloadController {
-            command_sender,
+            command_sender: Mutex::new(command_sender),
         }
     }
 }
@@ -260,6 +260,7 @@ impl NetworkResource for DownloadController {
     fn read_at(&self, offset: u64, buffer: &mut [u8]) -> Result<u32, ()> {
         let (sender, receiver) = mpsc::channel();
         self.command_sender
+            .lock().unwrap()
             .send(Commands::Read(offset, buffer.len() as u32, sender))
             .unwrap();
         match receiver.recv() {
@@ -286,6 +287,7 @@ impl NetworkResource for DownloadController {
     fn len(&self) -> Option<u64> {
         let (sender, receiver) = mpsc::channel();
         self.command_sender
+            .lock().unwrap()
             .send(Commands::GetContentLength(sender))
             .unwrap();
         match receiver.recv() {
@@ -298,6 +300,7 @@ impl NetworkResource for DownloadController {
         let (sender, receiver) = mpsc::channel();
         // TODO: move the slice in? Is that possible?
         self.command_sender
+            .lock().unwrap()
             .send(Commands::ReadFromCache(offset, buffer.len() as u32, sender))
             .unwrap();
         match receiver.recv() {
@@ -318,6 +321,7 @@ impl NetworkResource for DownloadController {
     fn cached_ranges(&self) -> Vec<Range<u64>> {
         let (sender, receiver) = mpsc::channel();
         self.command_sender
+            .lock().unwrap()
             .send(Commands::GetCachedRanges(sender))
             .unwrap();
         match receiver.recv() {

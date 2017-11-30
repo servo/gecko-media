@@ -22,7 +22,7 @@ use std::io::prelude::*;
 use std::mem;
 use std::ops::Range;
 use std::path::Path;
-use std::sync::mpsc;
+use std::sync::{Mutex, mpsc};
 use std::thread;
 use webrender::api::*;
 use webrender::api::ImageData::*;
@@ -64,23 +64,27 @@ impl PlayerWrapper {
         let (sender, receiver) = mpsc::channel();
 
         struct Sink {
-            sender: mpsc::Sender<PlayerEvent>,
+            sender: Mutex<mpsc::Sender<PlayerEvent>>,
         }
         impl PlayerEventSink for Sink {
             fn playback_ended(&self) {
-                self.sender.send(PlayerEvent::Ended).unwrap();
+                self.sender.lock().unwrap().send(PlayerEvent::Ended).unwrap();
             }
             fn decode_error(&self) {
                 println!("Decode error!");
-                self.sender.send(PlayerEvent::Error).unwrap();
+                self.sender.lock().unwrap().send(PlayerEvent::Error).unwrap();
             }
             fn async_event(&self, name: &str) {
                 self.sender
+                    .lock()
+                    .unwrap()
                     .send(PlayerEvent::AsyncEvent(CString::new(name).unwrap()))
                     .unwrap();
             }
             fn metadata_loaded(&self, metadata: Metadata) {
                 self.sender
+                    .lock()
+                    .unwrap()
                     .send(PlayerEvent::MetadataLoaded(metadata))
                     .unwrap();
             }
@@ -91,16 +95,22 @@ impl PlayerWrapper {
             fn seek_completed(&self) {}
             fn update_current_images(&self, images: Vec<PlanarYCbCrImage>) {
                 self.sender
+                    .lock()
+                    .unwrap()
                     .send(PlayerEvent::UpdateCurrentImages(images))
                     .unwrap();
             }
             fn buffered(&self, ranges: Vec<Range<f64>>) {
                 self.sender
+                    .lock()
+                    .unwrap()
                     .send(PlayerEvent::BufferedRanges(ranges))
                     .unwrap();
             }
             fn seekable(&self, ranges: Vec<Range<f64>>) {
                 self.sender
+                    .lock()
+                    .unwrap()
                     .send(PlayerEvent::SeekableRanges(ranges))
                     .unwrap();
             }
@@ -111,7 +121,7 @@ impl PlayerWrapper {
         let (video_dimensions_sender, video_dimensions_receiver) = mpsc::channel();
         let wrapper_sender = sender.clone();
         let sink = Box::new(Sink {
-            sender,
+            sender: Mutex::new(sender),
         });
         let player = player_creator(sink);
         thread::spawn(move || {

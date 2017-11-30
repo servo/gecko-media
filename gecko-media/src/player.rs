@@ -171,7 +171,7 @@ impl Drop for PlanarYCbCrImage {
 /// Users of Player pass in an implementation of this trait when creating
 /// Player objects. When events happen in the Player, users will receive
 /// callbacks upon the trait implementation, notifying them of the event.
-pub trait PlayerEventSink {
+pub trait PlayerEventSink: Send + Sync {
     /// Called when playback has reached the end of media. Playback can
     /// be resumed from the start of media by calling Player::Play, or by
     /// seeking.
@@ -313,7 +313,7 @@ impl Player {
     }
 }
 
-pub trait NetworkResource {
+pub trait NetworkResource: Send + Sync {
     /// Attempts to fill buffer with bytes from offset. Reads as many
     /// bytes as possible, blocks if no bytes are available at offset,
     /// until bytes become available.
