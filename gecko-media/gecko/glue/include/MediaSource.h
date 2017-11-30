@@ -41,6 +41,8 @@ public:
 
   void DecoderEnded(const bool aEnded);
 
+  void EndOfStreamError(const GeckoMediaEndOfStreamError aError);
+
   static bool IsTypeSupported(const char* aType);
 
 private:

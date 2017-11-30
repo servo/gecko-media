@@ -13,4 +13,11 @@ struct GeckoMediaTimeInterval
   double mEnd;
 };
 
+enum class GeckoMediaEndOfStreamError
+{
+  Network,
+  Decode,
+  EndGuard_
+};
+
 #endif // GeckoMediaTypes_h_

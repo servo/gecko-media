@@ -48,3 +48,12 @@ GeckoMedia_MediaSource_DecoderEnded(size_t aId, const bool aEnded)
 
   reflector->mMediaSource->DecoderEnded(aEnded);
 }
+
+void
+GeckoMedia_MediaSource_EndOfStreamError(size_t aId,
+                                        GeckoMediaEndOfStreamError aError)
+{
+  IMPL_GECKO_MEDIA_REFLECTOR_GET(GeckoMediaSource)
+
+  reflector->mMediaSource->EndOfStreamError(aError);
+}

@@ -97,8 +97,7 @@ MediaSource::DurationChange(double aDuration)
 
   // Update the media duration to the new duration and run the HTMLMediaElement
   // duration change algorithm.
-  // TODO: Implement https://www.w3.org/TR/media-source/#mediasource-attach
-  // first mDecoder->SetMediaSourceDuration(aDuration);
+  mDecoder->SetMediaSourceDuration(aDuration);
 }
 
 MediaSourceReadyState
@@ -110,16 +109,6 @@ MediaSource::ReadyState()
   }
 
   return (*mImpl.mGetReadyState)(mImpl.mContext);
-}
-
-void
-MediaSource::DecoderEnded(const bool aEnded)
-{
-  MOZ_ASSERT(NS_IsMainThread());
-  MSE_DEBUG("DecoderEnded(aEnded=%d)", aEnded);
-
-  // Notify reader whether more data may come or not.
-  mDecoder->Ended(aEnded);
 }
 
 bool
@@ -143,10 +132,37 @@ MediaSource::LiveSeekableRange()
     return interval;
   }
 
-  GeckoMediaTimeInterval interval_ = (*mImpl.mGetLiveSeekableRange)(mImpl.mContext);
+  GeckoMediaTimeInterval interval_ =
+    (*mImpl.mGetLiveSeekableRange)(mImpl.mContext);
   interval.mStart = media::TimeUnit::FromSeconds(interval_.mStart);
   interval.mEnd = media::TimeUnit::FromSeconds(interval_.mEnd);
   return interval;
+}
+
+void
+MediaSource::DecoderEnded(const bool aEnded)
+{
+  MOZ_ASSERT(NS_IsMainThread());
+  MSE_DEBUG("DecoderEnded(aEnded=%d)", aEnded);
+
+  // Notify reader whether more data may come or not.
+  mDecoder->Ended(aEnded);
+}
+
+void
+MediaSource::EndOfStreamError(const GeckoMediaEndOfStreamError aError)
+{
+  MOZ_ASSERT(NS_IsMainThread());
+  MSE_DEBUG("EndOfStreamError");
+
+  switch (aError) {
+    case GeckoMediaEndOfStreamError::Network:
+      mDecoder->NetworkError(MediaResult(NS_ERROR_FAILURE, "MSE network"));
+      break;
+    case GeckoMediaEndOfStreamError::Decode:
+      mDecoder->DecodeError(NS_ERROR_DOM_MEDIA_FATAL_ERR);
+      break;
+  }
 }
 
 /* static */

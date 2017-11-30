@@ -2,8 +2,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use bindings::GeckoMediaSourceImpl;
-use bindings::GeckoMediaTimeInterval;
+use bindings::GeckoMedia_MediaSource_EndOfStreamError;
+use bindings::{GeckoMediaEndOfStreamError, GeckoMediaSourceImpl, GeckoMediaTimeInterval};
 use bindings::{GeckoMedia_MediaSource_DecoderEnded, GeckoMedia_MediaSource_DurationChange};
 use std::rc::Rc;
 
@@ -26,6 +26,13 @@ impl MediaSource {
         self.gecko_media.queue_task(move || unsafe {
             GeckoMedia_MediaSource_DecoderEnded(id, ended);
         });
+    }
+
+    pub fn end_of_stream_error(&self, error: GeckoMediaEndOfStreamError) {
+        let id = self.id;
+        self.gecko_media.queue_task(move || unsafe {
+            GeckoMedia_MediaSource_EndOfStreamError(id, error);
+        })
     }
 }
 
