@@ -313,7 +313,7 @@ impl Player {
     }
 }
 
-pub trait NetworkResource {
+pub trait NetworkResource: Send + Sync {
     /// Attempts to fill buffer with bytes from offset. Reads as many
     /// bytes as possible, blocks if no bytes are available at offset,
     /// until bytes become available.
