@@ -35,6 +35,8 @@ pub trait MediaSourceImpl {
     fn get_ready_state(&self) -> i32;
     /// MediaSource duration getter.
     fn get_duration(&self) -> f64;
+    /// Tell whether a media source has live seekable range or not.
+    fn has_live_seekable_range(&self) -> bool;
 }
 
 fn to_ffi_callbacks(callbacks: Rc<MediaSourceImpl>) -> GeckoMediaSourceImpl {
@@ -45,6 +47,7 @@ fn to_ffi_callbacks(callbacks: Rc<MediaSourceImpl>) -> GeckoMediaSourceImpl {
 
     impl_simple_ffi_callback_wrapper!(get_ready_state, i32);
     impl_simple_ffi_callback_wrapper!(get_duration, f64);
+    impl_simple_ffi_callback_wrapper!(has_live_seekable_range, bool);
 
     GeckoMediaSourceImpl {
         mContext: Box::into_raw(Box::new(Wrapper {
@@ -53,5 +56,6 @@ fn to_ffi_callbacks(callbacks: Rc<MediaSourceImpl>) -> GeckoMediaSourceImpl {
         mFree: Some(free),
         mGetReadyState: Some(get_ready_state),
         mGetDuration: Some(get_duration),
+        mHasLiveSeekableRange: Some(has_live_seekable_range),
     }
 }

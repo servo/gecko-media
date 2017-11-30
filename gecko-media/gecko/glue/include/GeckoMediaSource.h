@@ -33,6 +33,7 @@ struct GeckoMediaSourceImpl
   void (*mFree)(void*);
   mozilla::dom::MediaSourceReadyState (*mGetReadyState)(void*);
   double (*mGetDuration)(void*);
+  bool (*mHasLiveSeekableRange)(void*);
 };
 
 extern "C" {

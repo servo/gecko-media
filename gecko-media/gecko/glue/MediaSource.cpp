@@ -122,6 +122,16 @@ MediaSource::DecoderEnded(const bool aEnded)
   mDecoder->Ended(aEnded);
 }
 
+bool
+MediaSource::HasLiveSeekableRange()
+{
+  MOZ_ASSERT(NS_IsMainThread());
+  if (!NS_WARN_IF(!mImpl.mContext || !mImpl.mHasLiveSeekableRange)) {
+    return false;
+  }
+  return (*mImpl.mHasLiveSeekableRange)(mImpl.mContext);
+}
+
 /* static */
 bool
 MediaSource::IsTypeSupported(const char* aType)

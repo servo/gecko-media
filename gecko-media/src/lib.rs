@@ -276,6 +276,9 @@ mod tests {
             fn get_duration(&self) -> f64 {
                 self.values.duration
             }
+            fn has_live_seekable_range(&self) -> bool {
+                false
+            }
         }
 
         let _ =  MediaSourceDom::new();

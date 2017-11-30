@@ -34,11 +34,9 @@ public:
 
   MediaSourceReadyState ReadyState();
 
-  static bool IsTypeSupported(const char* aType);
-
   void Detach() { /* TODO */}
 
-  bool HasLiveSeekableRange() const { return false; /* TODO get from mImpl */ }
+  bool HasLiveSeekableRange();
   media::TimeInterval LiveSeekableRange() const
   {
     // TODO get from mImpl
@@ -47,6 +45,8 @@ public:
   }
 
   void DecoderEnded(const bool aEnded);
+
+  static bool IsTypeSupported(const char* aType);
 
 private:
   GeckoMediaSourceImpl mImpl;
