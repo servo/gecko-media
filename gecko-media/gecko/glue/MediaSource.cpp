@@ -126,10 +126,27 @@ bool
 MediaSource::HasLiveSeekableRange()
 {
   MOZ_ASSERT(NS_IsMainThread());
-  if (!NS_WARN_IF(!mImpl.mContext || !mImpl.mHasLiveSeekableRange)) {
+  if (NS_WARN_IF(!mImpl.mContext || !mImpl.mHasLiveSeekableRange)) {
     return false;
   }
+
   return (*mImpl.mHasLiveSeekableRange)(mImpl.mContext);
+}
+
+media::TimeInterval
+MediaSource::LiveSeekableRange()
+{
+  MOZ_ASSERT(NS_IsMainThread());
+  media::TimeInterval interval(media::TimeUnit::Zero(),
+                               media::TimeUnit::Zero());
+  if (NS_WARN_IF(!mImpl.mContext || !mImpl.mGetLiveSeekableRange)) {
+    return interval;
+  }
+
+  GeckoMediaTimeInterval interval_ = (*mImpl.mGetLiveSeekableRange)(mImpl.mContext);
+  interval.mStart = media::TimeUnit::FromSeconds(interval_.mStart);
+  interval.mEnd = media::TimeUnit::FromSeconds(interval_.mEnd);
+  return interval;
 }
 
 /* static */

@@ -3,6 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use bindings::GeckoMediaSourceImpl;
+use bindings::GeckoMediaTimeInterval;
 use bindings::{GeckoMedia_MediaSource_DecoderEnded, GeckoMedia_MediaSource_DurationChange};
 use std::rc::Rc;
 
@@ -37,6 +38,8 @@ pub trait MediaSourceImpl {
     fn get_duration(&self) -> f64;
     /// Tell whether a media source has live seekable range or not.
     fn has_live_seekable_range(&self) -> bool;
+    /// MediaSource live seekable range getter.
+    fn get_live_seekable_range(&self) -> GeckoMediaTimeInterval;
 }
 
 fn to_ffi_callbacks(callbacks: Rc<MediaSourceImpl>) -> GeckoMediaSourceImpl {
@@ -48,6 +51,7 @@ fn to_ffi_callbacks(callbacks: Rc<MediaSourceImpl>) -> GeckoMediaSourceImpl {
     impl_simple_ffi_callback_wrapper!(get_ready_state, i32);
     impl_simple_ffi_callback_wrapper!(get_duration, f64);
     impl_simple_ffi_callback_wrapper!(has_live_seekable_range, bool);
+    impl_simple_ffi_callback_wrapper!(get_live_seekable_range, GeckoMediaTimeInterval);
 
     GeckoMediaSourceImpl {
         mContext: Box::into_raw(Box::new(Wrapper {
@@ -57,5 +61,6 @@ fn to_ffi_callbacks(callbacks: Rc<MediaSourceImpl>) -> GeckoMediaSourceImpl {
         mGetReadyState: Some(get_ready_state),
         mGetDuration: Some(get_duration),
         mHasLiveSeekableRange: Some(has_live_seekable_range),
+        mGetLiveSeekableRange: Some(get_live_seekable_range),
     }
 }

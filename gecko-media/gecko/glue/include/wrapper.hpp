@@ -2,4 +2,5 @@
 #include "GeckoMediaSource.h"
 #include "GeckoMediaSourceBuffer.h"
 #include "GeckoMediaSourceBufferList.h"
+#include "GeckoMediaTypes.h"
 #include "Player.h"

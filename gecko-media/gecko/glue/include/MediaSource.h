@@ -37,12 +37,7 @@ public:
   void Detach() { /* TODO */}
 
   bool HasLiveSeekableRange();
-  media::TimeInterval LiveSeekableRange() const
-  {
-    // TODO get from mImpl
-    return media::TimeInterval(media::TimeUnit::Zero(),
-                               media::TimeUnit::Zero());
-  }
+  media::TimeInterval LiveSeekableRange();
 
   void DecoderEnded(const bool aEnded);
 

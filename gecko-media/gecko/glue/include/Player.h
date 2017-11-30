@@ -7,6 +7,7 @@
 #ifndef Player_h_
 #define Player_h_
 
+#include "GeckoMediaTypes.h"
 #include <stddef.h>
 #include <stdint.h>
 
@@ -15,12 +16,6 @@ struct RustVecU8Object
   uint8_t* mData;
   size_t mLength;
   void (*mFree)(uint8_t* mData, size_t aLength);
-};
-
-struct GeckoMediaTimeInterval
-{
-  double mStart;
-  double mEnd;
 };
 
 struct GeckoMediaMetadata

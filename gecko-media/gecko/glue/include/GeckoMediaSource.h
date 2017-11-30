@@ -7,6 +7,7 @@
 #ifndef GeckoMediaSource_h_
 #define GeckoMediaSource_h_
 
+#include "GeckoMediaTypes.h"
 #include <stddef.h>
 #include <stdint.h>
 
@@ -34,6 +35,7 @@ struct GeckoMediaSourceImpl
   mozilla::dom::MediaSourceReadyState (*mGetReadyState)(void*);
   double (*mGetDuration)(void*);
   bool (*mHasLiveSeekableRange)(void*);
+  GeckoMediaTimeInterval (*mGetLiveSeekableRange)(void*);
 };
 
 extern "C" {
