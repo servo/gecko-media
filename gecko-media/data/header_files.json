@@ -103,6 +103,7 @@
   "OggCodecStore.h": "dom/media/ogg/OggCodecStore.h",
   "OggDecoder.h": "dom/media/ogg/OggDecoder.h",
   "OggDemuxer.h": "dom/media/ogg/OggDemuxer.h",
+  "OpenSLESProvider.h": "dom/media/systemservices/OpenSLESProvider.h",
   "OpusDecoder.h": "dom/media/platforms/agnostic/OpusDecoder.h",
   "OpusParser.h": "dom/media/ogg/OpusParser.h",
   "PDMFactory.h": "dom/media/platforms/PDMFactory.h",

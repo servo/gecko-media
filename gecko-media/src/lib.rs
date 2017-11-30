@@ -6,6 +6,9 @@
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
 
+#[cfg(target_os = "android")]
+#[allow(unused_extern_crates)]
+extern crate android_ffi;
 #[allow(unused_extern_crates)]
 extern crate cubeb_pulse;
 #[allow(unused_extern_crates)]
