@@ -40,8 +40,8 @@ addons:
       - libswresample-dev
 
 env:
-  - CARGO_FLAGS=""
-  - CARGO_FLAGS="--release"
+  - CARGO_FLAGS="" ANDROID_NDK_VERSION=r15c
+  - CARGO_FLAGS="--release" ANDROID_NDK_VERSION=r15c
 
 before_install:
   - |
@@ -74,9 +74,27 @@ before_install:
     if [ "${TRAVIS_OS_NAME}" != "osx" ]; then
       export CC=gcc-5 CXX=g++-5
     fi
+  - |
+    # Download Android NDK
+    export ANDROID_HOME="${HOME}/android-ndk"
+    export ANDROID_NDK_HOME="${ANDROID_HOME}/android-ndk-${ANDROID_NDK_VERSION}"
+    mkdir -p $ANDROID_HOME
+    if [ "${TRAVIS_OS_NAME}" == "osx" ]; then
+      PKG_OS="darwin"
+    else
+      PKG_OS="linux"
+    fi;
+    curl -o ndk.zip "https://dl.google.com/android/repository/android-ndk-${ANDROID_NDK_VERSION}-${PKG_OS}-x86_64.zip"
+    unzip -q ndk.zip -d $ANDROID_HOME
+    rustup target add arm-linux-androideabi
+    ./create-ndk-standalone.sh
+    mkdir -p ./.cargo
+    mv cargo-config.toml ./.cargo/config
+
 
 script:
   - env
   - servo-tidy
   - RUST_BACKTRACE=1 cargo test --verbose $CARGO_FLAGS
+  - RUST_BACKTRACE=1 CC=arm-linux-androideabi-gcc CXX=arm-linux-androideabi-g++ PATH=$PWD/NDK/arm/bin:$PATH cargo build --verbose --target arm-linux-androideabi $CARGO_FLAGS
   - sccache --show-stats
