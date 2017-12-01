@@ -14,6 +14,7 @@ extern crate webrender;
 
 use gecko_media::{GeckoMedia, Metadata, PlayerEventSink};
 use gecko_media::{PlanarYCbCrImage, Plane, Player, TimeStamp};
+use mirror::{Canonical, Mirror};
 use rand::{thread_rng, Rng};
 use std::env;
 use std::ffi::CString;
@@ -31,6 +32,8 @@ use webrender::api::ImageData::*;
 mod ui;
 #[path = "../network_resource.rs"]
 mod network_resource;
+#[path = "../mirror.rs"]
+mod mirror;
 
 use network_resource::DownloadController;
 
@@ -43,7 +46,6 @@ enum PlayerEvent {
     StartPlayback,
     PausePlayback,
     Seek(f64),
-    BufferedRanges(Vec<Range<f64>>),
     SeekableRanges(Vec<Range<f64>>),
     UpdateCurrentImages(Vec<PlanarYCbCrImage>),
 }
@@ -54,6 +56,9 @@ struct PlayerWrapper {
     ended_receiver: mpsc::Receiver<()>,
     already_ended: bool,
     video_dimensions_receiver: mpsc::Receiver<(i32, i32)>,
+    current_time_mirror: Mirror<f64>,
+    buffered_ranges_mirror: Mirror<Vec<Range<f64>>>,
+    duration_mirror: Mirror<f64>,
 }
 
 impl PlayerWrapper {
@@ -62,9 +67,14 @@ impl PlayerWrapper {
         F: FnOnce(Box<PlayerEventSink>) -> Player,
     {
         let (sender, receiver) = mpsc::channel();
-
+        let (current_time_mirror, current_time_canonical) = Mirror::new(0.0);
+        let (buffered_ranges_mirror, buffered_ranges_canonical) = Mirror::new(vec![]);
+        let (duration_mirror, duration_canonical) = Mirror::new(0.0);
         struct Sink {
             sender: Mutex<mpsc::Sender<PlayerEvent>>,
+            current_time_canonical: Canonical<f64>,
+            buffered_ranges_canonical: Canonical<Vec<Range<f64>>>,
+            duration_canonical: Canonical<f64>,
         }
         impl PlayerEventSink for Sink {
             fn playback_ended(&self) {
@@ -82,15 +92,20 @@ impl PlayerWrapper {
                     .unwrap();
             }
             fn metadata_loaded(&self, metadata: Metadata) {
+                self.duration_canonical.set(metadata.duration);
                 self.sender
                     .lock()
                     .unwrap()
                     .send(PlayerEvent::MetadataLoaded(metadata))
                     .unwrap();
             }
-            fn duration_changed(&self, _duration: f64) {}
+            fn duration_changed(&self, duration: f64) {
+                self.duration_canonical.set(duration);
+            }
             fn loaded_data(&self) {}
-            fn time_update(&self, _time: f64) {}
+            fn time_update(&self, time: f64) {
+                self.current_time_canonical.set(time);
+            }
             fn seek_started(&self) {}
             fn seek_completed(&self) {}
             fn update_current_images(&self, images: Vec<PlanarYCbCrImage>) {
@@ -101,11 +116,8 @@ impl PlayerWrapper {
                     .unwrap();
             }
             fn buffered(&self, ranges: Vec<Range<f64>>) {
-                self.sender
-                    .lock()
-                    .unwrap()
-                    .send(PlayerEvent::BufferedRanges(ranges))
-                    .unwrap();
+                println!("Buffered: {:?}", &ranges);
+                self.buffered_ranges_canonical.set(ranges);
             }
             fn seekable(&self, ranges: Vec<Range<f64>>) {
                 self.sender
@@ -122,6 +134,9 @@ impl PlayerWrapper {
         let wrapper_sender = sender.clone();
         let sink = Box::new(Sink {
             sender: Mutex::new(sender),
+            current_time_canonical,
+            buffered_ranges_canonical,
+            duration_canonical,
         });
         let player = player_creator(sink);
         thread::spawn(move || {
@@ -163,9 +178,6 @@ impl PlayerWrapper {
                     PlayerEvent::BreakOutOfEventLoop => {
                         break;
                     },
-                    PlayerEvent::BufferedRanges(ranges) => {
-                        println!("Buffered ranges: {:?}", ranges);
-                    },
                     PlayerEvent::SeekableRanges(ranges) => {
                         println!("Seekable ranges: {:?}", ranges);
                     },
@@ -191,6 +203,9 @@ impl PlayerWrapper {
             ended_receiver,
             already_ended: false,
             video_dimensions_receiver,
+            current_time_mirror,
+            buffered_ranges_mirror,
+            duration_mirror,
         }
     }
     pub fn shutdown(&self) {
@@ -220,6 +235,15 @@ impl PlayerWrapper {
     }
     pub fn seek(&self, position: f64) {
         self.sender.send(PlayerEvent::Seek(position)).unwrap();
+    }
+    pub fn current_time(&self) -> f64 {
+        self.current_time_mirror.get()
+    }
+    pub fn buffered_ranges(&self) -> Vec<Range<f64>> {
+        self.buffered_ranges_mirror.get()
+    }
+    pub fn duration(&self) -> f64 {
+        self.duration_mirror.get()
     }
 }
 
