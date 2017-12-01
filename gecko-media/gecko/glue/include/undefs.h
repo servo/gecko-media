@@ -42,3 +42,7 @@
 #define gMozillaPoisonSize GeckoMedia_gMozillaPoisonSize
 #define gMozillaPoisonBase GeckoMedia_gMozillaPoisonBase
 #define gMozillaPoisonValue GeckoMedia_gMozillaPoisonValue
+
+// Avoid duplicating symbols from the mozilla namespace used by this repository
+// as well as SpiderMonkey.
+#define mozilla GeckoMedia_mozilla
