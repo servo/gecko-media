@@ -25,6 +25,7 @@ use std::ops::Range;
 use std::path::Path;
 use std::sync::{Mutex, mpsc};
 use std::thread;
+use ui::HandyDandyRectBuilder;
 use webrender::api::*;
 use webrender::api::ImageData::*;
 
@@ -363,6 +364,82 @@ impl App {
             },
         }
     }
+
+    fn draw_progess_bar(&mut self, builder: &mut DisplayListBuilder, layout_size: &LayoutSize) {
+        let duration = self.player_wrapper.duration() as f32;
+        if duration <= 0.0 || !duration.is_finite() {
+            return;
+        }
+
+        let border_thickness: f32 = 4.0;
+        let scrubber_thickness: i32 = 40;
+        let margin: i32 = 10;
+        let padding: f32 = 10.0;
+        let width: i32 = layout_size.width as i32;
+        let height: i32 = layout_size.height as i32;
+        let background = LayoutPrimitiveInfo::new((margin, height - (margin + scrubber_thickness)).to(
+            width -
+                margin,
+            height -
+                margin,
+        ));
+
+        let opacity = 1.0;
+        builder.push_rect(&background, ColorF::new(0.0, 0.0, 0.0, opacity));
+
+        let border_side = BorderSide {
+            color: ColorF::new(0.7, 0.7, 0.7, opacity),
+            style: BorderStyle::Solid,
+        };
+        let border_widths = BorderWidths {
+            top: border_thickness,
+            left: border_thickness,
+            bottom: border_thickness,
+            right: border_thickness,
+        };
+        let border_details = BorderDetails::Normal(NormalBorder {
+            top: border_side,
+            right: border_side,
+            bottom: border_side,
+            left: border_side,
+            radius: BorderRadius::zero(),
+        });
+
+        builder.push_border(&background, border_widths, border_details);
+
+        let time = self.player_wrapper.current_time() as f32;
+        let rect = background.rect;
+        let proportion = time / duration;
+        let x = rect.min_x() + padding;
+        let y = rect.min_y() + padding;
+        let width = rect.max_x() - rect.min_x() - 2.0 * padding;
+        let height = rect.max_y() - rect.min_y() - 2.0 * padding;
+
+        for range in self.player_wrapper.buffered_ranges().into_iter().map(|r| {
+            Range {
+                start: r.start as f32 / duration,
+                end: r.end as f32 / duration,
+            }
+        })
+        {
+            let rect = LayoutPrimitiveInfo::new(((x + width * range.start) as i32, y as i32).to(
+                (x + width * range.end) as
+                    i32,
+                (y + height) as
+                    i32,
+            ));
+            builder.push_rect(&rect, ColorF::new(0.4, 0.4, 0.4, opacity));
+        }
+
+        let cursor_width = 5.0;
+        let x = x + proportion * (width - cursor_width);
+        let cursor = LayoutPrimitiveInfo::new((x as i32, y as i32).to(
+            (x + cursor_width) as i32,
+            (y + height) as i32,
+        ));
+        builder.push_rect(&cursor, ColorF::new(0.0, 0.0, 1.0, opacity));
+
+    }
 }
 
 impl ui::Example for App {
@@ -463,7 +540,7 @@ impl ui::Example for App {
             // Render the image centered in the window.
             let render_location = LayoutPoint::new(
                 (layout_size.width - render_size.width) / 2.0,
-                (layout_size.height - render_size.height) / 2.0
+                (layout_size.height - render_size.height) / 2.0,
             );
             let info = LayoutPrimitiveInfo::with_clip_rect(LayoutRect::new(render_location, render_size), bounds);
             builder.push_yuv_image(
@@ -477,6 +554,8 @@ impl ui::Example for App {
                 ImageRendering::Auto,
             );
         }
+
+        self.draw_progess_bar(builder, &layout_size);
 
         builder.pop_stacking_context();
     }
