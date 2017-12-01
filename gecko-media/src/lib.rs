@@ -31,6 +31,10 @@ pub mod bindings {
 pub use bindings::CanPlayTypeResult as CanPlayType;
 pub use bindings::GeckoMediaTimeInterval;
 pub use mse::mediasource::{MediaSource as GeckoMediaSource, MediaSourceImpl as GeckoMediaSourceImpl};
+pub use mse::sourcebuffer::SourceBuffer as GeckoMediaSourceBuffer;
+pub use mse::sourcebuffer::SourceBufferImpl as GeckoMediaSourceBufferImpl;
+pub use mse::sourcebufferlist::SourceBufferList as GeckoMediaSourceBufferList;
+pub use mse::sourcebufferlist::SourceBufferListImpl as GeckoMediaSourceBufferListImpl;
 pub use player::{Metadata, NetworkResource, PlanarYCbCrImage, Plane, Player, PlayerEventSink, Region};
 pub use top::GeckoMedia;
 pub use timestamp::TimeStamp;
@@ -98,31 +102,67 @@ mod tests {
                     .unwrap();
             }
             fn metadata_loaded(&self, metadata: Metadata) {
-                self.sender.lock().unwrap().send(Status::MetadataLoaded(metadata)).unwrap();
+                self.sender
+                    .lock()
+                    .unwrap()
+                    .send(Status::MetadataLoaded(metadata))
+                    .unwrap();
             }
             fn duration_changed(&self, duration: f64) {
-                self.sender.lock().unwrap().send(Status::DurationChanged(duration)).unwrap();
+                self.sender
+                    .lock()
+                    .unwrap()
+                    .send(Status::DurationChanged(duration))
+                    .unwrap();
             }
             fn loaded_data(&self) {
-                self.sender.lock().unwrap().send(Status::LoadedData).unwrap();
+                self.sender
+                    .lock()
+                    .unwrap()
+                    .send(Status::LoadedData)
+                    .unwrap();
             }
             fn time_update(&self, time: f64) {
-                self.sender.lock().unwrap().send(Status::TimeUpdate(time)).unwrap();
+                self.sender
+                    .lock()
+                    .unwrap()
+                    .send(Status::TimeUpdate(time))
+                    .unwrap();
             }
             fn seek_started(&self) {
-                self.sender.lock().unwrap().send(Status::SeekStarted).unwrap();
+                self.sender
+                    .lock()
+                    .unwrap()
+                    .send(Status::SeekStarted)
+                    .unwrap();
             }
             fn seek_completed(&self) {
-                self.sender.lock().unwrap().send(Status::SeekComplete).unwrap();
+                self.sender
+                    .lock()
+                    .unwrap()
+                    .send(Status::SeekComplete)
+                    .unwrap();
             }
             fn update_current_images(&self, images: Vec<PlanarYCbCrImage>) {
-                self.sender.lock().unwrap().send(Status::UpdateImages(images)).unwrap();
+                self.sender
+                    .lock()
+                    .unwrap()
+                    .send(Status::UpdateImages(images))
+                    .unwrap();
             }
             fn buffered(&self, ranges: Vec<Range<f64>>) {
-                self.sender.lock().unwrap().send(Status::Buffered(ranges)).unwrap();
+                self.sender
+                    .lock()
+                    .unwrap()
+                    .send(Status::Buffered(ranges))
+                    .unwrap();
             }
             fn seekable(&self, ranges: Vec<Range<f64>>) {
-                self.sender.lock().unwrap().send(Status::Seekable(ranges)).unwrap();
+                self.sender
+                    .lock()
+                    .unwrap()
+                    .send(Status::Seekable(ranges))
+                    .unwrap();
             }
         }
         let sink = Box::new(Sink {
@@ -288,7 +328,7 @@ mod tests {
             }
         }
 
-        let _ =  MediaSourceDom::new();
+        let _ = MediaSourceDom::new();
 
         let gecko_media = GeckoMedia::get().unwrap();
 

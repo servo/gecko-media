@@ -8,23 +8,32 @@
 
 #include "GeckoMediaMacros.h"
 #include "SourceBuffer.h"
-#include "UniquePtr.h"
+#include "RefPtr.h"
 
-using namespace mozilla;
 using mozilla::dom::SourceBuffer;
 
 struct GeckoMediaSourceBuffer
 {
   GeckoMediaSourceBuffer(size_t aId, GeckoMediaSourceBufferImpl aImpl)
-    : mSourceBuffer(MakeUnique<SourceBuffer>(aImpl))
+    : mSourceBuffer(new SourceBuffer(aImpl))
     , mId(aId)
   {
   }
 
-  UniquePtr<SourceBuffer> mSourceBuffer;
+  RefPtr<SourceBuffer> mSourceBuffer;
   const size_t mId;
 };
 
 IMPL_GECKO_MEDIA_REFLECTOR(GeckoMediaSourceBuffer,
                            SourceBuffer,
                            GeckoMediaSourceBufferImpl)
+
+SourceBuffer*
+GetSourceBuffer(const size_t aId)
+{
+  GeckoMediaSourceBuffer* reflector = GetReflector(aId);
+  if (NS_WARN_IF(!reflector)) {
+    return nullptr;
+  }
+  return reflector->mSourceBuffer;
+}

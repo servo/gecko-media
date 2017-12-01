@@ -8,6 +8,7 @@
 #define mozilla_dom_SourceBuffer_h_
 
 #include "GeckoMediaSourceBuffer.h"
+#include "nsISupportsImpl.h"
 #include "TimeUnits.h"
 
 namespace mozilla
@@ -18,8 +19,9 @@ namespace dom
 class SourceBuffer final
 {
 public:
+  NS_INLINE_DECL_REFCOUNTING(SourceBuffer)
+
   SourceBuffer(GeckoMediaSourceBufferImpl aImpl);
-  ~SourceBuffer();
 
   media::TimeIntervals GetTimeIntervals() {
     // TODO get from mImpl
@@ -29,6 +31,8 @@ public:
   void Detach() { /* TODO */ }
 
 private:
+  ~SourceBuffer();
+
   GeckoMediaSourceBufferImpl mImpl;
 };
 

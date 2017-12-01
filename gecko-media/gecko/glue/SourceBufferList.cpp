@@ -6,22 +6,51 @@
 
 #include "SourceBufferList.h"
 
-namespace mozilla
-{
-namespace dom
-{
+#include "GeckoMediaSourceBuffer.h"
+#include "nsThreadManager.h"
+#include "SourceBuffer.h"
+
+namespace mozilla {
+namespace dom {
 
 SourceBufferList::SourceBufferList(GeckoMediaSourceBufferListImpl aImpl)
-    : mImpl(aImpl)
+  : mImpl(aImpl)
 {
 }
 
 SourceBufferList::~SourceBufferList()
 {
-  if (mImpl.mContext && mImpl.mFree)
-  {
+  MOZ_ASSERT(NS_IsMainThread());
+
+  if (mImpl.mContext && mImpl.mFree) {
     (*mImpl.mFree)(mImpl.mContext);
   }
+}
+
+SourceBuffer*
+SourceBufferList::IndexedGetter(uint32_t aIndex, bool& aFound)
+{
+  MOZ_ASSERT(NS_IsMainThread());
+
+  if (!mImpl.mContext || !mImpl.mIndexedGetter) {
+    aFound = false;
+    return nullptr;
+  }
+
+  size_t id;
+  aFound = (*mImpl.mIndexedGetter)(mImpl.mContext, aIndex, &id);
+
+  if (!aFound) {
+    return nullptr;
+  }
+
+  auto sourceBuffer = GetSourceBuffer(id);
+  if (!sourceBuffer) {
+    aFound = false;
+    return nullptr;
+  }
+
+  return sourceBuffer;
 }
 
 } // namespace dom

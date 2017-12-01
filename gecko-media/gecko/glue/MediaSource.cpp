@@ -162,6 +162,8 @@ MediaSource::EndOfStreamError(const GeckoMediaEndOfStreamError aError)
     case GeckoMediaEndOfStreamError::Decode:
       mDecoder->DecodeError(NS_ERROR_DOM_MEDIA_FATAL_ERR);
       break;
+    default:
+      break;
   }
 }
 
