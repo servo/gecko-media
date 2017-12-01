@@ -85,7 +85,7 @@ pub trait Example {
     fn should_close_window(&mut self) -> bool {
         false
     }
-    fn video_dimensions(&mut self) -> Option<(i32, i32)> {
+    fn video_dimensions(&self) -> Option<(i32, i32)> {
         None
     }
 }
@@ -192,8 +192,10 @@ pub fn main_wrapper(example: &mut Example, options: Option<webrender::RendererOp
             api.set_window_parameters(
                 document_id,
                 DeviceUintSize::new(width, height),
-                DeviceUintRect::new(DeviceUintPoint::new(0, 0),
-                                    DeviceUintSize::new(width, height)),
+                DeviceUintRect::new(
+                    DeviceUintPoint::new(0, 0),
+                    DeviceUintSize::new(width, height),
+                ),
                 window.hidpi_factor(),
             );
         }

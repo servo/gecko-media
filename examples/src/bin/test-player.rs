@@ -56,10 +56,10 @@ struct PlayerWrapper {
     shutdown_receiver: mpsc::Receiver<()>,
     ended_receiver: mpsc::Receiver<()>,
     already_ended: bool,
-    video_dimensions_receiver: mpsc::Receiver<(i32, i32)>,
     current_time_mirror: Mirror<f64>,
     buffered_ranges_mirror: Mirror<Vec<Range<f64>>>,
     duration_mirror: Mirror<f64>,
+    video_dimensions_mirror: Mirror<Option<(i32, i32)>>,
 }
 
 impl PlayerWrapper {
@@ -71,11 +71,13 @@ impl PlayerWrapper {
         let (current_time_mirror, current_time_canonical) = Mirror::new(0.0);
         let (buffered_ranges_mirror, buffered_ranges_canonical) = Mirror::new(vec![]);
         let (duration_mirror, duration_canonical) = Mirror::new(0.0);
+        let (video_dimensions_mirror, video_dimensions_canonical) = Mirror::new(None);
         struct Sink {
             sender: Mutex<mpsc::Sender<PlayerEvent>>,
             current_time_canonical: Canonical<f64>,
             buffered_ranges_canonical: Canonical<Vec<Range<f64>>>,
             duration_canonical: Canonical<f64>,
+            video_dimensions_canonical: Canonical<Option<(i32, i32)>>,
         }
         impl PlayerEventSink for Sink {
             fn playback_ended(&self) {
@@ -94,6 +96,9 @@ impl PlayerWrapper {
             }
             fn metadata_loaded(&self, metadata: Metadata) {
                 self.duration_canonical.set(metadata.duration);
+                self.video_dimensions_canonical.set(
+                    metadata.video_dimensions,
+                );
                 self.sender
                     .lock()
                     .unwrap()
@@ -131,13 +136,13 @@ impl PlayerWrapper {
 
         let (shutdown_sender, shutdown_receiver) = mpsc::channel();
         let (ended_sender, ended_receiver) = mpsc::channel();
-        let (video_dimensions_sender, video_dimensions_receiver) = mpsc::channel();
         let wrapper_sender = sender.clone();
         let sink = Box::new(Sink {
             sender: Mutex::new(sender),
             current_time_canonical,
             buffered_ranges_canonical,
             duration_canonical,
+            video_dimensions_canonical,
         });
         let player = player_creator(sink);
         thread::spawn(move || {
@@ -162,10 +167,6 @@ impl PlayerWrapper {
                     PlayerEvent::MetadataLoaded(metadata) => {
                         println!("MetadataLoaded; duration: {}", metadata.duration);
                         duration = metadata.duration;
-                        if let Some(dimensions) = metadata.video_dimensions {
-                            println!("Video dimensions: {:?}", dimensions);
-                            video_dimensions_sender.send(dimensions).unwrap();
-                        }
                     },
                     PlayerEvent::StartPlayback => {
                         player.play();
@@ -203,10 +204,10 @@ impl PlayerWrapper {
             shutdown_receiver,
             ended_receiver,
             already_ended: false,
-            video_dimensions_receiver,
             current_time_mirror,
             buffered_ranges_mirror,
             duration_mirror,
+            video_dimensions_mirror,
         }
     }
     pub fn shutdown(&self) {
@@ -228,11 +229,8 @@ impl PlayerWrapper {
     pub fn pause(&self) {
         self.sender.send(PlayerEvent::PausePlayback).unwrap();
     }
-    pub fn dimensions_changed(&mut self) -> Option<(i32, i32)> {
-        if let Ok(dimensions) = self.video_dimensions_receiver.try_recv() {
-            return Some(dimensions);
-        }
-        None
+    pub fn video_dimensions(&self) -> Option<(i32, i32)> {
+        self.video_dimensions_mirror.get()
     }
     pub fn seek(&self, position: f64) {
         self.sender.send(PlayerEvent::Seek(position)).unwrap();
@@ -287,7 +285,6 @@ struct App {
     last_frame_id: u32,
     player_wrapper: PlayerWrapper,
     playing: bool,
-    intrinsic_size: Option<(i32, i32)>,
 }
 
 impl App {
@@ -307,7 +304,6 @@ impl App {
             last_frame_id: 0,
             player_wrapper: PlayerWrapper::new(player_creator, frame_sender),
             playing: false,
-            intrinsic_size: None,
         }
     }
     fn shutdown(&self) {
@@ -470,12 +466,8 @@ impl ui::Example for App {
         self.player_wrapper.playback_ended()
     }
 
-    fn video_dimensions(&mut self) -> Option<(i32, i32)> {
-        let dimensions = self.player_wrapper.dimensions_changed();
-        if dimensions.is_some() {
-            self.intrinsic_size = dimensions.clone();
-        }
-        self.intrinsic_size.clone()
+    fn video_dimensions(&self) -> Option<(i32, i32)> {
+        self.player_wrapper.video_dimensions()
     }
 
     fn render(
@@ -499,10 +491,6 @@ impl ui::Example for App {
             Vec::new(),
         );
 
-        // Note: video_dimensions() mutably borrows, so must call this outside
-        // the loop below.
-        let intrinsic_size = self.video_dimensions();
-
         if !self.frame_queue.is_empty() {
             let frame = &self.frame_queue[0];
             self.y_channel_key =
@@ -516,7 +504,7 @@ impl ui::Example for App {
             // at which the video frame is supposed to be rendered at after
             // scaling to respect the Pixel Aspect Ratio. If we don't know the
             // intrinsic size, we'll just use the frame size.
-            let (width, height) = match intrinsic_size {
+            let (width, height) = match self.video_dimensions() {
                 Some((width, height)) => (width, height),
                 None => (frame.picture.width, frame.picture.height),
             };
