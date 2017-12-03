@@ -14,6 +14,7 @@ extern crate webrender;
 
 use gecko_media::{GeckoMedia, Metadata, PlayerEventSink};
 use gecko_media::{PlanarYCbCrImage, Plane, Player, TimeStamp};
+use mirror::{Canonical, Mirror};
 use rand::{thread_rng, Rng};
 use std::env;
 use std::ffi::CString;
@@ -24,6 +25,7 @@ use std::ops::Range;
 use std::path::Path;
 use std::sync::{Mutex, mpsc};
 use std::thread;
+use ui::HandyDandyRectBuilder;
 use webrender::api::*;
 use webrender::api::ImageData::*;
 
@@ -31,6 +33,8 @@ use webrender::api::ImageData::*;
 mod ui;
 #[path = "../network_resource.rs"]
 mod network_resource;
+#[path = "../mirror.rs"]
+mod mirror;
 
 use network_resource::DownloadController;
 
@@ -43,7 +47,6 @@ enum PlayerEvent {
     StartPlayback,
     PausePlayback,
     Seek(f64),
-    BufferedRanges(Vec<Range<f64>>),
     SeekableRanges(Vec<Range<f64>>),
     UpdateCurrentImages(Vec<PlanarYCbCrImage>),
 }
@@ -53,7 +56,10 @@ struct PlayerWrapper {
     shutdown_receiver: mpsc::Receiver<()>,
     ended_receiver: mpsc::Receiver<()>,
     already_ended: bool,
-    video_dimensions_receiver: mpsc::Receiver<(i32, i32)>,
+    current_time_mirror: Mirror<f64>,
+    buffered_ranges_mirror: Mirror<Vec<Range<f64>>>,
+    duration_mirror: Mirror<f64>,
+    video_dimensions_mirror: Mirror<Option<(i32, i32)>>,
 }
 
 impl PlayerWrapper {
@@ -62,9 +68,16 @@ impl PlayerWrapper {
         F: FnOnce(Box<PlayerEventSink>) -> Player,
     {
         let (sender, receiver) = mpsc::channel();
-
+        let (current_time_mirror, current_time_canonical) = Mirror::new(0.0);
+        let (buffered_ranges_mirror, buffered_ranges_canonical) = Mirror::new(vec![]);
+        let (duration_mirror, duration_canonical) = Mirror::new(0.0);
+        let (video_dimensions_mirror, video_dimensions_canonical) = Mirror::new(None);
         struct Sink {
             sender: Mutex<mpsc::Sender<PlayerEvent>>,
+            current_time_canonical: Canonical<f64>,
+            buffered_ranges_canonical: Canonical<Vec<Range<f64>>>,
+            duration_canonical: Canonical<f64>,
+            video_dimensions_canonical: Canonical<Option<(i32, i32)>>,
         }
         impl PlayerEventSink for Sink {
             fn playback_ended(&self) {
@@ -82,15 +95,23 @@ impl PlayerWrapper {
                     .unwrap();
             }
             fn metadata_loaded(&self, metadata: Metadata) {
+                self.duration_canonical.set(metadata.duration);
+                self.video_dimensions_canonical.set(
+                    metadata.video_dimensions,
+                );
                 self.sender
                     .lock()
                     .unwrap()
                     .send(PlayerEvent::MetadataLoaded(metadata))
                     .unwrap();
             }
-            fn duration_changed(&self, _duration: f64) {}
+            fn duration_changed(&self, duration: f64) {
+                self.duration_canonical.set(duration);
+            }
             fn loaded_data(&self) {}
-            fn time_update(&self, _time: f64) {}
+            fn time_update(&self, time: f64) {
+                self.current_time_canonical.set(time);
+            }
             fn seek_started(&self) {}
             fn seek_completed(&self) {}
             fn update_current_images(&self, images: Vec<PlanarYCbCrImage>) {
@@ -101,11 +122,8 @@ impl PlayerWrapper {
                     .unwrap();
             }
             fn buffered(&self, ranges: Vec<Range<f64>>) {
-                self.sender
-                    .lock()
-                    .unwrap()
-                    .send(PlayerEvent::BufferedRanges(ranges))
-                    .unwrap();
+                println!("Buffered: {:?}", &ranges);
+                self.buffered_ranges_canonical.set(ranges);
             }
             fn seekable(&self, ranges: Vec<Range<f64>>) {
                 self.sender
@@ -118,10 +136,13 @@ impl PlayerWrapper {
 
         let (shutdown_sender, shutdown_receiver) = mpsc::channel();
         let (ended_sender, ended_receiver) = mpsc::channel();
-        let (video_dimensions_sender, video_dimensions_receiver) = mpsc::channel();
         let wrapper_sender = sender.clone();
         let sink = Box::new(Sink {
             sender: Mutex::new(sender),
+            current_time_canonical,
+            buffered_ranges_canonical,
+            duration_canonical,
+            video_dimensions_canonical,
         });
         let player = player_creator(sink);
         thread::spawn(move || {
@@ -146,10 +167,6 @@ impl PlayerWrapper {
                     PlayerEvent::MetadataLoaded(metadata) => {
                         println!("MetadataLoaded; duration: {}", metadata.duration);
                         duration = metadata.duration;
-                        if let Some(dimensions) = metadata.video_dimensions {
-                            println!("Video dimensions: {:?}", dimensions);
-                            video_dimensions_sender.send(dimensions).unwrap();
-                        }
                     },
                     PlayerEvent::StartPlayback => {
                         player.play();
@@ -162,9 +179,6 @@ impl PlayerWrapper {
                     },
                     PlayerEvent::BreakOutOfEventLoop => {
                         break;
-                    },
-                    PlayerEvent::BufferedRanges(ranges) => {
-                        println!("Buffered ranges: {:?}", ranges);
                     },
                     PlayerEvent::SeekableRanges(ranges) => {
                         println!("Seekable ranges: {:?}", ranges);
@@ -190,7 +204,10 @@ impl PlayerWrapper {
             shutdown_receiver,
             ended_receiver,
             already_ended: false,
-            video_dimensions_receiver,
+            current_time_mirror,
+            buffered_ranges_mirror,
+            duration_mirror,
+            video_dimensions_mirror,
         }
     }
     pub fn shutdown(&self) {
@@ -212,14 +229,20 @@ impl PlayerWrapper {
     pub fn pause(&self) {
         self.sender.send(PlayerEvent::PausePlayback).unwrap();
     }
-    pub fn dimensions_changed(&mut self) -> Option<(i32, i32)> {
-        if let Ok(dimensions) = self.video_dimensions_receiver.try_recv() {
-            return Some(dimensions);
-        }
-        None
+    pub fn video_dimensions(&self) -> Option<(i32, i32)> {
+        self.video_dimensions_mirror.get()
     }
     pub fn seek(&self, position: f64) {
         self.sender.send(PlayerEvent::Seek(position)).unwrap();
+    }
+    pub fn current_time(&self) -> f64 {
+        self.current_time_mirror.get()
+    }
+    pub fn buffered_ranges(&self) -> Vec<Range<f64>> {
+        self.buffered_ranges_mirror.get()
+    }
+    pub fn duration(&self) -> f64 {
+        self.duration_mirror.get()
     }
 }
 
@@ -262,7 +285,6 @@ struct App {
     last_frame_id: u32,
     player_wrapper: PlayerWrapper,
     playing: bool,
-    intrinsic_size: Option<(i32, i32)>,
 }
 
 impl App {
@@ -282,7 +304,6 @@ impl App {
             last_frame_id: 0,
             player_wrapper: PlayerWrapper::new(player_creator, frame_sender),
             playing: false,
-            intrinsic_size: None,
         }
     }
     fn shutdown(&self) {
@@ -339,6 +360,82 @@ impl App {
             },
         }
     }
+
+    fn draw_progess_bar(&mut self, builder: &mut DisplayListBuilder, layout_size: &LayoutSize) {
+        let duration = self.player_wrapper.duration() as f32;
+        if duration <= 0.0 || !duration.is_finite() {
+            return;
+        }
+
+        let border_thickness: f32 = 4.0;
+        let scrubber_thickness: i32 = 40;
+        let margin: i32 = 10;
+        let padding: f32 = 10.0;
+        let width: i32 = layout_size.width as i32;
+        let height: i32 = layout_size.height as i32;
+        let background = LayoutPrimitiveInfo::new((margin, height - (margin + scrubber_thickness)).to(
+            width -
+                margin,
+            height -
+                margin,
+        ));
+
+        let opacity = 1.0;
+        builder.push_rect(&background, ColorF::new(0.0, 0.0, 0.0, opacity));
+
+        let border_side = BorderSide {
+            color: ColorF::new(0.7, 0.7, 0.7, opacity),
+            style: BorderStyle::Solid,
+        };
+        let border_widths = BorderWidths {
+            top: border_thickness,
+            left: border_thickness,
+            bottom: border_thickness,
+            right: border_thickness,
+        };
+        let border_details = BorderDetails::Normal(NormalBorder {
+            top: border_side,
+            right: border_side,
+            bottom: border_side,
+            left: border_side,
+            radius: BorderRadius::zero(),
+        });
+
+        builder.push_border(&background, border_widths, border_details);
+
+        let time = self.player_wrapper.current_time() as f32;
+        let rect = background.rect;
+        let proportion = time / duration;
+        let x = rect.min_x() + padding;
+        let y = rect.min_y() + padding;
+        let width = rect.max_x() - rect.min_x() - 2.0 * padding;
+        let height = rect.max_y() - rect.min_y() - 2.0 * padding;
+
+        for range in self.player_wrapper.buffered_ranges().into_iter().map(|r| {
+            Range {
+                start: r.start as f32 / duration,
+                end: r.end as f32 / duration,
+            }
+        })
+        {
+            let rect = LayoutPrimitiveInfo::new(((x + width * range.start) as i32, y as i32).to(
+                (x + width * range.end) as
+                    i32,
+                (y + height) as
+                    i32,
+            ));
+            builder.push_rect(&rect, ColorF::new(0.4, 0.4, 0.4, opacity));
+        }
+
+        let cursor_width = 5.0;
+        let x = x + proportion * (width - cursor_width);
+        let cursor = LayoutPrimitiveInfo::new((x as i32, y as i32).to(
+            (x + cursor_width) as i32,
+            (y + height) as i32,
+        ));
+        builder.push_rect(&cursor, ColorF::new(0.0, 0.0, 1.0, opacity));
+
+    }
 }
 
 impl ui::Example for App {
@@ -369,12 +466,8 @@ impl ui::Example for App {
         self.player_wrapper.playback_ended()
     }
 
-    fn video_dimensions(&mut self) -> Option<(i32, i32)> {
-        let dimensions = self.player_wrapper.dimensions_changed();
-        if dimensions.is_some() {
-            self.intrinsic_size = dimensions.clone();
-        }
-        self.intrinsic_size.clone()
+    fn video_dimensions(&self) -> Option<(i32, i32)> {
+        self.player_wrapper.video_dimensions()
     }
 
     fn render(
@@ -398,10 +491,6 @@ impl ui::Example for App {
             Vec::new(),
         );
 
-        // Note: video_dimensions() mutably borrows, so must call this outside
-        // the loop below.
-        let intrinsic_size = self.video_dimensions();
-
         if !self.frame_queue.is_empty() {
             let frame = &self.frame_queue[0];
             self.y_channel_key =
@@ -415,7 +504,7 @@ impl ui::Example for App {
             // at which the video frame is supposed to be rendered at after
             // scaling to respect the Pixel Aspect Ratio. If we don't know the
             // intrinsic size, we'll just use the frame size.
-            let (width, height) = match intrinsic_size {
+            let (width, height) = match self.video_dimensions() {
                 Some((width, height)) => (width, height),
                 None => (frame.picture.width, frame.picture.height),
             };
@@ -439,7 +528,7 @@ impl ui::Example for App {
             // Render the image centered in the window.
             let render_location = LayoutPoint::new(
                 (layout_size.width - render_size.width) / 2.0,
-                (layout_size.height - render_size.height) / 2.0
+                (layout_size.height - render_size.height) / 2.0,
             );
             let info = LayoutPrimitiveInfo::with_clip_rect(LayoutRect::new(render_location, render_size), bounds);
             builder.push_yuv_image(
@@ -453,6 +542,8 @@ impl ui::Example for App {
                 ImageRendering::Auto,
             );
         }
+
+        self.draw_progess_bar(builder, &layout_size);
 
         builder.pop_stacking_context();
     }

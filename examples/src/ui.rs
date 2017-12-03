@@ -39,6 +39,28 @@ impl RenderNotifier for Notifier {
     }
 }
 
+pub trait HandyDandyRectBuilder {
+    fn to(&self, x2: i32, y2: i32) -> LayoutRect;
+    fn by(&self, w: i32, h: i32) -> LayoutRect;
+}
+// Allows doing `(x, y).to(x2, y2)` or `(x, y).by(width, height)` with i32
+// values to build a f32 LayoutRect
+impl HandyDandyRectBuilder for (i32, i32) {
+    fn to(&self, x2: i32, y2: i32) -> LayoutRect {
+        LayoutRect::new(
+            LayoutPoint::new(self.0 as f32, self.1 as f32),
+            LayoutSize::new((x2 - self.0) as f32, (y2 - self.1) as f32),
+        )
+    }
+
+    fn by(&self, w: i32, h: i32) -> LayoutRect {
+        LayoutRect::new(
+            LayoutPoint::new(self.0 as f32, self.1 as f32),
+            LayoutSize::new(w as f32, h as f32),
+        )
+    }
+}
+
 pub trait Example {
     fn render(
         &mut self,
@@ -63,7 +85,7 @@ pub trait Example {
     fn should_close_window(&mut self) -> bool {
         false
     }
-    fn video_dimensions(&mut self) -> Option<(i32, i32)> {
+    fn video_dimensions(&self) -> Option<(i32, i32)> {
         None
     }
 }
@@ -170,8 +192,10 @@ pub fn main_wrapper(example: &mut Example, options: Option<webrender::RendererOp
             api.set_window_parameters(
                 document_id,
                 DeviceUintSize::new(width, height),
-                DeviceUintRect::new(DeviceUintPoint::new(0, 0),
-                                    DeviceUintSize::new(width, height)),
+                DeviceUintRect::new(
+                    DeviceUintPoint::new(0, 0),
+                    DeviceUintSize::new(width, height),
+                ),
                 window.hidpi_factor(),
             );
         }
