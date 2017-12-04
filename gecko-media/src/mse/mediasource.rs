@@ -2,7 +2,9 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use bindings::GeckoMediaSourceImpl;
+use bindings::GeckoMedia_MediaSource_EndOfStreamError;
+use bindings::{GeckoMediaEndOfStreamError, GeckoMediaSourceImpl, GeckoMediaTimeInterval};
+use bindings::{GeckoMedia_MediaSource_DecoderEnded, GeckoMedia_MediaSource_DurationChange};
 use std::rc::Rc;
 
 def_gecko_media_struct!(MediaSource);
@@ -11,7 +13,28 @@ impl_new_gecko_media_struct!(MediaSource, MediaSourceImpl, GeckoMedia_MediaSourc
 
 impl_drop_gecko_media_struct!(MediaSource, GeckoMedia_MediaSource_Shutdown);
 
-impl MediaSource {}
+impl MediaSource {
+    pub fn duration_change(&self, duration: f64) {
+        let id = self.id;
+        self.gecko_media.queue_task(move || unsafe {
+            GeckoMedia_MediaSource_DurationChange(id, duration);
+        });
+    }
+
+    pub fn decoder_ended(&self, ended: bool) {
+        let id = self.id;
+        self.gecko_media.queue_task(move || unsafe {
+            GeckoMedia_MediaSource_DecoderEnded(id, ended);
+        });
+    }
+
+    pub fn end_of_stream_error(&self, error: GeckoMediaEndOfStreamError) {
+        let id = self.id;
+        self.gecko_media.queue_task(move || unsafe {
+            GeckoMedia_MediaSource_EndOfStreamError(id, error);
+        })
+    }
+}
 
 /// Users of MediaSource pass in an implementation of this trait when creating
 /// MediaSource objects.
@@ -20,6 +43,10 @@ pub trait MediaSourceImpl {
     fn get_ready_state(&self) -> i32;
     /// MediaSource duration getter.
     fn get_duration(&self) -> f64;
+    /// Tell whether a media source has live seekable range or not.
+    fn has_live_seekable_range(&self) -> bool;
+    /// MediaSource live seekable range getter.
+    fn get_live_seekable_range(&self) -> GeckoMediaTimeInterval;
 }
 
 fn to_ffi_callbacks(callbacks: Rc<MediaSourceImpl>) -> GeckoMediaSourceImpl {
@@ -30,6 +57,8 @@ fn to_ffi_callbacks(callbacks: Rc<MediaSourceImpl>) -> GeckoMediaSourceImpl {
 
     impl_simple_ffi_callback_wrapper!(get_ready_state, i32);
     impl_simple_ffi_callback_wrapper!(get_duration, f64);
+    impl_simple_ffi_callback_wrapper!(has_live_seekable_range, bool);
+    impl_simple_ffi_callback_wrapper!(get_live_seekable_range, GeckoMediaTimeInterval);
 
     GeckoMediaSourceImpl {
         mContext: Box::into_raw(Box::new(Wrapper {
@@ -38,5 +67,7 @@ fn to_ffi_callbacks(callbacks: Rc<MediaSourceImpl>) -> GeckoMediaSourceImpl {
         mFree: Some(free),
         mGetReadyState: Some(get_ready_state),
         mGetDuration: Some(get_duration),
+        mHasLiveSeekableRange: Some(has_live_seekable_range),
+        mGetLiveSeekableRange: Some(get_live_seekable_range),
     }
 }

@@ -29,6 +29,7 @@ pub mod bindings {
 
 #[doc(inline)]
 pub use bindings::CanPlayTypeResult as CanPlayType;
+pub use bindings::GeckoMediaTimeInterval;
 pub use mse::mediasource::{MediaSource as GeckoMediaSource, MediaSourceImpl as GeckoMediaSourceImpl};
 pub use player::{Metadata, NetworkResource, PlanarYCbCrImage, Plane, Player, PlayerEventSink, Region};
 pub use top::GeckoMedia;
@@ -42,7 +43,7 @@ mod tests {
     use std::io::prelude::*;
     use std::ops::Range;
     use std::sync::{Mutex, mpsc};
-    use {CanPlayType, GeckoMedia, GeckoMediaSource, GeckoMediaSourceImpl};
+    use {CanPlayType, GeckoMedia, GeckoMediaSource, GeckoMediaSourceImpl, GeckoMediaTimeInterval};
 
     fn test_can_play_type() {
         let gecko_media = GeckoMedia::get().unwrap();
@@ -275,6 +276,15 @@ mod tests {
             }
             fn get_duration(&self) -> f64 {
                 self.values.duration
+            }
+            fn has_live_seekable_range(&self) -> bool {
+                false
+            }
+            fn get_live_seekable_range(&self) -> GeckoMediaTimeInterval {
+                GeckoMediaTimeInterval {
+                    mStart: 0.,
+                    mEnd: 0.,
+                }
             }
         }
 

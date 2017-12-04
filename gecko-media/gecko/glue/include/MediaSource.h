@@ -8,6 +8,7 @@
 #define mozilla_dom_MediaSource_h_
 
 #include "GeckoMediaSource.h"
+#include "MediaSourceDecoder.h"
 #include "SourceBufferList.h"
 #include "TimeUnits.h"
 
@@ -29,23 +30,25 @@ public:
   }
 
   double Duration();
+  void DurationChange(const double aDuration);
 
   MediaSourceReadyState ReadyState();
 
-  static bool IsTypeSupported(const char* aType);
-
   void Detach() { /* TODO */}
 
-  bool HasLiveSeekableRange() const { return false; /* TODO get from mImpl */ }
-  media::TimeInterval LiveSeekableRange() const
-  {
-    // TODO get from mImpl
-    return media::TimeInterval(media::TimeUnit::Zero(),
-                               media::TimeUnit::Zero());
-  }
+  bool HasLiveSeekableRange();
+  media::TimeInterval LiveSeekableRange();
+
+  void DecoderEnded(const bool aEnded);
+
+  void EndOfStreamError(const GeckoMediaEndOfStreamError aError);
+
+  static bool IsTypeSupported(const char* aType);
 
 private:
   GeckoMediaSourceImpl mImpl;
+
+  RefPtr<MediaSourceDecoder> mDecoder;
 };
 
 } // namespace dom

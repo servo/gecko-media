@@ -32,3 +32,28 @@ GeckoMedia_MediaSource_IsTypeSupported(const char* aMimeType)
 {
   return MediaSource::IsTypeSupported(aMimeType);
 }
+
+void
+GeckoMedia_MediaSource_DurationChange(size_t aId, const double aDuration)
+{
+  IMPL_GECKO_MEDIA_REFLECTOR_GET(GeckoMediaSource)
+
+  reflector->mMediaSource->DurationChange(aDuration);
+}
+
+void
+GeckoMedia_MediaSource_DecoderEnded(size_t aId, const bool aEnded)
+{
+  IMPL_GECKO_MEDIA_REFLECTOR_GET(GeckoMediaSource)
+
+  reflector->mMediaSource->DecoderEnded(aEnded);
+}
+
+void
+GeckoMedia_MediaSource_EndOfStreamError(size_t aId,
+                                        GeckoMediaEndOfStreamError aError)
+{
+  IMPL_GECKO_MEDIA_REFLECTOR_GET(GeckoMediaSource)
+
+  reflector->mMediaSource->EndOfStreamError(aError);
+}

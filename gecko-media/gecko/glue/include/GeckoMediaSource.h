@@ -7,6 +7,7 @@
 #ifndef GeckoMediaSource_h_
 #define GeckoMediaSource_h_
 
+#include "GeckoMediaTypes.h"
 #include <stddef.h>
 #include <stdint.h>
 
@@ -33,6 +34,8 @@ struct GeckoMediaSourceImpl
   void (*mFree)(void*);
   mozilla::dom::MediaSourceReadyState (*mGetReadyState)(void*);
   double (*mGetDuration)(void*);
+  bool (*mHasLiveSeekableRange)(void*);
+  GeckoMediaTimeInterval (*mGetLiveSeekableRange)(void*);
 };
 
 extern "C" {
@@ -44,6 +47,16 @@ GeckoMedia_MediaSource_Shutdown(size_t aId);
 
 bool
 GeckoMedia_MediaSource_IsTypeSupported(const char* aMimeType);
+
+void
+GeckoMedia_MediaSource_DurationChange(size_t aId, const double aDuration);
+
+void
+GeckoMedia_MediaSource_DecoderEnded(size_t aId, const bool aEnded);
+
+void
+GeckoMedia_MediaSource_EndOfStreamError(size_t aId,
+                                        GeckoMediaEndOfStreamError aError);
 }
 
 #endif // GeckoMediaSource_h
