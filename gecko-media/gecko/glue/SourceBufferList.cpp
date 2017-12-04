@@ -53,5 +53,15 @@ SourceBufferList::IndexedGetter(uint32_t aIndex, bool& aFound)
   return sourceBuffer;
 }
 
+uint32_t
+SourceBufferList::Length()
+{
+  MOZ_ASSERT(NS_IsMainThread());
+
+  if (mImpl.mContext && mImpl.mLength) {
+    return (*mImpl.mLength)(mImpl.mContext);
+  }
+}
+
 } // namespace dom
 } // namespace mozilla

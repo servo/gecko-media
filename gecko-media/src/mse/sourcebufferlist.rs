@@ -18,6 +18,8 @@ impl_drop_gecko_media_struct!(SourceBufferList, GeckoMedia_SourceBufferList_Shut
 pub trait SourceBufferListImpl {
     /// Get the internal identifier of the index'th SourceBuffer in the list if found.
     fn indexed_getter(&self, index: u32, source_buffer: *mut usize) -> bool;
+    /// Get the number of SourceBuffer objects in the list.
+    fn length(&self) -> u32;
 }
 
 pub fn to_ffi_callbacks(callbacks: Rc<SourceBufferListImpl>) -> GeckoMediaSourceBufferListImpl {
@@ -25,6 +27,8 @@ pub fn to_ffi_callbacks(callbacks: Rc<SourceBufferListImpl>) -> GeckoMediaSource
     // when we pass into C++ code.
 
     def_gecko_callbacks_ffi_wrapper!(Rc<SourceBufferListImpl>);
+
+    impl_simple_ffi_callback_wrapper!(length, u32);
 
     unsafe extern "C" fn indexed_getter(ptr: *mut c_void, index: u32, id: *mut usize) -> bool {
         let wrapper = &*(ptr as *mut Wrapper);
@@ -37,5 +41,6 @@ pub fn to_ffi_callbacks(callbacks: Rc<SourceBufferListImpl>) -> GeckoMediaSource
         })) as *mut c_void,
         mFree: Some(free),
         mIndexedGetter: Some(indexed_getter),
+        mLength: Some(length),
     }
 }

@@ -26,7 +26,7 @@ public:
 
   SourceBuffer* IndexedGetter(uint32_t aIndex, bool& aFound);
 
-  int32_t Length() { return 0; /* TODO get from mImpl */ }
+  uint32_t Length();
 
 private:
   ~SourceBufferList();

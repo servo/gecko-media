@@ -18,6 +18,7 @@ struct GeckoMediaSourceBufferListImpl
   void* mContext;
   void (*mFree)(void*);
   bool (*mIndexedGetter)(void*, uint32_t, size_t*);
+  uint32_t (*mLength)(void*);
 };
 
 extern "C" {
