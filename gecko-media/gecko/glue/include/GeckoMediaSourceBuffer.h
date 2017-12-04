@@ -28,7 +28,10 @@ GetSourceBuffer(const size_t aId);
 
 extern "C" {
 void
-GeckoMedia_SourceBuffer_Create(size_t aId, GeckoMediaSourceBufferImpl aImpl);
+GeckoMedia_SourceBuffer_Create(size_t aId,
+                               GeckoMediaSourceBufferImpl aImpl,
+                               size_t aParentId,
+                               const char* aMimeType);
 
 void
 GeckoMedia_SourceBuffer_Shutdown(size_t aId);

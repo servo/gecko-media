@@ -21,6 +21,15 @@ struct GeckoMediaSourceBufferListImpl
   uint32_t (*mLength)(void*);
 };
 
+namespace mozilla {
+namespace dom {
+class SourceBufferList;
+}
+}
+
+mozilla::dom::SourceBufferList*
+GetSourceBufferList(const size_t aId);
+
 extern "C" {
 void
 GeckoMedia_SourceBufferList_Create(size_t aId,
@@ -29,5 +38,4 @@ GeckoMedia_SourceBufferList_Create(size_t aId,
 void
 GeckoMedia_SourceBufferList_Shutdown(size_t aId);
 }
-
 #endif // GeckoMediaSourceBufferList_h_

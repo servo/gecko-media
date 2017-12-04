@@ -27,3 +27,13 @@ struct GeckoMediaSourceBufferList
 IMPL_GECKO_MEDIA_REFLECTOR(GeckoMediaSourceBufferList,
                            SourceBufferList,
                            GeckoMediaSourceBufferListImpl)
+
+SourceBufferList*
+GetSourceBufferList(const size_t aId)
+{
+  GeckoMediaSourceBufferList* reflector = GetReflector(aId);
+  if (NS_WARN_IF(!reflector)) {
+    return nullptr;
+  }
+  return reflector->mSourceBufferList;
+}

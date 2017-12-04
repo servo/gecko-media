@@ -10,30 +10,34 @@
 #include "GeckoMediaSourceBuffer.h"
 #include "nsISupportsImpl.h"
 #include "TimeUnits.h"
+#include "TrackBuffersManager.h"
 
-namespace mozilla
-{
-namespace dom
-{
+namespace mozilla {
+namespace dom {
 
 class SourceBuffer final
 {
 public:
   NS_INLINE_DECL_REFCOUNTING(SourceBuffer)
 
-  SourceBuffer(GeckoMediaSourceBufferImpl aImpl);
+  SourceBuffer(GeckoMediaSourceBufferImpl aImpl,
+               size_t aParentId,
+               const char* aMimeType);
 
-  media::TimeIntervals GetTimeIntervals() {
+  media::TimeIntervals GetTimeIntervals()
+  {
     // TODO get from mImpl
     return media::TimeIntervals::Invalid();
   }
 
-  void Detach() { /* TODO */ }
+  void Detach() { /* TODO */}
 
 private:
   ~SourceBuffer();
 
   GeckoMediaSourceBufferImpl mImpl;
+
+  RefPtr<TrackBuffersManager> mTrackBuffersManager;
 };
 
 } // namespace dom
