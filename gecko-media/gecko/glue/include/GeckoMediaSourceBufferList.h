@@ -8,13 +8,17 @@
 #define GeckoMediaSourceBufferList_h_
 
 #include <stddef.h>
+#include <stdint.h>
 
+struct GeckoMediaSourceBuffer;
 struct GeckoMediaSourceBufferList;
 
 struct GeckoMediaSourceBufferListImpl
 {
   void* mContext;
   void (*mFree)(void*);
+  bool (*mIndexedGetter)(void*, uint32_t, size_t*);
+  uint32_t (*mLength)(void*);
 };
 
 extern "C" {

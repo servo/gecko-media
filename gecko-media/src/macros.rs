@@ -9,6 +9,12 @@ macro_rules! def_gecko_media_struct (
             gecko_media: GeckoMedia,
             id: usize,
         }
+
+        impl $struct {
+            pub fn get_id(&self) -> usize {
+                self.id
+            }
+        }
     );
 );
 

@@ -9,12 +9,13 @@
 
 #include "GeckoMediaSourceBufferList.h"
 #include "nsISupportsImpl.h"
-#include "SourceBuffer.h"
 
 namespace mozilla
 {
 namespace dom
 {
+
+class SourceBuffer;
 
 class SourceBufferList final
 {
@@ -23,13 +24,9 @@ public:
 
   SourceBufferList(GeckoMediaSourceBufferListImpl aImpl);
 
-  SourceBuffer* IndexedGetter(uint32_t aIndex, bool& aFound) {
-    /* TODO get from mImpl */
-    aFound = false;
-    return new SourceBuffer(GeckoMediaSourceBufferImpl());
-  }
+  SourceBuffer* IndexedGetter(uint32_t aIndex, bool& aFound);
 
-  int32_t Length() { return 0; /* TODO get from mImpl */ }
+  uint32_t Length();
 
 private:
   ~SourceBufferList();

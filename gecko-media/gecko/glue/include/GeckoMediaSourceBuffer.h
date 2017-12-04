@@ -9,6 +9,12 @@
 
 #include <stddef.h>
 
+namespace mozilla {
+namespace dom {
+class SourceBuffer;
+}
+}
+
 struct GeckoMediaSourceBuffer;
 
 struct GeckoMediaSourceBufferImpl
@@ -16,6 +22,9 @@ struct GeckoMediaSourceBufferImpl
   void* mContext;
   void (*mFree)(void*);
 };
+
+mozilla::dom::SourceBuffer*
+GetSourceBuffer(const size_t aId);
 
 extern "C" {
 void
