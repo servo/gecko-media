@@ -73,7 +73,7 @@ MediaSource::~MediaSource()
     mDecoder->DetachMediaSource();
   }
 
-  if (!NS_WARN_IF(mImpl.mContext || mImpl.mFree)) {
+  if (NS_WARN_IF(!mImpl.mContext || !mImpl.mFree)) {
     return;
   }
   (*mImpl.mFree)(mImpl.mContext);
@@ -83,7 +83,7 @@ double
 MediaSource::Duration()
 {
   MOZ_ASSERT(NS_IsMainThread());
-  if (!NS_WARN_IF(!mImpl.mContext || !mImpl.mGetDuration)) {
+  if (NS_WARN_IF(!mImpl.mContext || !mImpl.mGetDuration)) {
     return 0;
   }
   return (*mImpl.mGetDuration)(mImpl.mContext);

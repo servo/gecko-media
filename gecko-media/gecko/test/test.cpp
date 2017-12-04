@@ -10,9 +10,11 @@
 #include "GeckoMedia.h"
 #include "GeckoMediaDecoder.h"
 #include "GeckoMediaDecoderOwner.h"
+#include "GeckoMediaSource.h"
 #include "ImageContainer.h"
 #include "MediaData.h"
 #include "MediaDecoder.h"
+#include "MediaSource.h"
 #include "MediaStreamGraph.h"
 #include "PlatformDecoderModule.h"
 #include "VideoUtils.h"
@@ -37,6 +39,8 @@
   "Андропов, Брежнев, Горбачёв, Ленин, Маленков, Сталин, Хрущёв, Черненко"
 
 namespace mozilla {
+
+using dom::MediaSourceReadyState;
 
 void
 TestString()
@@ -388,7 +392,8 @@ CreateBlankVideoData(uint32_t aFrameWidth, uint32_t aFrameHeight)
   VideoInfo info;
   info.mDisplay = gfx::IntSize(aFrameWidth, aFrameHeight);
   gfx::IntRect picture(0, 0, aFrameWidth, aFrameHeight);
-  RefPtr<layers::ImageContainer> imageContainer = new layers::ImageContainer(nullptr);
+  RefPtr<layers::ImageContainer> imageContainer =
+    new layers::ImageContainer(nullptr);
   return VideoData::CreateAndCopyData(
     info,
     imageContainer,
@@ -472,10 +477,10 @@ void
 TestDecoderTraits()
 {
   assert(DecoderTraits::CanHandleContainerType(
-         MediaContainerType(MEDIAMIMETYPE("audio/ogg")), nullptr) ==
+           MediaContainerType(MEDIAMIMETYPE("audio/ogg")), nullptr) ==
          CANPLAY_MAYBE);
   assert(DecoderTraits::CanHandleContainerType(
-         MediaContainerType(MEDIAMIMETYPE("audio/flac")), nullptr) ==
+           MediaContainerType(MEDIAMIMETYPE("audio/flac")), nullptr) ==
          CANPLAY_MAYBE);
   assert(DecoderTraits::CanHandleContainerType(
            MediaContainerType(MEDIAMIMETYPE("audio/mp4")), nullptr) ==
@@ -487,7 +492,7 @@ TestDecoderTraits()
            MediaContainerType(MEDIAMIMETYPE("audio/wav")), nullptr) ==
          CANPLAY_MAYBE);
   assert(DecoderTraits::CanHandleContainerType(
-         MediaContainerType(MEDIAMIMETYPE("audio/mp3")), nullptr) ==
+           MediaContainerType(MEDIAMIMETYPE("audio/mp3")), nullptr) ==
          CANPLAY_MAYBE);
 }
 
@@ -508,15 +513,14 @@ public:
       new OwningBufferMediaResource(data, fsize);
     return resource.forget();
   }
+
 private:
   OwningBufferMediaResource(const uint8_t* aBuffer, size_t aLength)
     : BufferMediaResource(aBuffer, aLength)
     , mBuffer(aBuffer)
   {
   }
-  ~OwningBufferMediaResource() {
-    delete[] mBuffer;
-  }
+  ~OwningBufferMediaResource() { delete[] mBuffer; }
   const uint8_t* mBuffer;
 };
 
@@ -525,7 +529,7 @@ TestGeckoDecoder()
 {
   RefPtr<GeckoMediaDecoderOwner> owner = new GeckoMediaDecoderOwner();
   MediaDecoderInit decoderInit(owner,
-                               0.001,  // volume
+                               0.001, // volume
                                true,  // mPreservesPitch
                                1.0,   // mPlaybackRate
                                false, // mMinimizePreroll
@@ -540,9 +544,85 @@ TestGeckoDecoder()
 
   decoder->Play();
 
-  SpinEventLoopUntil([decoder, &owner]() { return decoder->IsEnded() || owner->HasError(); });
+  SpinEventLoopUntil(
+    [decoder, &owner]() { return decoder->IsEnded() || owner->HasError(); });
   MOZ_ASSERT(!owner->HasError());
   decoder->Shutdown();
+}
+
+struct DummyMediaSource
+{
+  size_t id;
+  double released;
+  double duration;
+  MediaSourceReadyState readyState;
+  GeckoMediaTimeInterval liveSeekableRange;
+};
+
+double
+GetDuration(void* aContext)
+{
+  return static_cast<DummyMediaSource*>(aContext)->duration;
+}
+
+MediaSourceReadyState
+GetReadyState(void* aContext)
+{
+  return static_cast<DummyMediaSource*>(aContext)->readyState;
+}
+
+bool
+HasLiveSeekableRange(void* aContext)
+{
+  return true;
+}
+
+GeckoMediaTimeInterval
+LiveSeekableRange(void* aContext)
+{
+  return static_cast<DummyMediaSource*>(aContext)->liveSeekableRange;
+}
+
+void
+Free(void* aContext)
+{
+  static_cast<DummyMediaSource*>(aContext)->released = true;
+}
+
+void
+TestGeckoMediaSource()
+{
+  using namespace media;
+  double start = 0.5;
+  double end = 1.0;
+  TimeInterval interval(TimeUnit::FromSeconds(start),
+                        TimeUnit::FromSeconds(end));
+
+  DummyMediaSource test1{ 1111,  /* id */
+                          false, /* released */
+                          1.0,   /* duration */
+                          MediaSourceReadyState::Closed,
+                          GeckoMediaTimeInterval{ start, end } };
+  GeckoMediaSourceImpl test1_impl{
+    &test1,                /* mContext */
+    &Free,                 /* mFree */
+    &GetReadyState,        /* mGetReadyState */
+    &GetDuration,          /* mGetDuration */
+    &HasLiveSeekableRange, /* mHasLiveSeekableRange */
+    &LiveSeekableRange     /* mGetLiveSeekableRange */
+  };
+  MOZ_ASSERT(GetMediaSource(test1.id) == nullptr);
+  GeckoMedia_MediaSource_Create(test1.id, test1_impl);
+  auto mediaSource = GetMediaSource(test1.id);
+  MOZ_ASSERT(mediaSource != nullptr);
+  MOZ_ASSERT(mediaSource->Duration() == test1.duration);
+  MOZ_ASSERT(mediaSource->ReadyState() == test1.readyState);
+  MOZ_ASSERT(mediaSource->HasLiveSeekableRange());
+  MOZ_ASSERT(mediaSource->LiveSeekableRange() == interval);
+  MOZ_ASSERT(test1.released == false);
+  GeckoMedia_MediaSource_Shutdown(test1.id);
+  MOZ_ASSERT(test1.released == true);
+  MOZ_ASSERT(GetMediaSource(test1.id) == nullptr);
 }
 
 } // namespace mozilla
@@ -565,4 +645,5 @@ TestGecko()
   mozilla::Test_MP4Demuxer();
   mozilla::TestDecoderTraits();
   mozilla::TestGeckoDecoder();
+  mozilla::TestGeckoMediaSource();
 }
