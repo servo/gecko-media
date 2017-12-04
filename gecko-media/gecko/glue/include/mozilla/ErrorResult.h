@@ -219,7 +219,7 @@ public:
   // Use SuppressException when you want to suppress any exception that might be
   // on the TErrorResult.  After this call, the TErrorResult will be back a "no
   // exception thrown" state.
-  void SuppressException();
+  void SuppressException() {}
 
   // Use StealNSResult() when you want to safely convert the TErrorResult to
   // an nsresult that you will then return to a caller.  This will

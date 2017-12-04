@@ -11,6 +11,7 @@
 #include "GeckoMediaDecoder.h"
 #include "GeckoMediaDecoderOwner.h"
 #include "GeckoMediaSource.h"
+#include "GeckoMediaSourceBuffer.h"
 #include "ImageContainer.h"
 #include "MediaData.h"
 #include "MediaDecoder.h"
@@ -584,7 +585,7 @@ LiveSeekableRange(void* aContext)
 }
 
 void
-Free(void* aContext)
+MediaSourceFree(void* aContext)
 {
   static_cast<DummyMediaSource*>(aContext)->released = true;
 }
@@ -605,7 +606,7 @@ TestGeckoMediaSource()
                           GeckoMediaTimeInterval{ start, end } };
   GeckoMediaSourceImpl test1_impl{
     &test1,                /* mContext */
-    &Free,                 /* mFree */
+    &MediaSourceFree,      /* mFree */
     &GetReadyState,        /* mGetReadyState */
     &GetDuration,          /* mGetDuration */
     &HasLiveSeekableRange, /* mHasLiveSeekableRange */
@@ -623,6 +624,37 @@ TestGeckoMediaSource()
   GeckoMedia_MediaSource_Shutdown(test1.id);
   MOZ_ASSERT(test1.released == true);
   MOZ_ASSERT(GetMediaSource(test1.id) == nullptr);
+}
+
+struct DummySourceBuffer
+{
+  size_t id;
+  double released;
+};
+
+void
+SourceBufferFree(void* aContext)
+{
+  static_cast<DummySourceBuffer*>(aContext)->released = true;
+}
+
+void
+TestGeckoMediaSourceBuffer()
+{
+  DummySourceBuffer test1{ 2222, /* id */
+                           false /* released */ };
+  GeckoMediaSourceBufferImpl test1_impl{
+    &test1,           /* mContext */
+    &SourceBufferFree /* mFree */
+  };
+  MOZ_ASSERT(GetSourceBuffer(test1.id) == nullptr);
+  GeckoMedia_SourceBuffer_Create(test1.id, test1_impl, 0, "video/mp4");
+  auto sourceBuffer = GetSourceBuffer(test1.id);
+  MOZ_ASSERT(sourceBuffer != nullptr);
+  MOZ_ASSERT(test1.released == false);
+  GeckoMedia_SourceBuffer_Shutdown(test1.id);
+  MOZ_ASSERT(test1.released == true);
+  MOZ_ASSERT(GetSourceBuffer(test1.id) == nullptr);
 }
 
 } // namespace mozilla
@@ -647,4 +679,5 @@ TestGecko()
   TestDecoderTraits();
   TestGeckoDecoder();
   TestGeckoMediaSource();
+  TestGeckoMediaSourceBuffer();
 }
