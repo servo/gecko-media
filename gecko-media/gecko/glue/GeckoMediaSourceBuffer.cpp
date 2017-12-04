@@ -14,8 +14,11 @@ using mozilla::dom::SourceBuffer;
 
 struct GeckoMediaSourceBuffer
 {
-  GeckoMediaSourceBuffer(size_t aId, GeckoMediaSourceBufferImpl aImpl)
-    : mSourceBuffer(new SourceBuffer(aImpl))
+  GeckoMediaSourceBuffer(size_t aId,
+                         GeckoMediaSourceBufferImpl aImpl,
+                         size_t aParentId,
+                         const char* aMimeType)
+    : mSourceBuffer(new SourceBuffer(aImpl, aParentId, aMimeType))
     , mId(aId)
   {
   }
@@ -24,9 +27,20 @@ struct GeckoMediaSourceBuffer
   const size_t mId;
 };
 
-IMPL_GECKO_MEDIA_REFLECTOR(GeckoMediaSourceBuffer,
-                           SourceBuffer,
-                           GeckoMediaSourceBufferImpl)
+DEF_GECKO_MEDIA_REFLECTOR_CONTAINER(GeckoMediaSourceBuffer)
+IMPL_GECKO_MEDIA_REFLECTOR_GETTER(GeckoMediaSourceBuffer)
+IMPL_GECKO_MEDIA_REFLECTOR_SHUTDOWN(GeckoMediaSourceBuffer, SourceBuffer)
+
+void
+GeckoMedia_SourceBuffer_Create(size_t aId,
+                               GeckoMediaSourceBufferImpl aImpl,
+                               size_t aParentId,
+                               const char* aMimeType)
+{
+  GeckoMediaSourceBuffer* reflector =
+    sReflectors.AppendElement(GeckoMediaSourceBuffer(aId, aImpl, aParentId, aMimeType));
+  MOZ_ASSERT(GetReflector(aId) == reflector);
+}
 
 SourceBuffer*
 GetSourceBuffer(const size_t aId)

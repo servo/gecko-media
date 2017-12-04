@@ -150,12 +150,19 @@ impl GeckoMedia {
     );
 
     /// Creates a SourceBuffer instance and its corresponding GeckoMediaSourceBuffer reflector.
-    impl_gecko_media_struct_constructor!(
-        create_source_buffer,
-        SourceBufferImpl,
-        SourceBuffer,
-        NEXT_SOURCE_BUFFER_ID
-    );
+    pub fn create_source_buffer(
+        callbacks: Weak<SourceBufferImpl>,
+        parent_id: usize,
+        mime: &str,
+    ) -> Result<SourceBuffer, ()> {
+        let handle = GeckoMedia::get()?;
+        let id = NEXT_SOURCE_BUFFER_ID.fetch_add(1, Ordering::SeqCst);
+        if let Some(callbacks) = callbacks.upgrade() {
+            SourceBuffer::new(handle, id, callbacks, parent_id, mime)
+        } else {
+            panic!("Callbacks gone")
+        }
+    }
 
     /// Creates a SourceBufferList instance and its corresponding GeckoMediaSourceBufferList reflector.
     impl_gecko_media_struct_constructor!(

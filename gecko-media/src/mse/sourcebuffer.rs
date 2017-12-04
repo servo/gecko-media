@@ -2,16 +2,32 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use bindings::GeckoMediaSourceBufferImpl;
+use bindings::{GeckoMediaSourceBufferImpl, GeckoMedia_SourceBuffer_Create};
+use std::ffi::CString;
 use std::rc::Rc;
 
 def_gecko_media_struct!(SourceBuffer);
 
-impl_new_gecko_media_struct!(
-    SourceBuffer,
-    SourceBufferImpl,
-    GeckoMedia_SourceBuffer_Create
-);
+impl SourceBuffer {
+    pub fn new(gecko_media: GeckoMedia,
+               id: usize,
+               callbacks: Rc<SourceBufferImpl>,
+               parent_id: usize,
+               mime: &str) -> Result<Self,()> {
+        let callbacks = to_ffi_callbacks(callbacks);
+        let mime = match CString::new(mime.as_bytes()) {
+            Ok(mime) => mime,
+            _ => return Err(()),
+        };
+        gecko_media.queue_task(move || unsafe {
+            GeckoMedia_SourceBuffer_Create(id, callbacks, parent_id, mime.as_ptr());
+        });
+        Ok(Self {
+            gecko_media,
+            id,
+        })
+    }
+}
 
 impl_drop_gecko_media_struct!(SourceBuffer, GeckoMedia_SourceBuffer_Shutdown);
 

@@ -9,6 +9,7 @@
 
 #include "GeckoMediaSource.h"
 #include "MediaSourceDecoder.h"
+#include "nsISupportsImpl.h"
 #include "SourceBufferList.h"
 #include "TimeUnits.h"
 
@@ -18,8 +19,9 @@ namespace dom {
 class MediaSource final
 {
 public:
+  NS_INLINE_DECL_REFCOUNTING(MediaSource)
+
   MediaSource(GeckoMediaSourceImpl aGeckoMediaSourceImpl);
-  ~MediaSource();
 
   SourceBufferList* ActiveSourceBuffers()
   {
@@ -43,9 +45,13 @@ public:
 
   void EndOfStreamError(const GeckoMediaEndOfStreamError aError);
 
+  MediaSourceDecoder* GetDecoder() { return mDecoder; }
+
   static bool IsTypeSupported(const char* aType);
 
 private:
+  ~MediaSource();
+
   GeckoMediaSourceImpl mImpl;
 
   RefPtr<MediaSourceDecoder> mDecoder;

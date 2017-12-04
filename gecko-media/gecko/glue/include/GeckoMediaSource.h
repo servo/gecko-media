@@ -16,6 +16,8 @@ struct GeckoMediaSource;
 namespace mozilla {
 namespace dom {
 
+class MediaSource;
+
 enum class MediaSourceReadyState
 {
   Closed = 0,
@@ -37,6 +39,9 @@ struct GeckoMediaSourceImpl
   bool (*mHasLiveSeekableRange)(void*);
   GeckoMediaTimeInterval (*mGetLiveSeekableRange)(void*);
 };
+
+mozilla::dom::MediaSource*
+GetMediaSource(size_t aId);
 
 extern "C" {
 void

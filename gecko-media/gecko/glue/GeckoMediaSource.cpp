@@ -16,12 +16,12 @@ using mozilla::dom::MediaSource;
 struct GeckoMediaSource
 {
   GeckoMediaSource(size_t aId, GeckoMediaSourceImpl aImpl)
-    : mMediaSource(MakeUnique<MediaSource>(aImpl))
+    : mMediaSource(new MediaSource(aImpl))
     , mId(aId)
   {
   }
 
-  UniquePtr<MediaSource> mMediaSource;
+  RefPtr<MediaSource> mMediaSource;
   const size_t mId;
 };
 
@@ -56,4 +56,14 @@ GeckoMedia_MediaSource_EndOfStreamError(size_t aId,
   IMPL_GECKO_MEDIA_REFLECTOR_GET(GeckoMediaSource)
 
   reflector->mMediaSource->EndOfStreamError(aError);
+}
+
+MediaSource*
+GetMediaSource(const size_t aId)
+{
+  GeckoMediaSource* reflector = GetReflector(aId);
+  if (NS_WARN_IF(!reflector)) {
+    return nullptr;
+  }
+  return reflector->mMediaSource;
 }
