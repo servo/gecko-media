@@ -91,7 +91,10 @@ GeckoMediaDecoder::Shutdown()
   MOZ_ASSERT(NS_IsMainThread());
   AbstractThread::AutoEnter context(AbstractMainThread());
   GECKO_DEBUG("Shutdown");
-
+  if (mResource) {
+    mResource->Close();
+    mResource = nullptr;
+  }
   mGeckoWatchManager.Shutdown();
   MediaDecoder::Shutdown();
 }
@@ -193,6 +196,15 @@ GeckoMediaDecoder::CheckSeekable()
     mCachedSeekable = currentSeekable;
     mOwner->NotifySeekable();
   }
+}
+
+void
+GeckoMediaDecoder::NotifyDataArrivedIfNotShutdown()
+{
+  if (IsShutdown()) {
+    return;
+  }
+  NotifyDataArrived();
 }
 
 #undef GECKO_DEBUG

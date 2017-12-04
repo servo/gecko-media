@@ -3,6 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use futures::{Future, Stream};
+use gecko_media::CachedRangesSink;
 use gecko_media::NetworkResource;
 use hyper;
 use hyper::header::{ByteRangeSpec, ContentLength, ContentRange};
@@ -71,7 +72,6 @@ impl Cache {
 enum Response {
     Data(u64, Vec<u8>),
     ContentLength(Option<u64>),
-    CachedRanges(Vec<Range<u64>>),
     Error,
 }
 
@@ -79,9 +79,10 @@ enum Commands {
     Read(u64, u32, mpsc::Sender<Response>),
     ReadFromCache(u64, u32, mpsc::Sender<Response>),
     AddToCache(u64, Vec<u8>),
-    GetCachedRanges(mpsc::Sender<Response>),
     SetContentLength(u64),
     GetContentLength(mpsc::Sender<Response>),
+    SetCachedRangesSink(CachedRangesSink),
+    Shutdown,
 }
 
 const SEEK_VS_READ_THRESHOLD: u64 = 1_000_000;
@@ -187,8 +188,15 @@ impl DownloadController {
             let mut downloader = Downloader::new(uri, command_sender_clone);
             let mut content_length = None;
             let mut pending_reads = vec![];
+            let mut cached_ranges_sink = None;
             loop {
                 match command_receiver.recv() {
+                    Ok(Commands::SetCachedRangesSink(sink)) => {
+                        cached_ranges_sink = Some(sink);
+                        cached_ranges_sink.as_ref().map(|sink| {
+                            sink.update(&cache.ranges())
+                        });
+                    },
                     Ok(Commands::Read(offset, count, response_sender)) => {
                         if let Ok(bytes) = cache.read(offset, count) {
                             // Read serviced from cached data.
@@ -219,6 +227,9 @@ impl DownloadController {
                     },
                     Ok(Commands::AddToCache(offset, bytes)) => {
                         cache.append(offset, &bytes);
+                        cached_ranges_sink.as_ref().map(|sink| {
+                            sink.update(&cache.ranges())
+                        });
                         // See if any reads waiting more data can now be serviced.
                         pending_reads = pending_reads
                             .into_iter()
@@ -232,11 +243,6 @@ impl DownloadController {
                             })
                             .collect();
                     },
-                    Ok(Commands::GetCachedRanges(response_sender)) => {
-                        response_sender
-                            .send(Response::CachedRanges(cache.ranges()))
-                            .ok();
-                    },
                     Ok(Commands::SetContentLength(length)) => {
                         content_length = Some(length);
                     },
@@ -244,6 +250,17 @@ impl DownloadController {
                         response_sender
                             .send(Response::ContentLength(content_length.clone()))
                             .ok();
+                    },
+                    Ok(Commands::Shutdown) => {
+                        downloader.stop_download();
+                        // Abort any pending reads. This is important, as
+                        // threads in GeckoMedia may be blocked in our Rust
+                        // DownloadController::read_from_cache() impl waiting
+                        // for the result of a read.
+                        for (_, _, ref response_sender) in pending_reads {
+                            response_sender.send(Response::Error).ok();
+                        }
+                        break;
                     },
                     Err(_) => {},
                 }
@@ -256,11 +273,29 @@ impl DownloadController {
     }
 }
 
+impl Drop for DownloadController {
+    fn drop(&mut self) {
+        self.command_sender
+            .lock()
+            .unwrap()
+            .send(Commands::Shutdown)
+            .ok();
+    }
+}
+
 impl NetworkResource for DownloadController {
+    fn set_cached_ranges_sink(&self, sink: CachedRangesSink) {
+        self.command_sender
+            .lock()
+            .unwrap()
+            .send(Commands::SetCachedRangesSink(sink))
+            .unwrap();
+    }
     fn read_at(&self, offset: u64, buffer: &mut [u8]) -> Result<u32, ()> {
         let (sender, receiver) = mpsc::channel();
         self.command_sender
-            .lock().unwrap()
+            .lock()
+            .unwrap()
             .send(Commands::Read(offset, buffer.len() as u32, sender))
             .unwrap();
         match receiver.recv() {
@@ -287,7 +322,8 @@ impl NetworkResource for DownloadController {
     fn len(&self) -> Option<u64> {
         let (sender, receiver) = mpsc::channel();
         self.command_sender
-            .lock().unwrap()
+            .lock()
+            .unwrap()
             .send(Commands::GetContentLength(sender))
             .unwrap();
         match receiver.recv() {
@@ -298,9 +334,9 @@ impl NetworkResource for DownloadController {
 
     fn read_from_cache(&self, offset: u64, buffer: &mut [u8]) -> Result<(), ()> {
         let (sender, receiver) = mpsc::channel();
-        // TODO: move the slice in? Is that possible?
         self.command_sender
-            .lock().unwrap()
+            .lock()
+            .unwrap()
             .send(Commands::ReadFromCache(offset, buffer.len() as u32, sender))
             .unwrap();
         match receiver.recv() {
@@ -315,18 +351,6 @@ impl NetworkResource for DownloadController {
                 Ok(())
             },
             _ => Err(()),
-        }
-    }
-
-    fn cached_ranges(&self) -> Vec<Range<u64>> {
-        let (sender, receiver) = mpsc::channel();
-        self.command_sender
-            .lock().unwrap()
-            .send(Commands::GetCachedRanges(sender))
-            .unwrap();
-        match receiver.recv() {
-            Ok(Response::CachedRanges(ranges)) => ranges,
-            _ => vec![],
         }
     }
 }

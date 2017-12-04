@@ -6,6 +6,7 @@
 #include <unistd.h>
 
 #include "AudioStream.h"
+#include "BufferMediaResource.h"
 #include "DecoderTraits.h"
 #include "GeckoMedia.h"
 #include "GeckoMediaDecoder.h"

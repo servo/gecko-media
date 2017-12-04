@@ -6,11 +6,102 @@
 
 #include "RustMediaResource.h"
 
+#include "mozilla/Atomics.h"
+#include "mozilla/Assertions.h"
+#include "mozilla/StaticMutex.h"
+
 namespace mozilla {
+
+static Atomic<uint32_t> sNextResourceId(0u);
+static nsTArray<RustMediaResource*> sResources;
+StaticMutex sResourceMutex;
+
+static void
+UpdateCachedRanges(uint32_t aResourceID,
+                   const GeckoMediaByteRange* aRanges,
+                   size_t aLength)
+{
+  RefPtr<RustMediaResource> resource;
+  {
+    StaticMutexAutoLock lock(sResourceMutex);
+    for (auto r : sResources) {
+      if (r->ID() == aResourceID) {
+        resource = r;
+        break;
+      }
+    }
+  }
+  if (!resource) {
+    NS_WARNING("Received cached ranges update for dead resource.");
+    return;
+  }
+  resource->SetCachedRanges(aRanges, aLength);
+}
+
+void
+RustMediaResource::SetCachedRanges(const GeckoMediaByteRange* aRanges, size_t aLength)
+{
+  {
+    MutexAutoLock lock(mRangesLock);
+    mRanges.Clear();
+    mRanges.AppendElements(aRanges, aLength);
+  }
+  if (mDecoder) {
+    RefPtr<GeckoMediaDecoder> decoder = mDecoder;
+    RefPtr<AbstractThread> thread = AbstractThread::MainThread();
+    nsCOMPtr<nsIRunnable> task = NS_NewRunnableFunction(
+      "RustMediaResource::SetCachedRanges",
+      [decoder]() {
+        decoder->NotifyDataArrivedIfNotShutdown();
+      });
+   thread->Dispatch(task.forget());
+  }
+}
 
 RustMediaResource::RustMediaResource(NetworkResourceObject aNetworkResource)
   : mResource(aNetworkResource)
+  , mResourceID(++sNextResourceId)
+  , mRangesLock("RustMediaResource::mRanges")
 {
+  MOZ_ASSERT(mResourceID > 0);
+  {
+    StaticMutexAutoLock lock(sResourceMutex);
+    sResources.AppendElement(this);
+  }
+  if (mResource.mSetRangesObserver && mResource.mData) {
+    (*mResource.mSetRangesObserver)(
+      mResource.mData,
+      CachedRangesObserverObject{
+        &UpdateCachedRanges,
+        mResourceID
+      });
+  }
+}
+
+RustMediaResource::~RustMediaResource()
+{
+  MOZ_ASSERT(!mDecoder);
+}
+
+nsresult
+RustMediaResource::Close()
+{
+  mDecoder = nullptr;
+  {
+    StaticMutexAutoLock lock(sResourceMutex);
+    sResources.RemoveElement(this);
+  }
+  if (mResource.mFree && mResource.mData) {
+    (*mResource.mFree)(mResource.mData);
+    mResource.mData = nullptr;
+  }
+  return NS_OK;
+}
+
+void
+RustMediaResource::SetDecoder(GeckoMediaDecoder* aDecoder)
+{
+  mDecoder = aDecoder;
 }
 
 nsresult
@@ -152,12 +243,10 @@ AddByteRangeToIntervalSet(void* aData, uint64_t aStart, uint64_t aEnd)
 nsresult
 RustMediaResource::GetCachedRanges(MediaByteRangeSet& aRanges)
 {
-  if (!mResource.mCachedRanges || !mResource.mData) {
-    return NS_ERROR_FAILURE;
+  MutexAutoLock lock(mRangesLock);
+  for (const auto& range : mRanges) {
+    aRanges += MediaByteRange(range.mStart, range.mEnd);
   }
-  GeckoMediaByteIntervalSet intervalSet{ &AddByteRangeToIntervalSet,
-                                         reinterpret_cast<void*>(&aRanges) };
-  (*mResource.mCachedRanges)(mResource.mData, &intervalSet);
   return NS_OK;
 }
 

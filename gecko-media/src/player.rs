@@ -2,8 +2,9 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use bindings::GeckoPlanarYCbCrImage;
-use bindings::{GeckoMediaMetadata, GeckoMediaByteIntervalSet, GeckoMediaTimeInterval};
+use bindings::CachedRangesObserverObject;
+use bindings::{GeckoMediaByteRange, GeckoPlanarYCbCrImage};
+use bindings::{GeckoMediaMetadata, GeckoMediaTimeInterval};
 use bindings::{GeckoMedia_Player_CreateBlobPlayer, GeckoMedia_Player_CreateNetworkPlayer};
 use bindings::{GeckoMedia_Player_Pause, GeckoMedia_Player_Play};
 use bindings::{GeckoMedia_Player_Seek, GeckoMedia_Player_SetVolume};
@@ -313,7 +314,41 @@ impl Player {
     }
 }
 
+/// Passed to NetworkResource shortly after startup. NetworkResource uses
+/// this object to inform the Player when the byte ranges of the resource
+/// that are cached has changed.
+pub struct CachedRangesSink {
+    observer: CachedRangesObserverObject,
+}
+
+impl CachedRangesSink {
+    /// Whenever the byte ranges that are cached changes, for example if more
+    /// data is downloaded, or if data is evicted from the cache, the
+    /// NetworkResource implementation should call update() to inform the
+    /// Player of the change. The Player will then update the buffered
+    /// ranges, and internal state that reflects the cached ranges.
+    pub fn update(&self, ranges: &[Range<u64>]) {
+        let mut data = vec![];
+        for ref r in ranges.iter() {
+            data.push(GeckoMediaByteRange {
+                mStart: r.start,
+                mEnd: r.end,
+            });
+        }
+        unsafe {
+            self.observer.mUpdate.as_ref().map(|f| {
+                f(self.observer.mResourceID, data.as_ptr(), data.len())
+            });
+        }
+    }
+}
+
 pub trait NetworkResource: Send + Sync {
+    /// Sets the sender to which the implementation should send updates
+    /// whenever the cached ranges change. Whenever new data is added to
+    /// or removed from the cache, the NetworkResource should send a
+    /// message informing GeckcoMedia of the new cached ranges.
+    fn set_cached_ranges_sink(&self, sink: CachedRangesSink);
     /// Attempts to fill buffer with bytes from offset. Reads as many
     /// bytes as possible, blocks if no bytes are available at offset,
     /// until bytes become available.
@@ -330,8 +365,6 @@ pub trait NetworkResource: Send + Sync {
     fn len(&self) -> Option<u64>;
     /// Reads data from a cached range.
     fn read_from_cache(&self, offset: u64, buffer: &mut [u8]) -> Result<(), ()>;
-    /// Reports the byte ranges that are cached by the implementation.
-    fn cached_ranges(&self) -> Vec<Range<u64>>;
 }
 
 fn to_ffi_callback(callbacks: Box<PlayerEventSink>) -> PlayerCallbackObject {
@@ -412,6 +445,13 @@ fn to_ffi_resource(callbacks: Box<NetworkResource>) -> NetworkResourceObject {
 
     def_gecko_callbacks_ffi_wrapper!(Box<NetworkResource>);
 
+    unsafe extern "C" fn set_ranges_observer(ptr: *mut c_void, observer: CachedRangesObserverObject) {
+        let wrapper = &*(ptr as *mut Wrapper);
+        wrapper.callbacks.set_cached_ranges_sink(CachedRangesSink {
+            observer,
+        })
+    }
+
     unsafe extern "C" fn read_at(
         ptr: *mut c_void,
         offset: u64,
@@ -452,22 +492,13 @@ fn to_ffi_resource(callbacks: Box<NetworkResource>) -> NetworkResourceObject {
             Err(_) => false,
         }
     }
-    unsafe extern "C" fn cached_ranges(ptr: *mut c_void, interval_set: *mut GeckoMediaByteIntervalSet) {
-        let wrapper = &*(ptr as *mut Wrapper);
-        for range in wrapper.callbacks.cached_ranges() {
-            (*interval_set).mAdd.as_ref().map(|f| {
-                f((*interval_set).mData, range.start, range.end)
-            });
-        }
-    }
-
     NetworkResourceObject {
+        mSetRangesObserver: Some(set_ranges_observer),
         mReadAt: Some(read_at),
         mPin: Some(pin),
         mUnPin: Some(unpin),
         mLength: Some(length),
         mReadFromCache: Some(read_from_cache),
-        mCachedRanges: Some(cached_ranges),
         mFree: Some(free),
         mData: Box::into_raw(Box::new(Wrapper {
             callbacks,

@@ -7,7 +7,7 @@
 #ifndef GECKO_MEDIA_DECODER_H_
 #define GECKO_MEDIA_DECODER_H_
 
-#include "BufferMediaResource.h"
+#include "MediaResource.h"
 #include "MediaDecoder.h"
 #include "mozilla/RefPtr.h"
 #include "TimeUnits.h"
@@ -43,6 +43,8 @@ public:
   nsresult Play() override;
 
   bool IsOwnerPaused() const;
+
+  void NotifyDataArrivedIfNotShutdown();
 
 protected:
   RefPtr<MediaResource> mResource;
