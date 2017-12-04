@@ -12,6 +12,7 @@
 #include "GeckoMediaDecoderOwner.h"
 #include "GeckoMediaSource.h"
 #include "GeckoMediaSourceBuffer.h"
+#include "GeckoMediaSourceBufferList.h"
 #include "ImageContainer.h"
 #include "MediaData.h"
 #include "MediaDecoder.h"
@@ -657,6 +658,72 @@ TestGeckoMediaSourceBuffer()
   MOZ_ASSERT(GetSourceBuffer(test1.id) == nullptr);
 }
 
+struct DummySourceBufferList
+{
+  size_t id;
+  double released;
+  size_t sourceBuffer;
+};
+
+bool
+IndexedGetter(void* aContext, uint32_t aIndex, size_t* aId)
+{
+  if (aIndex > 0) {
+    return false;
+  }
+  *aId = static_cast<DummySourceBufferList*>(aContext)->sourceBuffer;
+  return true;
+}
+
+uint32_t
+Length(void*)
+{
+  return 1;
+}
+
+void
+SourceBufferListFree(void* aContext)
+{
+  static_cast<DummySourceBufferList*>(aContext)->released = true;
+}
+
+void
+TestGeckoMediaSourceBufferList()
+{
+  DummySourceBuffer test{ 2222, /* id */
+                          false /* released */ };
+  GeckoMediaSourceBufferImpl test_impl{
+    &test,            /* mContext */
+    &SourceBufferFree /* mFree */
+  };
+  MOZ_ASSERT(GetSourceBuffer(test.id) == nullptr);
+  GeckoMedia_SourceBuffer_Create(test.id, test_impl, 0, "video/mp4");
+  DummySourceBufferList test1{ 3333,  /* id */
+                               false, /* released */
+                               test.id /* sourceBuffer id */ };
+  GeckoMediaSourceBufferListImpl test1_impl{
+    &test1,                /* mContext */
+    &SourceBufferListFree, /* mFree */
+    &IndexedGetter,        /* mIndexedGetter */
+    &Length                /* mLength */
+  };
+  MOZ_ASSERT(GetSourceBufferList(test1.id) == nullptr);
+  GeckoMedia_SourceBufferList_Create(test1.id, test1_impl);
+  auto sourceBufferList = GetSourceBufferList(test1.id);
+  MOZ_ASSERT(sourceBufferList != nullptr);
+  bool found = false;
+  auto mediaSource = sourceBufferList->IndexedGetter(0, found);
+  MOZ_ASSERT(mediaSource != nullptr && found);
+  mediaSource = sourceBufferList->IndexedGetter(1, found);
+  MOZ_ASSERT(mediaSource == nullptr && !found);
+  MOZ_ASSERT(sourceBufferList->Length() == 1);
+  MOZ_ASSERT(test1.released == false);
+  GeckoMedia_SourceBufferList_Shutdown(test1.id);
+  MOZ_ASSERT(test1.released == true);
+  MOZ_ASSERT(GetSourceBufferList(test1.id) == nullptr);
+  GeckoMedia_SourceBuffer_Shutdown(test.id);
+}
+
 } // namespace mozilla
 
 extern "C" void
@@ -680,4 +747,5 @@ TestGecko()
   TestGeckoDecoder();
   TestGeckoMediaSource();
   TestGeckoMediaSourceBuffer();
+  TestGeckoMediaSourceBufferList();
 }

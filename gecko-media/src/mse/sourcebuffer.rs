@@ -13,7 +13,7 @@ impl SourceBuffer {
                id: usize,
                callbacks: Rc<SourceBufferImpl>,
                parent_id: usize,
-               mime: &str) -> Result<Self,()> {
+               mime: &str) -> Result<Self, ()> {
         let callbacks = to_ffi_callbacks(callbacks);
         let mime = match CString::new(mime.as_bytes()) {
             Ok(mime) => mime,
