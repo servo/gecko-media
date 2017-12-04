@@ -630,20 +630,21 @@ TestGeckoMediaSource()
 extern "C" void
 TestGecko()
 {
-  mozilla::TestPreferences();
-  mozilla::TestString();
-  mozilla::TestArray();
-  mozilla::TestAudioStream();
-  mozilla::TestHashTables();
-  mozilla::TestTimeStamp();
-  mozilla::TestThreads();
-  mozilla::TestMozPromise();
-  mozilla::TestVideoData();
-  mozilla::TestAudioData();
-  mozilla::Test_MediaDataDecoder();
-  mozilla::Test_MediaMIMETypes();
-  mozilla::Test_MP4Demuxer();
-  mozilla::TestDecoderTraits();
-  mozilla::TestGeckoDecoder();
-  mozilla::TestGeckoMediaSource();
+  using namespace mozilla;
+  TestPreferences();
+  TestString();
+  TestArray();
+  TestAudioStream();
+  TestHashTables();
+  TestTimeStamp();
+  TestThreads();
+  TestMozPromise();
+  TestVideoData();
+  TestAudioData();
+  Test_MediaDataDecoder();
+  Test_MediaMIMETypes();
+  Test_MP4Demuxer();
+  TestDecoderTraits();
+  TestGeckoDecoder();
+  TestGeckoMediaSource();
 }
