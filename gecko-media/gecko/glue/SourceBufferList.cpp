@@ -22,9 +22,11 @@ SourceBufferList::~SourceBufferList()
 {
   MOZ_ASSERT(NS_IsMainThread());
 
-  if (mImpl.mContext && mImpl.mFree) {
-    (*mImpl.mFree)(mImpl.mContext);
+  if (NS_WARN_IF(!mImpl.mContext || !mImpl.mFree)) {
+    return;
   }
+
+  (*mImpl.mFree)(mImpl.mContext);
 }
 
 SourceBuffer*
@@ -32,7 +34,7 @@ SourceBufferList::IndexedGetter(uint32_t aIndex, bool& aFound)
 {
   MOZ_ASSERT(NS_IsMainThread());
 
-  if (!mImpl.mContext || !mImpl.mIndexedGetter) {
+  if (NS_WARN_IF(!mImpl.mContext || !mImpl.mIndexedGetter)) {
     aFound = false;
     return nullptr;
   }
@@ -40,12 +42,12 @@ SourceBufferList::IndexedGetter(uint32_t aIndex, bool& aFound)
   size_t id;
   aFound = (*mImpl.mIndexedGetter)(mImpl.mContext, aIndex, &id);
 
-  if (!aFound) {
+  if (NS_WARN_IF(!aFound)) {
     return nullptr;
   }
 
   auto sourceBuffer = GetSourceBuffer(id);
-  if (!sourceBuffer) {
+  if (NS_WARN_IF(!sourceBuffer)) {
     aFound = false;
     return nullptr;
   }
@@ -58,9 +60,11 @@ SourceBufferList::Length()
 {
   MOZ_ASSERT(NS_IsMainThread());
 
-  if (mImpl.mContext && mImpl.mLength) {
-    return (*mImpl.mLength)(mImpl.mContext);
+  if (NS_WARN_IF(!mImpl.mContext || !mImpl.mLength)) {
+    return 0;
   }
+
+  return (*mImpl.mLength)(mImpl.mContext);
 }
 
 } // namespace dom
