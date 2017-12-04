@@ -24,15 +24,7 @@
   void GeckoMedia_##Class##_Create(size_t aId, Callbacks aCallbacks)           \
   {                                                                            \
     GMClass* reflector = sReflectors.AppendElement(GMClass(aId, aCallbacks));  \
-    if (NS_WARN_IF(!reflector)) {                                              \
-      return;                                                                  \
-    }                                                                          \
-    for (size_t i = 0; i < sReflectors.Length(); i++) {                        \
-      if (sReflectors[i].mId == aId) {                                         \
-        sReflectors.RemoveElementAt(i);                                        \
-        break;                                                                 \
-      }                                                                        \
-    }                                                                          \
+    MOZ_ASSERT(GetReflector(aId) == reflector);                                \
   }
 
 #define IMPL_GECKO_MEDIA_REFLECTOR_GET(Class)                                  \
