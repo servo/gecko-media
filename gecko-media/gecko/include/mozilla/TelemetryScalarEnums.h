@@ -1,4 +1,4 @@
-/* This file is auto-generated, see gen_scalar_enum.py.  */
+/* This file is auto-generated, see gen-scalar-enum.py.  */
 
 #ifndef mozilla_TelemetryScalarEnums_h
 #define mozilla_TelemetryScalarEnums_h
@@ -60,6 +60,8 @@ enum class ScalarID : uint32_t {
   MEDIARECORDER_RECORDING_COUNT,
   NAVIGATOR_STORAGE_ESTIMATE_COUNT,
   NAVIGATOR_STORAGE_PERSIST_COUNT,
+  NETWORK_TCP_OVERLAPPED_IO_CANCELED_BEFORE_FINISHED,
+  NETWORK_TCP_OVERLAPPED_RESULT_DELAYED,
   SERVICES_SYNC_FXA_VERIFICATION_METHOD,
   SERVICES_SYNC_SYNC_LOGIN_STATE_TRANSITIONS,
   BROWSER_ENGAGEMENT_NAVIGATION_ABOUT_NEWTAB,
@@ -96,8 +98,6 @@ enum class ScalarID : uint32_t {
 #if defined(ACCESSIBILITY)
   A11Y_INSTANTIATORS,
 #endif
-  SW_CORS_RES_FOR_SO_REQ_COUNT,
-  SW_SYNTHESIZED_RES_COUNT,
 #if defined(XP_WIN)
   SANDBOX_NO_JOB,
 #endif
