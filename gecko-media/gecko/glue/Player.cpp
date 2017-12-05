@@ -99,9 +99,11 @@ GeckoMedia_Player_CreateNetworkPlayer(size_t aId,
                                       const char* aMimeType,
                                       PlayerCallbackObject aCallback)
 {
-  RefPtr<MediaResource> resource =
+  RefPtr<RustMediaResource> resource =
     new RustMediaResource(aNetworkResource);
   CreatePlayer(aId, resource, aMimeType, aCallback);
+  IMPL_GECKO_MEDIA_REFLECTOR_GET(Player)
+  resource->SetDecoder(reflector->mDecoder);
 }
 
 void

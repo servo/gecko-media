@@ -126,6 +126,7 @@ void
 Benchmark::ReturnResult(uint32_t aDecodeFps)
 {
   MOZ_ASSERT(OnThread());
+
   mPromise.ResolveIfExists(aDecodeFps, __func__);
 }
 
@@ -291,7 +292,6 @@ BenchmarkPlayback::Output(const MediaDataDecoder::DecodedData& aResults)
   TimeStamp now = TimeStamp::Now();
   int32_t frames = mFrameCount - ref->mParameters.mStartupFrame;
   TimeDuration elapsedTime = now - mDecodeStartTime.refOr(now);
-
   if (!mFinished &&
       (((frames == ref->mParameters.mFramesToMeasure) && frames > 0) ||
        elapsedTime >= ref->mParameters.mTimeout || mDrained)) {

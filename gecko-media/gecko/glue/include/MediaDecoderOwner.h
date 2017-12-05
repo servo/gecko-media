@@ -195,13 +195,6 @@ public:
    * Servo only methods go here. Please provide default implementations so they
    * can build in Gecko without any modification.
    */
-
-  // Called by the media decoder whenever the buffered ranges are updated.
-  virtual void NotifyBuffered() const { }
-
-  // Called by the media decoder whenever the seekable ranges are updated.
-  virtual void NotifySeekable() const { }
-
 };
 
 } // namespace mozilla

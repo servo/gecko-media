@@ -9,7 +9,7 @@
 
 #include "AudioSegment.h"
 #include "VideoSegment.h"
-// #include "nsContentUtils.h"
+#include "nsContentUtils.h"
 #include "nsIObserver.h"
 #include "nsPrintfCString.h"
 #include "nsServiceManagerUtils.h"
@@ -59,6 +59,8 @@ enum SourceMediaStream::TrackCommands : uint32_t {
 
 /**
  * A hash table containing the graph instances, one per document.
+ *
+ * The key is a hash of nsPIDOMWindowInner, see `WindowToHash`.
  */
 static nsDataHashtable<nsUint32HashKey, MediaStreamGraphImpl*> gGraphs;
 
@@ -962,7 +964,7 @@ MediaStreamGraphImpl::PlayAudio(MediaStream* aStream)
     // Need unique id for stream & track - and we want it to match the inserter
     output.WriteTo(LATENCY_STREAM_ID(aStream, track->GetID()),
                                      mMixer,
-                                     CurrentDriver()->AsAudioCallbackDriver()->OutputChannelCount(),
+                                     AudioChannelCount(),
                                      mSampleRate);
   }
   return ticksWritten;
@@ -1217,11 +1219,13 @@ MediaStreamGraphImpl::PrepareUpdatesToMainThreadState(bool aFinalUpdate)
     }
   }
 
-  // Don't send the message to the main thread if it's not going to have
-  // any work to do.
-  if (aFinalUpdate ||
-      !mUpdateRunnables.IsEmpty() ||
-      !mStreamUpdates.IsEmpty()) {
+  // If this is the final update, then a stable state event will soon be
+  // posted just before this thread finishes, and so there is no need to also
+  // post here.
+  if (!aFinalUpdate &&
+      // Don't send the message to the main thread if it's not going to have
+      // any work to do.
+      !(mUpdateRunnables.IsEmpty() && mStreamUpdates.IsEmpty())) {
     EnsureStableStateEventPosted();
   }
 }
@@ -1281,7 +1285,6 @@ MediaStreamGraphImpl::AllFinishedStreamsNotified()
 void
 MediaStreamGraphImpl::RunMessageAfterProcessing(UniquePtr<ControlMessage> aMessage)
 {
-  MOZ_ASSERT(CurrentDriver()->OnThread());
   MOZ_ASSERT(OnGraphThread());
 
   if (mFrontMessageQueue.IsEmpty()) {
@@ -1465,12 +1468,7 @@ MediaStreamGraphImpl::UpdateMainThreadState()
     (IsEmpty() && mBackMessageQueue.IsEmpty());
   PrepareUpdatesToMainThreadState(finalUpdate);
   if (finalUpdate) {
-    // Enter shutdown mode. The stable-state handler will detect this
-    // and complete shutdown. Destroy any streams immediately.
-    LOG(LogLevel::Debug,
-        ("MediaStreamGraph %p waiting for main thread cleanup", this));
-    // We'll shut down this graph object if it does not get restarted.
-    LifecycleStateRef() = LIFECYCLE_WAITING_FOR_MAIN_THREAD_CLEANUP;
+    // Enter shutdown mode when this iteration is completed.
     // No need to Destroy streams here. The main-thread owner of each
     // stream is responsible for calling Destroy on them.
     return false;
@@ -1642,6 +1640,20 @@ public:
       // teardown and just leak, for safety.
       return NS_OK;
     }
+
+    // mGraph's thread is not running so it's OK to do whatever here
+    for (MediaStream* stream : mGraph->AllStreams()) {
+      // Clean up all MediaSegments since we cannot release Images too
+      // late during shutdown. Also notify listeners that they were removed
+      // so they can clean up any gfx resources.
+      if (SourceMediaStream* source = stream->AsSourceStream()) {
+        // Finishing a SourceStream prevents new data from being appended.
+        source->Finish();
+      }
+      stream->GetStreamTracks().Clear();
+      stream->RemoveAllListenersImpl();
+    }
+
     mGraph->mForceShutdownTicket = nullptr;
 #endif
 
@@ -1654,24 +1666,13 @@ public:
       mGraph->Destroy();
     } else {
       // The graph is not empty.  We must be in a forced shutdown, or a
-      // non-realtime graph that has finished processing.  Some later
-      // AppendMessage will detect that the manager has been emptied, and
+      // non-realtime graph that has finished processing. Some later
+      // AppendMessage will detect that the graph has been emptied, and
       // delete it.
       NS_ASSERTION(mGraph->mForceShutDown || !mGraph->mRealtime,
                    "Not in forced shutdown?");
-      // mGraph's thread is not running so it's OK to do whatever here
-      for (MediaStream* stream : mGraph->AllStreams()) {
-        // Clean up all MediaSegments since we cannot release Images too
-        // late during shutdowna
-        if (SourceMediaStream* source = stream->AsSourceStream()) {
-          // Finishing a SourceStream prevents new data from being appended.
-          source->Finish();
-        }
-        stream->GetStreamTracks().Clear();
-      }
-
       mGraph->LifecycleStateRef() =
-         MediaStreamGraphImpl::LIFECYCLE_WAITING_FOR_STREAM_DESTRUCTION;
+        MediaStreamGraphImpl::LIFECYCLE_WAITING_FOR_STREAM_DESTRUCTION;
     }
     return NS_OK;
   }
@@ -1771,7 +1772,7 @@ MediaStreamGraphImpl::RunInStableState(bool aSourceIsMSG)
         // A new graph graph will be created if one is needed.
         // Asynchronously clean up old graph. We don't want to do this
         // synchronously because it spins the event loop waiting for threads
-        // to shut down, and we don't want to do that in a stable state handler.        
+        // to shut down, and we don't want to do that in a stable state handler.
         LifecycleStateRef() = LIFECYCLE_WAITING_FOR_THREAD_SHUTDOWN;
         LOG(LogLevel::Debug,
             ("Sending MediaStreamGraphShutDownRunnable %p", this));
@@ -1895,11 +1896,7 @@ MediaStreamGraphImpl::EnsureRunInStableState()
     return;
   mPostedRunInStableState = true;
   nsCOMPtr<nsIRunnable> event = new MediaStreamGraphStableStateRunnable(this, false);
-#ifdef GECKO_MEDIA_CRATE
-  NS_DispatchToCurrentThread(event.forget());
-#else
   nsContentUtils::RunInStableState(event.forget());
-#endif
 }
 
 void
@@ -1913,6 +1910,19 @@ MediaStreamGraphImpl::EnsureStableStateEventPosted()
   mPostedRunInStableStateEvent = true;
   nsCOMPtr<nsIRunnable> event = new MediaStreamGraphStableStateRunnable(this, true);
   mAbstractMainThread->Dispatch(event.forget());
+}
+
+void
+MediaStreamGraphImpl::SignalMainThreadCleanup()
+{
+  MOZ_ASSERT(mDriver->OnThread());
+
+  MonitorAutoLock lock(mMonitor);
+  LOG(LogLevel::Debug,
+      ("MediaStreamGraph %p waiting for main thread cleanup", this));
+  LifecycleStateRef() =
+    MediaStreamGraphImpl::LIFECYCLE_WAITING_FOR_MAIN_THREAD_CLEANUP;
+  EnsureStableStateEventPosted();
 }
 
 void
@@ -2139,11 +2149,23 @@ MediaStream::EnsureTrack(TrackID aTrackId)
 void
 MediaStream::RemoveAllListenersImpl()
 {
-  for (int32_t i = mListeners.Length() - 1; i >= 0; --i) {
-    RefPtr<MediaStreamListener> listener = mListeners[i].forget();
-    listener->NotifyEvent(GraphImpl(), MediaStreamGraphEvent::EVENT_REMOVED);
+  GraphImpl()->AssertOnGraphThreadOrNotRunning();
+
+  auto streamListeners(mListeners);
+  for (auto& l : streamListeners) {
+    l->NotifyEvent(GraphImpl(), MediaStreamGraphEvent::EVENT_REMOVED);
   }
   mListeners.Clear();
+
+  auto trackListeners(mTrackListeners);
+  for (auto& l : trackListeners) {
+    l.mListener->NotifyRemoved();
+  }
+  mTrackListeners.Clear();
+
+  if (SourceMediaStream* source = AsSourceStream()) {
+    source->RemoveAllDirectListeners();
+  }
 }
 
 void
@@ -3184,6 +3206,18 @@ SourceMediaStream::EndAllTrackAndFinish()
   // we will call NotifyEvent() to let GetUserMedia know
 }
 
+void
+SourceMediaStream::RemoveAllDirectListeners()
+{
+  GraphImpl()->AssertOnGraphThreadOrNotRunning();
+
+  auto directListeners(mDirectTrackListeners);
+  for (auto& l : directListeners) {
+    l.mListener->NotifyDirectListenerUninstalled();
+  }
+  mDirectTrackListeners.Clear();
+}
+
 SourceMediaStream::~SourceMediaStream()
 {
 }
@@ -3564,30 +3598,25 @@ uint32_t WindowToHash(nsPIDOMWindowInner* aWindow)
 MediaStreamGraph*
 MediaStreamGraph::GetInstanceIfExists(nsPIDOMWindowInner* aWindow)
 {
- MOZ_ASSERT(NS_IsMainThread(), "Main thread only");
+  MOZ_ASSERT(NS_IsMainThread(), "Main thread only");
 
- uint32_t hashkey = WindowToHash(aWindow);
+  uint32_t hashkey = WindowToHash(aWindow);
 
- MediaStreamGraphImpl* graph = nullptr;
- gGraphs.Get(hashkey, &graph);
- return graph;
+  MediaStreamGraphImpl* graph = nullptr;
+  gGraphs.Get(hashkey, &graph);
+  return graph;
 }
- 
+
 MediaStreamGraph*
 MediaStreamGraph::GetInstance(MediaStreamGraph::GraphDriverType aGraphDriverRequested,
                               nsPIDOMWindowInner* aWindow)
 {
   MOZ_ASSERT(NS_IsMainThread(), "Main thread only");
 
-  MediaStreamGraphImpl* graph = nullptr;
+  MediaStreamGraphImpl* graph =
+    static_cast<MediaStreamGraphImpl*>(GetInstanceIfExists(aWindow));
 
-  // We hash the nsPIDOMWindowInner to form a key to the gloabl
-  // MediaStreamGraph hashtable. Effectively, this means there is a graph per
-  // document.
-
-  uint32_t hashkey = WindowToHash(aWindow);
-
-  if (!gGraphs.Get(hashkey, &graph)) {
+  if (!graph) {
 #ifndef GECKO_MEDIA_CRATE
     if (!gMediaStreamGraphShutdownBlocker) {
 
@@ -3641,13 +3670,14 @@ MediaStreamGraph::GetInstance(MediaStreamGraph::GraphDriverType aGraphDriverRequ
                                      CubebUtils::PreferredSampleRate(),
                                      mainThread);
 
+    uint32_t hashkey = WindowToHash(aWindow);
     gGraphs.Put(hashkey, graph);
 
     LOG(LogLevel::Debug,
         ("Starting up MediaStreamGraph %p for window %p", graph, aWindow));
   }
 
-  return graph;
+  return nullptr;
 }
 
 MediaStreamGraph*
@@ -3660,9 +3690,9 @@ MediaStreamGraph::CreateNonRealtimeInstance(TrackRate aSampleRate,
 #else
   nsCOMPtr<nsIGlobalObject> parentObject = do_QueryInterface(aWindow);
   MediaStreamGraphImpl* graph = new MediaStreamGraphImpl(
-                                                         OFFLINE_THREAD_DRIVER,
-                                                         aSampleRate,
-                                                         parentObject->AbstractMainThreadFor(TaskCategory::Other));
+    OFFLINE_THREAD_DRIVER,
+    aSampleRate,
+    parentObject->AbstractMainThreadFor(TaskCategory::Other));
 
   LOG(LogLevel::Debug, ("Starting up Offline MediaStreamGraph %p", graph));
 

@@ -159,12 +159,10 @@ add_library(gecko_core OBJECT
   gecko/glue/nsContentTypeParser.cpp
   gecko/glue/nsCategoryManager.cpp
   gecko/glue/nsComponentManager.cpp
-  gecko/glue/nsComponentManagerUtils.cpp
   gecko/glue/nsObserverList.cpp
   gecko/glue/nsObserverService.cpp
   gecko/glue/nsThread.cpp
   gecko/glue/nsTraceRefcnt.cpp
-  gecko/glue/nsCRTGlue.cpp
   gecko/glue/Preferences.cpp
   gecko/glue/RustServices.cpp
   gecko/glue/RustMediaResource.cpp
@@ -262,11 +260,13 @@ add_library(gecko_core OBJECT
   gecko/src/xpcom/base/ClearOnShutdown.cpp
   gecko/src/xpcom/base/ErrorNames.cpp
   gecko/src/xpcom/base/nsCOMPtr.cpp
+  gecko/src/xpcom/base/nsCRTGlue.cpp
   gecko/src/xpcom/base/nsClassInfoImpl.cpp
   gecko/src/xpcom/base/nsID.cpp
   gecko/src/xpcom/base/nsISupportsImpl.cpp
   gecko/src/xpcom/base/nsMemory.cpp
   gecko/src/xpcom/base/nsWeakReference.cpp
+  gecko/src/xpcom/components/nsComponentManagerUtils.cpp
   gecko/src/xpcom/components/GenericFactory.cpp
   gecko/src/xpcom/ds/PLDHashTable.cpp
   gecko/src/xpcom/ds/nsCOMArray.cpp

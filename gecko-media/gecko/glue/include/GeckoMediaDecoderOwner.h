@@ -198,8 +198,8 @@ public:
 
   void UpdateCurrentImages(nsTArray<GeckoPlanarYCbCrImage> aImages);
 
-  void NotifyBuffered() const override;
-  void NotifySeekable() const override;
+  void NotifyBuffered() const;
+  void NotifySeekable() const;
 
   void Shutdown();
 

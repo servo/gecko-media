@@ -25,10 +25,15 @@
 #include "nsCOMPtr.h"
 #include "nsQueryObject.h"
 #include "pratom.h"
+// #include "mozilla/CycleCollectedJSContext.h"
 #include "mozilla/Logging.h"
 #include "nsIObserverService.h"
 #include "mozilla/HangMonitor.h"
 #include "mozilla/IOInterposer.h"
+#ifndef GECKO_MEDIA_CRATE
+#include "mozilla/ipc/MessageChannel.h"
+#include "mozilla/ipc/BackgroundChild.h"
+#endif
 #include "mozilla/Scheduler.h"
 #include "mozilla/SchedulerGroup.h"
 #include "mozilla/ScopeExit.h"
@@ -39,18 +44,17 @@
 #include "mozilla/Telemetry.h"
 #include "mozilla/TimeStamp.h"
 #include "mozilla/Unused.h"
+#ifndef GECKO_MEDIA_CRATE
+#include "mozilla/dom/ScriptSettings.h"
+#include "nsICrashReporter.h"
+#endif
 #include "nsThreadSyncDispatch.h"
+#include "nsServiceManagerUtils.h"
+#include "GeckoProfiler.h"
 #include "InputEventStatistics.h"
 #include "ThreadEventTarget.h"
 
 #ifndef GECKO_MEDIA_CRATE
-#include "mozilla/CycleCollectedJSContext.h"
-#include "mozilla/ipc/MessageChannel.h"
-#include "mozilla/ipc/BackgroundChild.h"
-#include "mozilla/dom/ScriptSettings.h"
-#include "GeckoProfiler.h"
-#include "nsServiceManagerUtils.h"
-#include "nsICrashReporter.h"
 #include "mozilla/dom/ContentChild.h"
 #endif
 

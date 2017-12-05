@@ -9,8 +9,10 @@
 
 #include "MediaResource.h"
 #include "Player.h"
+#include "GeckoMediaDecoder.h"
 
 #include "mozilla/Atomics.h"
+#include "mozilla/Mutex.h"
 
 namespace mozilla {
 
@@ -35,8 +37,17 @@ public:
                          uint32_t aCount) override;
   nsresult GetCachedRanges(MediaByteRangeSet& aRanges) override;
 
+  uint32_t ID() const { return mResourceID; }
+  void SetCachedRanges(const GeckoMediaByteRange* aRanges, size_t aLength);
+  void SetDecoder(GeckoMediaDecoder* aDecoder);
+  nsresult Close() override;
 private:
+  ~RustMediaResource();
   NetworkResourceObject mResource = { 0 };
+  const uint32_t mResourceID;
+  Mutex mRangesLock;
+  nsTArray<GeckoMediaByteRange> mRanges;
+  RefPtr<GeckoMediaDecoder> mDecoder;
 };
 
 } // namespace mozilla

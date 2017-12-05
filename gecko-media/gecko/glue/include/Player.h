@@ -79,18 +79,23 @@ struct PlayerCallbackObject
   void (*mFree)(void*);
 };
 
-struct GeckoMediaByteIntervalSet {
-  void (*mAdd)(void* aData, uint64_t aStart, uint64_t aEnd);
-  void* mData;
+struct GeckoMediaByteRange {
+  uint64_t mStart;
+  uint64_t mEnd;
+};
+
+struct CachedRangesObserverObject {
+  void (*mUpdate)(uint32_t, const GeckoMediaByteRange*, size_t);
+  uint32_t mResourceID;
 };
 
 struct NetworkResourceObject {
+  void (*mSetRangesObserver)(void*, CachedRangesObserverObject);
   bool (*mReadAt)(void* aData, uint64_t aOffset, uint8_t* aBytes, uint32_t aLength, uint32_t* aOutBytesRead);
   void (*mPin)(void* aData);
   void (*mUnPin)(void* aData);
   int64_t (*mLength)(void* aData);
   bool (*mReadFromCache)(void* aData, uint64_t aOffset, uint8_t* aBytes, uint32_t aLength);
-  void (*mCachedRanges)(void* aData, GeckoMediaByteIntervalSet*);
   void (*mFree)(void*);
   void* mData;
 };

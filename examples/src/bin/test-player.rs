@@ -81,11 +81,19 @@ impl PlayerWrapper {
         }
         impl PlayerEventSink for Sink {
             fn playback_ended(&self) {
-                self.sender.lock().unwrap().send(PlayerEvent::Ended).unwrap();
+                self.sender
+                    .lock()
+                    .unwrap()
+                    .send(PlayerEvent::Ended)
+                    .unwrap();
             }
             fn decode_error(&self) {
                 println!("Decode error!");
-                self.sender.lock().unwrap().send(PlayerEvent::Error).unwrap();
+                self.sender
+                    .lock()
+                    .unwrap()
+                    .send(PlayerEvent::Error)
+                    .unwrap();
             }
             fn async_event(&self, name: &str) {
                 self.sender
@@ -122,7 +130,6 @@ impl PlayerWrapper {
                     .unwrap();
             }
             fn buffered(&self, ranges: Vec<Range<f64>>) {
-                println!("Buffered: {:?}", &ranges);
                 self.buffered_ranges_canonical.set(ranges);
             }
             fn seekable(&self, ranges: Vec<Range<f64>>) {

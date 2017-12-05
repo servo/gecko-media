@@ -35,7 +35,8 @@ pub use mse::sourcebuffer::SourceBuffer as GeckoMediaSourceBuffer;
 pub use mse::sourcebuffer::SourceBufferImpl as GeckoMediaSourceBufferImpl;
 pub use mse::sourcebufferlist::SourceBufferList as GeckoMediaSourceBufferList;
 pub use mse::sourcebufferlist::SourceBufferListImpl as GeckoMediaSourceBufferListImpl;
-pub use player::{Metadata, NetworkResource, PlanarYCbCrImage, Plane, Player, PlayerEventSink, Region};
+pub use player::{CachedRangesSink, Metadata, NetworkResource, PlanarYCbCrImage};
+pub use player::{Plane, Player, PlayerEventSink, Region};
 pub use top::GeckoMedia;
 pub use timestamp::TimeStamp;
 

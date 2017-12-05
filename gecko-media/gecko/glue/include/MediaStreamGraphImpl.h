@@ -198,6 +198,14 @@ public:
    */
   bool OneIteration(GraphTime aStateEnd);
 
+  /**
+   * Called from the driver, when the graph thread is about to stop, to tell
+   * the main thread to attempt to begin cleanup.  The main thread may either
+   * shutdown or revive the graph depending on whether it receives new
+   * messages.
+   */
+  void SignalMainThreadCleanup();
+
   bool Running() const
   {
     return LifecycleStateRef() == LIFECYCLE_RUNNING;
@@ -396,6 +404,9 @@ public:
    */
   bool IsEmpty() const
   {
+    MOZ_ASSERT(OnGraphThreadOrNotRunning() ||
+               (NS_IsMainThread() &&
+                LifecycleStateRef() >= LIFECYCLE_WAITING_FOR_MAIN_THREAD_CLEANUP));
     return mStreams.IsEmpty() && mSuspendedStreams.IsEmpty() && mPortCount == 0;
   }
 
@@ -470,14 +481,12 @@ public:
    * It is only safe to call this at the very end of an iteration, when there
    * has been a SwitchAtNextIteration call during the iteration. The driver
    * should return and pass the control to the new driver shortly after.
-   * We can also switch from Revive() (on MainThread), in which case the
-   * monitor is held
+   * We can also switch from Revive() (on MainThread). Monitor must be held.
    */
   void SetCurrentDriver(GraphDriver* aDriver)
   {
 #ifdef DEBUG
     mMonitor.AssertCurrentThreadOwns();
-    AssertOnGraphThreadOrNotRunning();
 #endif
     mDriver = aDriver;
   }
@@ -570,6 +579,8 @@ public:
    * switch occur, previous driver is either deleted, or it's ownership is
    * passed to a event that will take care of the asynchronous cleanup, as
    * audio stream can take some time to shut down.
+   * Accessed on both the main thread and the graph thread; both read and write.
+   * Must hold monitor to access it.
    */
   RefPtr<GraphDriver> mDriver;
 
@@ -581,6 +592,7 @@ public:
    * The graph keeps a reference to each stream.
    * References are maintained manually to simplify reordering without
    * unnecessary thread-safe refcount changes.
+   * Must satisfy OnGraphThreadOrNotRunning().
    */
   nsTArray<MediaStream*> mStreams;
   /**
@@ -588,12 +600,9 @@ public:
    * mStreams and mSuspendStream are disjoint sets: a stream is either suspended
    * or not suspended. Suspended streams are not ordered in UpdateStreamOrder,
    * and are therefore not doing any processing.
+   * Must satisfy OnGraphThreadOrNotRunning().
    */
   nsTArray<MediaStream*> mSuspendedStreams;
-  /**
-   * Suspended AudioContext IDs
-   */
-  nsTHashtable<nsUint64HashKey> mSuspendedContexts;
   /**
    * Streams from mFirstCycleBreaker to the end of mStreams produce output
    * before they receive input.  They correspond to DelayNodes that are in
@@ -721,8 +730,11 @@ public:
     // realtime graph when it has no streams.
     LIFECYCLE_WAITING_FOR_STREAM_DESTRUCTION
   };
+
   /**
-   * Modified only on the main thread in mMonitor.
+   * Modified only in mMonitor.  Transitions to
+   * LIFECYCLE_WAITING_FOR_MAIN_THREAD_CLEANUP occur on the graph thread at
+   * the end of an iteration.  All other transitions occur on the main thread.
    */
   LifecycleState mLifecycleState;
   LifecycleState& LifecycleStateRef()
@@ -745,17 +757,22 @@ public:
   }
   /**
    * The graph should stop processing at or after this time.
+   * Only set on main thread. Read on both main and MSG thread.
    */
   Atomic<GraphTime> mEndTime;
 
   /**
    * True when we need to do a forced shutdown during application shutdown.
+   * Only set on main thread.
+   * Can be read safely on the main thread, on all other threads mMonitor must
+   * be held.
    */
   bool mForceShutDown;
 
 #ifndef GECKO_MEDIA_CRATE
   /**
    * Drop this reference during shutdown to unblock shutdown.
+   * Only accessed on the main thread.
    **/
   RefPtr<media::ShutdownTicket> mForceShutdownTicket;
 #endif
@@ -763,6 +780,7 @@ public:
   /**
    * True when we have posted an event to the main thread to run
    * RunInStableState() and the event hasn't run yet.
+   * Accessed on both main and MSG thread, mMonitor must be held.
    */
   bool mPostedRunInStableStateEvent;
 
@@ -784,13 +802,14 @@ public:
   /**
    * True when a stable state runner has been posted to the appshell to run
    * RunInStableState at the next stable state.
+   * Only accessed on the main thread.
    */
   bool mPostedRunInStableState;
   /**
    * True when processing real-time audio/video.  False when processing non-realtime
    * audio.
    */
-  bool mRealtime;
+  const bool mRealtime;
   /**
    * True when a non-realtime MediaStreamGraph has started to process input.  This
    * value is only accessed on the main thread.
@@ -812,6 +831,7 @@ public:
 #endif
 
   // used to limit graph shutdown time
+  // Only accessed on the main thread.
   nsCOMPtr<nsITimer> mShutdownTimer;
 
 private:

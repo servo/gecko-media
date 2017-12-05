@@ -15,9 +15,7 @@
 #include "nsComponentManagerUtils.h"
 #include "nsServiceManagerUtils.h"
 
-#ifndef GECKO_MEDIA_CRATE
 #include "nsIComponentManager.h"
-#endif
 
 #ifndef MOZILLA_INTERNAL_API
 
