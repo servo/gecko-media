@@ -18,6 +18,7 @@
 #include "MediaDataDemuxer.h"
 #include "MediaMetadataManager.h"
 #include "MediaPrefs.h"
+#include "MediaPromiseDefs.h"
 #include "nsAutoPtr.h"
 #include "PDMFactory.h"
 #include "SeekTarget.h"
@@ -193,7 +194,7 @@ public:
   // cases like MSE.
   bool UseBufferingHeuristics() const { return mTrackDemuxersMayBlock; }
 
-  void SetCDMProxy(CDMProxy* aProxy);
+  RefPtr<SetCDMPromise> SetCDMProxy(CDMProxy* aProxy);
 
   // Returns a string describing the state of the decoder data.
   // Used for debugging purposes.
@@ -742,7 +743,7 @@ private:
   RefPtr<VideoFrameContainer> mVideoFrameContainer;
   layers::ImageContainer* GetImageContainer();
 
-  // RefPtr<CDMProxy> mCDMProxy;
+  RefPtr<CDMProxy> mCDMProxy;
 
   RefPtr<GMPCrashHelper> mCrashHelper;
 
@@ -798,6 +799,12 @@ private:
 
   // Used in bug 1393399 for telemetry.
   const MediaDecoderOwnerID mMediaDecoderOwnerID;
+
+  bool ResolveSetCDMPromiseIfDone(TrackType aTrack);
+  void PrepareToSetCDMForTrack(TrackType aTrack);
+  MozPromiseHolder<SetCDMPromise> mSetCDMPromise;
+  TrackSet mSetCDMForTracks{};
+  bool IsDecoderWaitingForCDM(TrackType aTrack);
 };
 
 } // namespace mozilla
