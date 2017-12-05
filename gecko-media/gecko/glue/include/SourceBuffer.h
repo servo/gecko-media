@@ -26,8 +26,6 @@ public:
 
   media::TimeIntervals GetTimeIntervals();
 
-  void Detach() { /* TODO */}
-
 private:
   ~SourceBuffer();
 
