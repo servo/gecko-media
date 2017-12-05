@@ -54,5 +54,11 @@ SourceBuffer::~SourceBuffer()
   }
 }
 
+media::TimeIntervals
+SourceBuffer::GetTimeIntervals()
+{
+  return mTrackBuffersManager->Buffered();
+}
+
 } // namespace dom
 } // namespace mozilla

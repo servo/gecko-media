@@ -24,11 +24,7 @@ public:
                size_t aParentId,
                const char* aMimeType);
 
-  media::TimeIntervals GetTimeIntervals()
-  {
-    // TODO get from mImpl
-    return media::TimeIntervals::Invalid();
-  }
+  media::TimeIntervals GetTimeIntervals();
 
   void Detach() { /* TODO */}
 
