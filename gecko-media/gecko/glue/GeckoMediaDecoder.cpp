@@ -11,6 +11,7 @@
 #include "VideoUtils.h"
 #include "mozilla/Logging.h"
 #include <algorithm>
+#include "GeckoMediaDecoderOwner.h"
 
 mozilla::LogModule*
 GetGeckoMediaLog()
@@ -184,7 +185,7 @@ GeckoMediaDecoder::GetCurrentPrincipal()
 void
 GeckoMediaDecoder::NotifyBuffered()
 {
-  mOwner->NotifyBuffered();
+  static_cast<GeckoMediaDecoderOwner*>(GetOwner())->NotifyBuffered();
   CheckSeekable();
 }
 
@@ -194,7 +195,7 @@ GeckoMediaDecoder::CheckSeekable()
   media::TimeIntervals currentSeekable = GetSeekable();
   if (currentSeekable != mCachedSeekable) {
     mCachedSeekable = currentSeekable;
-    mOwner->NotifySeekable();
+    static_cast<GeckoMediaDecoderOwner*>(GetOwner())->NotifySeekable();
   }
 }
 
@@ -204,7 +205,7 @@ GeckoMediaDecoder::NotifyDataArrivedIfNotShutdown()
   if (IsShutdown()) {
     return;
   }
-  NotifyDataArrived();
+  NotifyReaderDataArrived();
 }
 
 #undef GECKO_DEBUG

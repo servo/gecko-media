@@ -8,6 +8,7 @@
 
 // #include "base/message_loop.h"
 #include "mozilla/IOInterposer.h"
+//#include "mozilla/ServoBindings.h"
 #include "nsError.h"
 #include "nsThreadUtils.h"
 
@@ -30,7 +31,7 @@ CooperativeThreadPool::CooperativeThreadPool(size_t aNumThreads,
   , mController(aController)
   , mSelectedThread(size_t(0))
 {
-  MOZ_ASSERT(aNumThreads < kMaxThreads);
+  MOZ_ASSERT(aNumThreads <= kMaxThreads);
 
   gCooperativeSchedulingEnabled = true;
   sTlsCurrentThread.infallibleInit();

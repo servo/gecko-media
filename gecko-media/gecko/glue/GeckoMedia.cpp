@@ -99,6 +99,8 @@ GeckoMedia_Initialize(ThreadObserverObject aObject,
 
   RustServices::Init(aServices);
 
+  MediaDecoder::InitStatics();
+
   return true;
 }
 

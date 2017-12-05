@@ -9,25 +9,24 @@
 #include "nsIConsoleService.h"
 #include "nsIObserverService.h"
 #include "nsIObserver.h"
+// #include "nsIScriptError.h"
 #include "nsObserverService.h"
 #include "nsObserverList.h"
 #include "nsServiceManagerUtils.h"
 #include "nsThreadUtils.h"
 #include "nsEnumeratorUtils.h"
-#include "mozilla/Services.h"
-#include "mozilla/Telemetry.h"
-#include "mozilla/TimeStamp.h"
-#include "nsPrintfCString.h"
-#include "nsString.h"
-#ifdef MOZ_GECKO_PROFILER
-#include "GeckoProfiler.h"
-#endif
-
 #ifndef GECKO_MEDIA_CRATE
-#include "nsIScriptError.h"
 #include "xpcpublic.h"
 #include "mozilla/net/NeckoCommon.h"
 #endif
+#include "mozilla/Services.h"
+#include "mozilla/Telemetry.h"
+#include "mozilla/TimeStamp.h"
+#ifdef GECKO_MEDIA_CRATE
+#include "nsPrintfCString.h"
+#endif
+#include "nsString.h"
+#include "GeckoProfiler.h"
 
 #define NOTIFY_GLOBAL_OBSERVERS
 
@@ -300,10 +299,8 @@ NS_IMETHODIMP nsObserverService::NotifyObservers(nsISupports* aSubject,
 
   mozilla::TimeStamp start = TimeStamp::Now();
 
-#ifdef MOZ_GECKO_PROFILER
-  AUTO_PROFILER_LABEL_DYNAMIC("nsObserverService::NotifyObservers", OTHER,
-                              aTopic);
-#endif
+  AUTO_PROFILER_LABEL_DYNAMIC_CSTR(
+    "nsObserverService::NotifyObservers", OTHER, aTopic);
 
   nsObserverList* observerList = mObserverTopicTable.GetEntry(aTopic);
   if (observerList) {

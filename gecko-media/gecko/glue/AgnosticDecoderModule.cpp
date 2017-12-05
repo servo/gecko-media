@@ -65,8 +65,7 @@ AgnosticDecoderModule::CreateAudioDecoder(const CreateDecoderParams& aParams)
   const TrackInfo& config = aParams.mConfig;
   if (VorbisDataDecoder::IsVorbis(config.mMimeType)) {
     m = new VorbisDataDecoder(aParams);
-  } else
-  if (OpusDataDecoder::IsOpus(config.mMimeType)) {
+  } else if (OpusDataDecoder::IsOpus(config.mMimeType)) {
     m = new OpusDataDecoder(aParams);
   } else if (WaveDataDecoder::IsWave(config.mMimeType)) {
     m = new WaveDataDecoder(aParams);
