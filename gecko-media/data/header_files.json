@@ -75,6 +75,7 @@
   "MediaMIMETypes.h": "dom/media/MediaMIMETypes.h",
   "MediaMetadataManager.h": "dom/media/MediaMetadataManager.h",
   "MediaPrefs.h": "dom/media/MediaPrefs.h",
+  "MediaPromiseDefs.h": "dom/media/MediaPromiseDefs.h",
   "MediaQueue.h": "dom/media/MediaQueue.h",
   "MediaResource.h": "dom/media/MediaResource.h",
   "MediaResult.h": "dom/media/MediaResult.h",

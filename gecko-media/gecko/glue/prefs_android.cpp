@@ -14,9 +14,7 @@ pref("media.mediadrm-widevinecdm.visible", true);
 #ifdef NIGHTLY_BUILD
 pref("media.eme.enabled", true);
 #endif
-#ifdef NIGHTLY_BUILD
 pref("media.hls.enabled", true);
-#endif
 pref("media.suspend-bkgnd-video.enabled", true);
 pref("media.realtime_decoder.enabled", true);
 pref("media.plugins.enabled", true);
