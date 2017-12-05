@@ -8,6 +8,7 @@
 #define GeckoMediaSourceBuffer_h_
 
 #include <stddef.h>
+#include <stdint.h>
 
 namespace mozilla {
 namespace dom {
@@ -27,6 +28,7 @@ mozilla::dom::SourceBuffer*
 GetSourceBuffer(const size_t aId);
 
 extern "C" {
+// TODO error handling (i.e. aId or aParentId may not be valid)
 void
 GeckoMedia_SourceBuffer_Create(size_t aId,
                                GeckoMediaSourceBufferImpl aImpl,
@@ -35,6 +37,12 @@ GeckoMedia_SourceBuffer_Create(size_t aId,
 
 void
 GeckoMedia_SourceBuffer_Shutdown(size_t aId);
+
+void
+GeckoMedia_SourceBuffer_EvictData(size_t aId,
+                                  size_t aParentId,
+                                  int64_t aLength,
+                                  bool* aBufferFull);
 }
 
 #endif // GeckoMediaSourceBuffer_h_

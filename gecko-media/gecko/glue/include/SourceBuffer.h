@@ -26,6 +26,8 @@ public:
 
   media::TimeIntervals GetTimeIntervals();
 
+  void EvictData(size_t aParentId, size_t aLength, bool* aBufferFull);
+
 private:
   ~SourceBuffer();
 

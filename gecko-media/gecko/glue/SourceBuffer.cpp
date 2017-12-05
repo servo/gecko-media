@@ -11,15 +11,13 @@
 #include "MediaSourceDemuxer.h"
 #include "mozilla/Logging.h"
 
-extern mozilla::LogModule* GetMediaSourceLog();
+extern mozilla::LogModule*
+GetMediaSourceLog();
 
 #define MSE_DEBUG(arg, ...)                                                    \
   MOZ_LOG(GetMediaSourceLog(),                                                 \
           mozilla::LogLevel::Debug,                                            \
-          ("SourceBuffer(%p)::%s: " arg,                                       \
-           this,                                                               \
-           __func__,                                                           \
-           ##__VA_ARGS__))
+          ("SourceBuffer(%p)::%s: " arg, this, __func__, ##__VA_ARGS__))
 
 namespace mozilla {
 namespace dom {
@@ -58,6 +56,24 @@ media::TimeIntervals
 SourceBuffer::GetTimeIntervals()
 {
   return mTrackBuffersManager->Buffered();
+}
+
+void
+SourceBuffer::EvictData(size_t aParentId, size_t aLength, bool* aBufferFull)
+{
+  typedef TrackBuffersManager::EvictDataResult Result;
+
+  auto parent = GetMediaSource(aParentId);
+  if (NS_WARN_IF(!parent)) {
+    *aBufferFull = true;
+    return;
+  }
+
+  Result evicted = mTrackBuffersManager->EvictData(
+    media::TimeUnit::FromSeconds(parent->GetDecoder()->GetCurrentTime()),
+    aLength);
+
+  *aBufferFull = (evicted == Result::BUFFER_FULL);
 }
 
 } // namespace dom
