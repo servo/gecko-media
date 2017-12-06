@@ -66,7 +66,7 @@ struct PlayerCallbackObject
   void* mContext;
   void (*mPlaybackEnded)(void*);
   void (*mDecodeError)(void*);
-  void (*mAsyncEvent)(void*, const int8_t*);
+  void (*mAsyncEvent)(void*, const char*);
   void (*mMetadataLoaded)(void*, GeckoMediaMetadata);
   void (*mDurationChanged)(void*, double);
   void (*mLoadedData)(void*);

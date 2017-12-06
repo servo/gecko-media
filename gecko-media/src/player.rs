@@ -14,6 +14,7 @@ use std::ffi::CStr;
 use std::ffi::CString;
 use std::mem;
 use std::ops::Range;
+use std::os::raw::c_char;
 use std::slice;
 use timestamp::TimeStamp;
 
@@ -379,7 +380,7 @@ fn to_ffi_callback(callbacks: Box<PlayerEventSink>) -> PlayerCallbackObject {
     impl_simple_ffi_callback_wrapper!(seek_started, ());
     impl_simple_ffi_callback_wrapper!(seek_completed, ());
 
-    unsafe extern "C" fn async_event(ptr: *mut c_void, name: *const i8) {
+    unsafe extern "C" fn async_event(ptr: *mut c_void, name: *const c_char) {
         let wrapper = &*(ptr as *mut Wrapper);
         let c_str: &CStr = CStr::from_ptr(name);
         wrapper.callbacks.async_event(c_str.to_str().unwrap());

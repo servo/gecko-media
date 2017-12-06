@@ -29,16 +29,14 @@ fn compile_gecko_media() {
     println!("cargo:rustc-link-search=native={}", dst.display());
     println!("cargo:rustc-link-lib=static=gecko_media_cmake");
 
-    #[cfg(target_os = "macos")]
-    println!("cargo:rustc-link-lib=c++");
+    let target = std::env::var("TARGET").unwrap();
 
-    #[cfg(target_os = "linux")]
-    println!("cargo:rustc-link-lib=stdc++");
-
-    #[cfg(target_os = "linux")]
-    println!("cargo:rustc-link-lib=dl");
-    #[cfg(target_os = "macos")]
-    {
+    if let Some(_) = target.find("android") {
+        println!("cargo:rustc-link-lib=OpenSLES");
+        println!("cargo:rustc-link-lib=dl");
+        println!("cargo:rustc-link-lib=stdc++");
+    } else if let Some(_) = target.find("darwin") {
+        println!("cargo:rustc-link-lib=c++");
         let frameworks = vec![
             "CoreFoundation",
             "CoreAudio",
@@ -51,11 +49,12 @@ fn compile_gecko_media() {
         for framework in &frameworks {
             println!("cargo:rustc-link-lib=framework={}", framework);
         }
+    } else if let Some(_) = target.find("linux") {
+        println!("cargo:rustc-link-lib=stdc++");
+        println!("cargo:rustc-link-lib=dl");
+    } else if let Some(_) = target.find("windows") {
+        println!("cargo:rustc-link-lib=avrt");
     }
-    #[cfg(target_os = "windows")]
-    println!("cargo:rustc-link-lib=avrt");
-    #[cfg(target_os = "android")]
-    println!("cargo:rustc-link-lib=OpenSLES");
 }
 
 fn print_rerun_if() {

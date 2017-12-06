@@ -39,7 +39,7 @@ GeckoMediaDecoderOwner::DispatchAsyncEvent(const nsAString& aName)
     }
   }
   if (mCallback.mContext && mCallback.mAsyncEvent) {
-    (*mCallback.mAsyncEvent)(mCallback.mContext, (const int8_t*)dst.get());
+    (*mCallback.mAsyncEvent)(mCallback.mContext, dst.get());
   }
 };
 

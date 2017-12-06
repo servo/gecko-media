@@ -2,10 +2,12 @@
 [ignore]
 files = [
   "./gecko-media/import.py",
-  "./Cargo.lock"
+  "./Cargo.lock",
+  "./create-ndk-standalone.sh"
 ]
 directories = [
   "./gecko-media/gecko",
   "./target",
-  "./NullAudio"
+  "./NullAudio",
+  "./NDK"
 ]

@@ -12,6 +12,11 @@
 
 #undef MOZ_WEBRTC
 
+#if defined(ANDROID)
+// valloc isn't declared in any header of the generated ndk-r15c arm (version 21) toolchain.
+#undef HAVE_VALLOC
+#endif
+
 #define ReentrancyGuard GeckoMedia_ReentrancyGuard
 #define TimeStamp GeckoMedia_TimeStamp
 #define HashBytes GeckoMedia_HashBytes

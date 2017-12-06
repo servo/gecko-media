@@ -3,3 +3,6 @@
 Cargo.lock
 .vscode/
 glue_diffs/
+*~
+.cargo/
+/NDK/

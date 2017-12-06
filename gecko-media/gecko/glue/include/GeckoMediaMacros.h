@@ -6,6 +6,9 @@
 
 #include "nsTArray.h"
 
+#ifndef _GECKO_MEDIA_MACROS_H_
+#define _GECKO_MEDIA_MACROS_H_
+
 #define DEF_GECKO_MEDIA_REFLECTOR_CONTAINER(Class)                             \
   static nsTArray<Class> sReflectors;
 
@@ -59,3 +62,5 @@
   IMPL_GECKO_MEDIA_REFLECTOR_GETTER(GMClass)                                   \
   IMPL_GECKO_MEDIA_REFLECTOR_CONSTRUCTOR(GMClass, Class, Callbacks)            \
   IMPL_GECKO_MEDIA_REFLECTOR_SHUTDOWN(GMClass, Class)
+
+#endif

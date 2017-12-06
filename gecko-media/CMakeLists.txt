@@ -22,7 +22,7 @@ else()
   set(WINDOWS 0)
 endif()
 
-if($ENV{TARGET} MATCHES "Android")
+if($ENV{TARGET} MATCHES "android")
   set(ANDROID 1)
 else()
   set(ANDROID 0)
@@ -41,6 +41,7 @@ else()
 endif()
 
 if ($ENV{TARGET} MATCHES "arm")
+  enable_language(ASM)
   set(ARM 1)
 else()
   set(ARM 0)
@@ -70,7 +71,6 @@ endif()
 add_definitions(-DGECKO_MEDIA_CRATE=1)
 add_definitions(-DMOZILLA_INTERNAL_API=1)
 add_definitions(-D_PR_PTHREADS=1)
-add_definitions(-DGECKO_MEDIA_CRATE=1)
 add_definitions(-DRUST_BINDGEN=1)
 
 include_directories(
@@ -84,13 +84,13 @@ endif()
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_GNU_SOURCE")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-exceptions")
 
-if(LINUX)
+if(LINUX AND NOT ANDROID)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --include ${CMAKE_SOURCE_DIR}/gecko/glue/include/mozilla-config-x86_64-linux.h")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --include ${CMAKE_SOURCE_DIR}/gecko/glue/include/undefs.h")
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --include ${CMAKE_SOURCE_DIR}/gecko/glue/include/undefs.h")
 endif()
 
-if(MACOS)
+if(MACOS AND NOT ANDROID)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Xpreprocessor -include${CMAKE_SOURCE_DIR}/gecko/glue/include/mozilla-config-x86_64-apple-darwin.h")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Xpreprocessor -include${CMAKE_SOURCE_DIR}/gecko/glue/include/undefs.h")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-inline-new-delete")
@@ -100,9 +100,19 @@ if(MACOS)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-inline-new-delete")
 
   add_definitions(-DDARWIN=1)
-
 endif()
 
+if (ANDROID)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --include ${CMAKE_SOURCE_DIR}/gecko/glue/include/mozilla-config-android.h")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --include ${CMAKE_SOURCE_DIR}/gecko/glue/include/undefs.h")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --include ${CMAKE_SOURCE_DIR}/gecko/glue/include/undefs.h")
+  if (ARM)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mfloat-abi=softfp -mfpu=neon")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfloat-abi=softfp -mfpu=neon")
+  endif()
+  add_definitions(-DANDROID=1)
+  add_definitions(-DHAVE_FCNTL_FILE_LOCKING=1)
+endif()
 
 
 
@@ -277,8 +287,6 @@ add_library(gecko_core OBJECT
   gecko/src/xpcom/ds/nsTArray.cpp
   gecko/src/xpcom/ds/nsTObserverArray.cpp
   gecko/src/xpcom/io/nsDirectoryService.cpp
-  gecko/src/xpcom/string/nsReadableUtilsSSE2.cpp
-  gecko/src/xpcom/string/nsUTF8UtilsSSE2.cpp
   gecko/src/xpcom/string/unified.cpp
   gecko/src/xpcom/threads/AbstractThread.cpp
   gecko/src/xpcom/threads/BlockingResourceBase.cpp
@@ -320,6 +328,7 @@ add_library(gecko_core OBJECT
   gecko/src/nsprpub/pr/src/misc/prerrortable.c
   gecko/src/nsprpub/pr/src/misc/prinit.c
   gecko/src/nsprpub/pr/src/misc/prinrval.c
+  gecko/src/nsprpub/pr/src/misc/prlog2.c
   gecko/src/nsprpub/pr/src/misc/prnetdb.c
   gecko/src/nsprpub/pr/src/misc/prsystem.c
   gecko/src/nsprpub/pr/src/misc/prtime.c
@@ -331,14 +340,22 @@ add_library(gecko_core OBJECT
   gecko/src/nsprpub/pr/src/threads/prrwlock.c
   gecko/src/nsprpub/pr/src/threads/prtpd.c
 )
-if(LINUX)
+
+if(X86 OR X86_64)
+  target_sources(gecko_core PRIVATE
+    gecko/src/xpcom/string/nsReadableUtilsSSE2.cpp
+    gecko/src/xpcom/string/nsUTF8UtilsSSE2.cpp
+  )
+endif()
+
+if(LINUX OR ANDROID)
   target_sources(gecko_core PRIVATE
     gecko/src/mozglue/misc/Mutex_posix.cpp
     gecko/src/mozglue/misc/TimeStamp_posix.cpp
     gecko/src/nsprpub/pr/src/md/unix/linux.c
   )
 endif()
-if(MACOS)
+if(MACOS AND NOT ANDROID)
   target_sources(gecko_core PRIVATE
     gecko/glue/AppleDecoderModule.cpp
     gecko/glue/AppleVTDecoder.cpp
@@ -358,7 +375,11 @@ if(WINDOWS)
   )
 endif()
 if(ANDROID)
+  target_compile_definitions(gecko_core PRIVATE
+    __GNU_LIBRARY__=
+  )
   target_sources(gecko_core PRIVATE
+    gecko/src/dom/media/systemservices/OpenSLESProvider.cpp
     gecko/src/mozglue/misc/Mutex_posix.cpp
   )
 endif()
@@ -375,6 +396,7 @@ target_include_directories(gecko_core PRIVATE
     gecko/include/mozilla/media/libvorbis/include
     gecko/include/mozilla/media/libogg/include
     gecko/include/mozilla/media/libtheora/include
+    gecko/include/mozilla/media/libtremor/include
 )
 
 target_compile_definitions(gecko_core PRIVATE
@@ -643,6 +665,7 @@ if(X86 OR X86_64)
 endif()
 
 if(ANDROID)
+  target_include_directories(opus PRIVATE gecko/include/mozilla/media/libopus/silk/fixed)
   target_sources(opus PRIVATE
     gecko/src/media/libopus/silk/arm/arm_silk_map.c
     gecko/src/media/libopus/silk/arm/biquad_alt_neon_intr.c
@@ -652,10 +675,6 @@ if(ANDROID)
     gecko/src/media/libopus/silk/fixed/arm/warped_autocorrelation_FIX_neon_intr.c
     gecko/src/media/libopus/celt/arm/arm_celt_map.c
     gecko/src/media/libopus/celt/arm/armcpu.c
-    gecko/src/media/libopus/celt/arm/celt_ne10_fft.c
-    gecko/src/media/libopus/celt/arm/celt_ne10_mdct.c
-    gecko/src/media/libopus/celt/arm/celt_neon_intr.c
-    gecko/src/media/libopus/celt/arm/pitch_neon_intr.c
   )
 endif()
 
@@ -681,42 +700,77 @@ target_include_directories(opus PRIVATE
 )
 
 
+############
+# libtremor
+############
 
+if (ANDROID)
+  set(tremor_srcs
+    gecko/src/media/libtremor/lib/tremor_block.c
+    gecko/src/media/libtremor/lib/tremor_codebook.c
+    gecko/src/media/libtremor/lib/tremor_floor0.c
+    gecko/src/media/libtremor/lib/tremor_floor1.c
+    gecko/src/media/libtremor/lib/tremor_info.c
+    gecko/src/media/libtremor/lib/tremor_mapping0.c
+    gecko/src/media/libtremor/lib/tremor_mdct.c
+    gecko/src/media/libtremor/lib/tremor_registry.c
+    gecko/src/media/libtremor/lib/tremor_res012.c
+    gecko/src/media/libtremor/lib/tremor_sharedbook.c
+    gecko/src/media/libtremor/lib/tremor_synthesis.c
+    gecko/src/media/libtremor/lib/tremor_window.c
+  )
+
+  add_library(tremor OBJECT ${tremor_srcs})
+
+  if (ARM)
+    target_compile_definitions(tremor PRIVATE
+      _ARM_ASSEM_=
+    )
+  endif()
+
+  target_include_directories(tremor PRIVATE
+    gecko/include/mozilla/media/libtremor/lib
+    gecko/include/mozilla/media/libtremor/include/tremor
+    gecko/include/mozilla/media/libogg/include
+  )
+endif()
 
 ############
 # libvorbis
 ############
-set(vorbis_srcs
-  gecko/src/media/libvorbis/lib/vorbis_analysis.c
-  gecko/src/media/libvorbis/lib/vorbis_bitrate.c
-  gecko/src/media/libvorbis/lib/vorbis_block.c
-  gecko/src/media/libvorbis/lib/vorbis_codebook.c
-  gecko/src/media/libvorbis/lib/vorbis_envelope.c
-  gecko/src/media/libvorbis/lib/vorbis_floor0.c
-  gecko/src/media/libvorbis/lib/vorbis_floor1.c
-  gecko/src/media/libvorbis/lib/vorbis_info.c
-  gecko/src/media/libvorbis/lib/vorbis_lookup.c
-  gecko/src/media/libvorbis/lib/vorbis_lpc.c
-  gecko/src/media/libvorbis/lib/vorbis_lsp.c
-  gecko/src/media/libvorbis/lib/vorbis_mapping0.c
-  gecko/src/media/libvorbis/lib/vorbis_mdct.c
-  gecko/src/media/libvorbis/lib/vorbis_psy.c
-  gecko/src/media/libvorbis/lib/vorbis_registry.c
-  gecko/src/media/libvorbis/lib/vorbis_res0.c
-  gecko/src/media/libvorbis/lib/vorbis_sharedbook.c
-  gecko/src/media/libvorbis/lib/vorbis_smallft.c
-  gecko/src/media/libvorbis/lib/vorbis_synthesis.c
-  gecko/src/media/libvorbis/lib/vorbis_window.c
-  gecko/src/media/libvorbis/lib/vorbisenc.c
-)
+if (NOT ANDROID) 
+  set(vorbis_srcs
+    gecko/src/media/libvorbis/lib/vorbis_analysis.c
+    gecko/src/media/libvorbis/lib/vorbis_bitrate.c
+    gecko/src/media/libvorbis/lib/vorbis_block.c
+    gecko/src/media/libvorbis/lib/vorbis_codebook.c
+    gecko/src/media/libvorbis/lib/vorbis_envelope.c
+    gecko/src/media/libvorbis/lib/vorbis_floor0.c
+    gecko/src/media/libvorbis/lib/vorbis_floor1.c
+    gecko/src/media/libvorbis/lib/vorbis_info.c
+    gecko/src/media/libvorbis/lib/vorbis_lookup.c
+    gecko/src/media/libvorbis/lib/vorbis_lpc.c
+    gecko/src/media/libvorbis/lib/vorbis_lsp.c
+    gecko/src/media/libvorbis/lib/vorbis_mapping0.c
+    gecko/src/media/libvorbis/lib/vorbis_mdct.c
+    gecko/src/media/libvorbis/lib/vorbis_psy.c
+    gecko/src/media/libvorbis/lib/vorbis_registry.c
+    gecko/src/media/libvorbis/lib/vorbis_res0.c
+    gecko/src/media/libvorbis/lib/vorbis_sharedbook.c
+    gecko/src/media/libvorbis/lib/vorbis_smallft.c
+    gecko/src/media/libvorbis/lib/vorbis_synthesis.c
+    gecko/src/media/libvorbis/lib/vorbis_window.c
+    gecko/src/media/libvorbis/lib/vorbisenc.c
+  )
 
-add_library(vorbis OBJECT ${vorbis_srcs})
+  add_library(vorbis OBJECT ${vorbis_srcs})
 
-target_include_directories(vorbis PRIVATE
-  gecko/include/mozilla/media/libvorbis/lib
-  gecko/include/mozilla/media/libvorbis/include
-  gecko/include/mozilla/media/libogg/include/
-)
+  target_include_directories(vorbis PRIVATE
+    gecko/include/mozilla/media/libvorbis/lib
+    gecko/include/mozilla/media/libvorbis/include
+    gecko/include/mozilla/media/libogg/include/
+  )
+endif()
 
 ############
 # libtheora
@@ -770,6 +824,10 @@ if (ARM)
   target_sources(theora PRIVATE
     gecko/src/media/libtheora/lib/arm/armstate.c
     gecko/src/media/libtheora/lib/arm/armcpu.c
+    gecko/glue/libtheora-arm/armbits-gnu.s
+    gecko/glue/libtheora-arm/armfrag-gnu.s
+    gecko/glue/libtheora-arm/armidct-gnu.s
+    gecko/glue/libtheora-arm/armloop-gnu.s
   )
   target_compile_definitions(theora PRIVATE
     OC_ARM_ASM=
@@ -777,12 +835,11 @@ if (ARM)
     OC_ARM_ASM_MEDIA=
     OC_ARM_ASM_NEON=
     )
-  if (ANDROID)
-    target_compile_definitions(theora PRIVATE
-      __linux__=
-    )
-    # TODO: add arm*-gnu.s to target_sources.
-  endif()
+  target_include_directories(theora PRIVATE
+    gecko/include/mozilla/media/libtheora/lib/arm
+    gecko/glue/libtheora-arm
+  )
+  set(CMAKE_ASM_FLAGS "-mfpu=neon -march=armv7-a")
 endif()
 
 target_include_directories(theora PRIVATE
@@ -863,6 +920,9 @@ if(FEATURE_AUDIO_SAMPLE_TYPE_F32 AND X86)
 endif()
 
 if(ARM)
+  target_compile_definitions(speex_resampler PRIVATE
+    _USE_NEON=1
+  )
   target_sources(speex_resampler PRIVATE gecko/src/media/libspeex_resampler/src/resample_neon.c)
 endif()
 
@@ -913,7 +973,7 @@ add_library(cubeb OBJECT
   gecko/src/media/libcubeb/src/cubeb_resampler.cpp
 )
 
-if(LINUX)
+if(LINUX AND NOT ANDROID)
   # The only Mozilla supported audio backend on Linux is Pulse Audio.
   target_compile_definitions(cubeb PRIVATE
     USE_PULSE=1
@@ -923,7 +983,7 @@ if(LINUX)
     gecko/src/media/libcubeb/src/cubeb_pulse.c
   )
 endif()
-if(MACOS)
+if(MACOS AND NOT ANDROID)
   target_compile_definitions(cubeb PRIVATE USE_AUDIOUNIT=1)
   target_sources(cubeb PRIVATE
     gecko/src/media/libcubeb/src/cubeb_audiounit.cpp
@@ -993,11 +1053,18 @@ if (LINUX OR MACOS)
   set(FFMPEG57_OBJS $<TARGET_OBJECTS:ffmpeg57>)
 endif()
 
+set(VORBIS_OBJS)
+if (ANDROID)
+  set(VORBIS_OBJS $<TARGET_OBJECTS:tremor>)
+else()
+  set(VORBIS_OBJS $<TARGET_OBJECTS:vorbis>)
+endif()
+
 add_library(gecko_media_cmake STATIC
   $<TARGET_OBJECTS:ogg>
   $<TARGET_OBJECTS:gecko_core>
   $<TARGET_OBJECTS:opus>
-  $<TARGET_OBJECTS:vorbis>
+  ${VORBIS_OBJS}
   $<TARGET_OBJECTS:theora>
   $<TARGET_OBJECTS:soundtouch>
   $<TARGET_OBJECTS:speex_resampler>
