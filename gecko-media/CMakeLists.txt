@@ -149,6 +149,7 @@ add_library(gecko_core OBJECT
   gecko/glue/GeckoMediaSource.cpp
   gecko/glue/GeckoMediaSourceBuffer.cpp
   gecko/glue/GeckoMediaSourceBufferList.cpp
+  gecko/glue/GlueStubs.cpp
   gecko/glue/ImageContainer.cpp
   gecko/glue/InputEventStatistics.cpp
   gecko/glue/nsDebugImpl.cpp
@@ -156,9 +157,6 @@ add_library(gecko_core OBJECT
   gecko/glue/Logging.cpp
   gecko/glue/MainThreadIdlePeriod.cpp
   gecko/glue/MediaData.cpp
-  gecko/glue/MediaDecoder.cpp
-  gecko/glue/MediaDecoderStateMachine.cpp
-  gecko/glue/MediaFormatReader.cpp
   gecko/glue/MediaSource.cpp
   gecko/glue/MediaSourceDecoder.cpp
   gecko/glue/MediaStreamGraph.cpp
@@ -192,6 +190,9 @@ add_library(gecko_core OBJECT
   gecko/src/dom/media/AudioSegment.cpp
   gecko/src/dom/media/AudioStream.cpp
   gecko/src/dom/media/BitReader.cpp
+  gecko/src/dom/media/MediaDecoder.cpp
+  gecko/src/dom/media/MediaDecoderStateMachine.cpp
+  gecko/src/dom/media/MediaFormatReader.cpp
   gecko/src/dom/media/MediaContainerType.cpp
   gecko/src/dom/media/MediaInfo.cpp
   gecko/src/dom/media/MediaMIMETypes.cpp

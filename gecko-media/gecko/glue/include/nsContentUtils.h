@@ -11,6 +11,14 @@
 #include "mozilla/Move.h"
 #include "nsThreadUtils.h"
 
+namespace mozilla {
+namespace layers {
+class LayerManager;
+} // namespace layers
+} // namespace mozilla
+
+class nsIDocument;
+
 class nsContentUtils
 {
 public:
@@ -23,6 +31,9 @@ public:
     // clears mTailDispatcher which would make the ref() call below
     // fail.
     NS_DispatchToCurrentThread(mozilla::Move(aRunnable));
+  }
+  static mozilla::layers::LayerManager* LayerManagerForDocument(nsIDocument* aDocument) {
+    return nullptr;
   }
 };
 

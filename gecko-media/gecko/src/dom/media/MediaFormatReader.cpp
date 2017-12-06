@@ -7,11 +7,8 @@
 #include "MediaFormatReader.h"
 
 #include "AutoTaskQueue.h"
-// #include "Layers.h"
 #include "MediaData.h"
-#include "MediaDecoderOwner.h"
 #include "MediaInfo.h"
-#include "MediaResource.h"
 #include "VideoFrameContainer.h"
 #include "VideoUtils.h"
 #include "mozilla/AbstractThread.h"
@@ -20,7 +17,6 @@
 #include "mozilla/NotNull.h"
 #include "mozilla/Preferences.h"
 #include "mozilla/SharedThreadPool.h"
-#include "mozilla/SyncRunnable.h"
 #include "mozilla/Telemetry.h"
 #include "mozilla/Unused.h"
 #include "nsContentUtils.h"
@@ -31,10 +27,6 @@
 #include <queue>
 
 using namespace mozilla::media;
-
-// using mozilla::layers::Image;
-// using mozilla::layers::LayerManager;
-// using mozilla::layers::LayersBackend;
 
 static mozilla::LazyLogModule sFormatDecoderLog("MediaFormatReader");
 mozilla::LazyLogModule gMediaDemuxerLog("MediaDemuxer");
@@ -2141,10 +2133,10 @@ MediaFormatReader::DecodeDemuxedSamples(TrackType aTrack,
 
              // When we recovered from a GPU crash and get the first decoded
              // frame, report the recovery time telemetry.
-             // if (aTrack == TrackType::kVideoTrack) {
-             //   GPUProcessCrashTelemetryLogger::ReportTelemetry(
-             //     self->mMediaDecoderOwnerID, decoder.mDecoder.get());
-             // }
+             if (aTrack == TrackType::kVideoTrack) {
+               GPUProcessCrashTelemetryLogger::ReportTelemetry(
+                 self->mMediaDecoderOwnerID, decoder.mDecoder.get());
+             }
            },
            [self, aTrack, &decoder](const MediaResult& aError) {
              decoder.mDecodeRequest.Complete();

@@ -7,33 +7,23 @@
 #include "MediaDecoder.h"
 
 #include "ImageContainer.h"
-// #include "Layers.h"
+#include "Layers.h"
 #include "MediaDecoderStateMachine.h"
 #include "MediaFormatReader.h"
 #include "MediaResource.h"
 #include "MediaShutdownManager.h"
 #include "VideoFrameContainer.h"
 #include "VideoUtils.h"
-#ifdef GECKO_MEDIA_CRATE
-#include "Visibility.h"
-#endif
 #include "mozilla/AbstractThread.h"
-#ifndef GECKO_MEDIA_CRATE
-#include "mozilla/AsyncEventDispatcher.h"
-#endif
 #include "mozilla/FloatingPoint.h"
 #include "mozilla/MathAlgorithms.h"
 #include "mozilla/Preferences.h"
 #include "mozilla/StaticPtr.h"
 #include "mozilla/Telemetry.h"
-// #include "mozilla/dom/AudioTrack.h"
-// #include "mozilla/dom/AudioTrackList.h"
-// #include "mozilla/dom/VideoTrack.h"
-// #include "mozilla/dom/VideoTrackList.h"
-// #include "mozilla/layers/ShadowLayers.h"
+#include "Visibility.h"
 #include "mozilla/Unused.h"
 #include "nsComponentManagerUtils.h"
-// #include "nsContentUtils.h"
+#include "nsContentUtils.h"
 #include "nsError.h"
 #include "nsIMemoryReporter.h"
 #include "nsIObserver.h"
@@ -127,156 +117,6 @@ public:
     }
   }
 };
-
-class MediaDecoder::BackgroundVideoDecodingPermissionObserver final :
-  public nsIObserver
-{
-  public:
-    NS_DECL_ISUPPORTS
-
-    explicit BackgroundVideoDecodingPermissionObserver(MediaDecoder* aDecoder)
-      : mDecoder(aDecoder)
-      , mIsRegisteredForEvent(false)
-    {
-      MOZ_ASSERT(mDecoder);
-    }
-
-    NS_IMETHOD Observe(nsISupports* aSubject, const char* aTopic,
-                       const char16_t* aData) override
-    {
-      if (!MediaPrefs::ResumeVideoDecodingOnTabHover()) {
-        return NS_OK;
-      }
-
-      if (!IsValidEventSender(aSubject)) {
-        return NS_OK;
-      }
-
-      if (strcmp(aTopic, "unselected-tab-hover") == 0) {
-        mDecoder->mIsBackgroundVideoDecodingAllowed = !NS_strcmp(aData, u"true");
-        mDecoder->UpdateVideoDecodeMode();
-      }
-      return NS_OK;
-    }
-
-    void RegisterEvent() {
-      // MOZ_ASSERT(!mIsRegisteredForEvent);
-      // nsCOMPtr<nsIObserverService> observerService = services::GetObserverService();
-      // if (observerService) {
-      //   observerService->AddObserver(this, "unselected-tab-hover", false);
-      //   mIsRegisteredForEvent = true;
-      //   EnableEvent();
-      // }
-    }
-
-    void UnregisterEvent() {
-      // MOZ_ASSERT(mIsRegisteredForEvent);
-      // nsCOMPtr<nsIObserverService> observerService = services::GetObserverService();
-      // if (observerService) {
-      //   observerService->RemoveObserver(this, "unselected-tab-hover");
-      //   mIsRegisteredForEvent = false;
-      //   mDecoder->mIsBackgroundVideoDecodingAllowed = false;
-      //   mDecoder->UpdateVideoDecodeMode();
-      //   DisableEvent();
-      // }
-    }
-  private:
-    ~BackgroundVideoDecodingPermissionObserver() {
-      MOZ_ASSERT(!mIsRegisteredForEvent);
-    }
-
-    void EnableEvent() const
-    {
-      // nsCOMPtr<nsPIDOMWindowOuter> win = GetOwnerWindow();
-      // if (!win) {
-      //   return;
-      // }
-      // nsContentUtils::DispatchEventOnlyToChrome(
-      //   GetOwnerDoc(), ToSupports(win),
-      //   NS_LITERAL_STRING("UnselectedTabHover:Enable"),
-      //   /* Bubbles */ true,
-      //   /* Cancelable */ false,
-      //   /* DefaultAction */ nullptr);
-    }
-
-    void DisableEvent() const
-    {
-      // nsCOMPtr<nsPIDOMWindowOuter> win = GetOwnerWindow();
-      // if (!win) {
-      //   return;
-      // }
-      // nsContentUtils::DispatchEventOnlyToChrome(
-      //   GetOwnerDoc(), ToSupports(win),
-      //   NS_LITERAL_STRING("UnselectedTabHover:Disable"),
-      //   /* Bubbles */ true,
-      //   /* Cancelable */ false,
-      //   /* DefaultAction */ nullptr);
-    }
-
-    already_AddRefed<nsPIDOMWindowOuter> GetOwnerWindow() const
-    {
-      return nullptr;
-      // nsIDocument* doc = GetOwnerDoc();
-      // if (!doc) {
-      //   return nullptr;
-      // }
-
-      // nsCOMPtr<nsPIDOMWindowInner> innerWin = doc->GetInnerWindow();
-      // if (!innerWin) {
-      //   return nullptr;
-      // }
-
-      // nsCOMPtr<nsPIDOMWindowOuter> outerWin = innerWin->GetOuterWindow();
-      // if (!outerWin) {
-      //   return nullptr;
-      // }
-
-      // nsCOMPtr<nsPIDOMWindowOuter> topWin = outerWin->GetTop();
-      // return topWin.forget();
-    }
-
-    nsIDocument* GetOwnerDoc() const
-    {
-      if (!mDecoder->mOwner) {
-        return nullptr;
-      }
-
-      return nullptr;
-      // return mDecoder->mOwner->GetDocument();
-    }
-
-    bool IsValidEventSender(nsISupports* aSubject) const
-    {
-      return false;
-      // nsCOMPtr<nsPIDOMWindowInner> senderInner(do_QueryInterface(aSubject));
-      // if (!senderInner) {
-      //   return false;
-      // }
-
-      // nsCOMPtr<nsPIDOMWindowOuter> senderOuter = senderInner->GetOuterWindow();
-      // if (!senderOuter) {
-      //   return false;
-      // }
-
-      // nsCOMPtr<nsPIDOMWindowOuter> senderTop = senderOuter->GetTop();
-      // if (!senderTop) {
-      //   return false;
-      // }
-
-      // nsCOMPtr<nsPIDOMWindowOuter> ownerTop = GetOwnerWindow();
-      // if (!ownerTop) {
-      //   return false;
-      // }
-
-      // return ownerTop == senderTop;
-    }
-    // The life cycle of observer would always be shorter than decoder, so we
-    // use raw pointer here.
-    MediaDecoder* mDecoder;
-    bool mIsRegisteredForEvent;
-};
-
-NS_IMPL_ISUPPORTS(MediaDecoder::BackgroundVideoDecodingPermissionObserver, nsIObserver)
 
 StaticRefPtr<MediaMemoryTracker> MediaMemoryTracker::sUniqueInstance;
 
@@ -565,12 +405,12 @@ MediaDecoder::OnDecoderDoctorEvent(DecoderDoctorEvent aEvent)
   MOZ_ASSERT(NS_IsMainThread());
   // OnDecoderDoctorEvent is disconnected at shutdown time.
   MOZ_DIAGNOSTIC_ASSERT(!IsShutdown());
-  // nsIDocument* doc = GetOwner()->GetDocument();
-  // if (!doc) {
-  //   return;
-  // }
-  // DecoderDoctorDiagnostics diags;
-  // diags.StoreEvent(doc, aEvent, __func__);
+  nsIDocument* doc = GetOwner()->GetDocument();
+  if (!doc) {
+    return;
+  }
+  DecoderDoctorDiagnostics diags;
+  diags.StoreEvent(doc, aEvent, __func__);
 }
 
 static const char*
@@ -1069,31 +909,31 @@ MediaDecoder::DurationChanged()
   }
 }
 
-// already_AddRefed<KnowsCompositor>
-// MediaDecoder::GetCompositor()
-// {
-//   MediaDecoderOwner* owner = GetOwner();
-//   nsIDocument* ownerDoc = owner ? owner->GetDocument() : nullptr;
-//   RefPtr<LayerManager> layerManager =
-//     ownerDoc ? nsContentUtils::LayerManagerForDocument(ownerDoc) : nullptr;
-//   RefPtr<KnowsCompositor> knows =
-//     layerManager ? layerManager->AsKnowsCompositor() : nullptr;
-//   return knows.forget();
-// }
+already_AddRefed<KnowsCompositor>
+MediaDecoder::GetCompositor()
+{
+  MediaDecoderOwner* owner = GetOwner();
+  nsIDocument* ownerDoc = owner ? owner->GetDocument() : nullptr;
+  RefPtr<LayerManager> layerManager =
+    ownerDoc ? nsContentUtils::LayerManagerForDocument(ownerDoc) : nullptr;
+  RefPtr<KnowsCompositor> knows =
+    layerManager ? layerManager->AsKnowsCompositor() : nullptr;
+  return knows ? knows->GetForMedia().forget() : nullptr;
+}
 
 void
 MediaDecoder::NotifyCompositor()
 {
-  // RefPtr<KnowsCompositor> knowsCompositor = GetCompositor();
-  // if (knowsCompositor) {
-  //   nsCOMPtr<nsIRunnable> r =
-  //     NewRunnableMethod<already_AddRefed<KnowsCompositor>&&>(
-  //       "MediaFormatReader::UpdateCompositor",
-  //       mReader,
-  //       &MediaFormatReader::UpdateCompositor,
-  //       knowsCompositor.forget());
-  //    Unused << mReader->OwnerThread()->Dispatch(r.forget());
-  // }
+  RefPtr<KnowsCompositor> knowsCompositor = GetCompositor();
+  if (knowsCompositor) {
+    nsCOMPtr<nsIRunnable> r =
+      NewRunnableMethod<already_AddRefed<KnowsCompositor>&&>(
+        "MediaFormatReader::UpdateCompositor",
+        mReader,
+        &MediaFormatReader::UpdateCompositor,
+        knowsCompositor.forget());
+    Unused << mReader->OwnerThread()->Dispatch(r.forget());
+  }
 }
 
 void
@@ -1182,6 +1022,13 @@ MediaDecoder::UpdateVideoDecodeMode()
     LOG("UpdateVideoDecodeMode(), set Suspend because the element is not visible.");
     mDecoderStateMachine->SetVideoDecodeMode(VideoDecodeMode::Suspend);
   }
+}
+
+void
+MediaDecoder::SetIsBackgroundVideoDecodingAllowed(bool aAllowed)
+{
+  mIsBackgroundVideoDecodingAllowed = aAllowed;
+  UpdateVideoDecodeMode();
 }
 
 bool
@@ -1607,12 +1454,12 @@ MediaMemoryTracker::MediaMemoryTracker()
 void
 MediaMemoryTracker::InitMemoryReporter()
 {
-  // RegisterWeakAsyncMemoryReporter(this);
+  RegisterWeakAsyncMemoryReporter(this);
 }
 
 MediaMemoryTracker::~MediaMemoryTracker()
 {
-  // UnregisterWeakMemoryReporter(this);
+  UnregisterWeakMemoryReporter(this);
 }
 
 } // namespace mozilla
