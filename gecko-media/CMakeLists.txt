@@ -253,6 +253,7 @@ add_library(gecko_core OBJECT
   gecko/src/dom/media/platforms/agnostic/NullDecoderModule.cpp
   gecko/src/dom/media/platforms/agnostic/OpusDecoder.cpp
   gecko/src/dom/media/platforms/agnostic/VorbisDecoder.cpp
+  gecko/src/dom/media/platforms/agnostic/VPXDecoder.cpp
   gecko/src/dom/media/platforms/agnostic/WAVDecoder.cpp
   gecko/src/dom/media/platforms/ffmpeg/FFmpegLibWrapper.cpp
   gecko/src/dom/media/platforms/wrappers/H264Converter.cpp
@@ -260,6 +261,9 @@ add_library(gecko_core OBJECT
   gecko/src/dom/media/VideoFrameContainer.cpp
   gecko/src/dom/media/wave/WaveDecoder.cpp
   gecko/src/dom/media/wave/WaveDemuxer.cpp
+  gecko/src/dom/media/webm/WebMBufferedParser.cpp
+  gecko/src/dom/media/webm/WebMDecoder.cpp
+  gecko/src/dom/media/webm/WebMDemuxer.cpp
   gecko/src/memory/fallible/fallible.cpp
   gecko/src/memory/mozalloc/mozalloc.cpp
   gecko/src/memory/mozalloc/mozalloc_oom.cpp
@@ -400,6 +404,7 @@ target_include_directories(gecko_core PRIVATE
     gecko/include/mozilla/gfx
     gecko/include/mozilla/double-conversion
     gecko/include/mozilla/media/libvorbis/include
+    gecko/include/mozilla/media/libnestegg/include
     gecko/include/mozilla/media/libogg/include
     gecko/include/mozilla/media/libtheora/include
     gecko/include/mozilla/media/libtremor/include
@@ -461,6 +466,17 @@ target_include_directories(ffmpeg57 PRIVATE
 )
 endif()
 
+############
+# libnestegg
+############
+
+add_library(nestegg OBJECT
+  gecko/src/media/libnestegg/src/nestegg.c
+)
+
+target_include_directories(nestegg PRIVATE
+  gecko/include/mozilla/media/libnestegg/include
+)
 
 ############
 # libopus
@@ -1646,6 +1662,7 @@ endif()
 add_library(gecko_media_cmake STATIC
   $<TARGET_OBJECTS:ogg>
   $<TARGET_OBJECTS:gecko_core>
+  $<TARGET_OBJECTS:nestegg>
   $<TARGET_OBJECTS:opus>
   ${VORBIS_OBJS}
   $<TARGET_OBJECTS:theora>

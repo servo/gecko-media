@@ -6,7 +6,7 @@
 
 #include "VPXDecoder.h"
 #include "TimeUnits.h"
-// #include "gfx2DGlue.h"
+#include "gfx2DGlue.h"
 #include "mozilla/PodOperations.h"
 #include "mozilla/SyncRunnable.h"
 #include "ImageContainer.h"
@@ -20,8 +20,8 @@
 
 namespace mozilla {
 
-// using namespace gfx;
-// using namespace layers;
+using namespace gfx;
+using namespace layers;
 
 static VPXDecoder::Codec MimeTypeToCodec(const nsACString& aMimeType)
 {

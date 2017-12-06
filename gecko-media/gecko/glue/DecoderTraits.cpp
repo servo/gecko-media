@@ -13,8 +13,8 @@
 #include "OggDecoder.h"
 #include "OggDemuxer.h"
 
-// #include "WebMDecoder.h"
-// #include "WebMDemuxer.h"
+#include "WebMDecoder.h"
+#include "WebMDemuxer.h"
 
 #ifdef MOZ_ANDROID_HLS_SUPPORT
 #include "HLSDecoder.h"
@@ -94,16 +94,16 @@ CanHandleCodecsType(const MediaContainerType& aType,
     // ogg is supported and working: the codec must be invalid.
     return CANPLAY_NO;
   }
-// #if !defined(MOZ_OMX_WEBM_DECODER)
-//   if (WebMDecoder::IsSupportedType(mimeType)) {
-//     if (WebMDecoder::IsSupportedType(aType)) {
-//       return CANPLAY_YES;
-//     }
-//     // We can only reach this position if a particular codec was requested,
-//     // webm is supported and working: the codec must be invalid.
-//     return CANPLAY_NO;
-//   }
-// #endif
+#if !defined(MOZ_OMX_WEBM_DECODER)
+  if (WebMDecoder::IsSupportedType(mimeType)) {
+    if (WebMDecoder::IsSupportedType(aType)) {
+      return CANPLAY_YES;
+    }
+    // We can only reach this position if a particular codec was requested,
+    // webm is supported and working: the codec must be invalid.
+    return CANPLAY_NO;
+  }
+#endif
 #ifdef MOZ_FMP4
   if (MP4Decoder::IsSupportedType(mimeType,
                                   /* DecoderDoctorDiagnostics* */ nullptr)) {
@@ -166,11 +166,11 @@ CanHandleMediaType(const MediaContainerType& aType,
     return CANPLAY_MAYBE;
   }
 #endif
-// #if !defined(MOZ_OMX_WEBM_DECODER)
-//   if (WebMDecoder::IsSupportedType(mimeType)) {
-//     return CANPLAY_MAYBE;
-//   }
-// #endif
+#if !defined(MOZ_OMX_WEBM_DECODER)
+  if (WebMDecoder::IsSupportedType(mimeType)) {
+    return CANPLAY_MAYBE;
+  }
+#endif
   if (MP3Decoder::IsSupportedType(mimeType)) {
     return CANPLAY_MAYBE;
   }
@@ -255,11 +255,10 @@ DecoderTraits::CreateReader(const MediaContainerType& aType,
     decoderReader = new MediaFormatReader(aInit, demuxer);
     demuxer->SetChainingEvents(&decoderReader->TimedMetadataProducer(),
                                &decoderReader->MediaNotSeekableProducer());
+  } else
+  if (WebMDecoder::IsSupportedType(aType)) {
+    decoderReader = new MediaFormatReader(aInit, new WebMDemuxer(resource));
   }
-//   } else
-//   if (WebMDecoder::IsSupportedType(aType)) {
-//     decoderReader = new MediaFormatReader(aInit, new WebMDemuxer(resource));
-//   }
 
   return decoderReader;
 }
@@ -278,7 +277,7 @@ DecoderTraits::IsSupportedType(const MediaContainerType& aType)
 #endif
     &OggDecoder::IsSupportedType,
     &WaveDecoder::IsSupportedType,
-//     &WebMDecoder::IsSupportedType,
+    &WebMDecoder::IsSupportedType,
   };
   for (IsSupportedFunction func : funcs) {
     if (func(aType)) {
@@ -306,11 +305,11 @@ bool DecoderTraits::IsSupportedInVideoDocument(const nsACString& aType)
 
   return
     OggDecoder::IsSupportedType(*type) ||
-//     WebMDecoder::IsSupportedType(*type) ||
+    WebMDecoder::IsSupportedType(*type) ||
 #ifdef MOZ_FMP4
     MP4Decoder::IsSupportedType(*type, /* DecoderDoctorDiagnostics* */ nullptr) ||
 #endif
-//     MP3Decoder::IsSupportedType(*type) ||
+    MP3Decoder::IsSupportedType(*type) ||
 //     ADTSDecoder::IsSupportedType(*type) ||
     FlacDecoder::IsSupportedType(*type) ||
 // #ifdef MOZ_ANDROID_HLS_SUPPORT
