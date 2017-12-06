@@ -497,6 +497,12 @@ TestDecoderTraits()
   assert(DecoderTraits::CanHandleContainerType(
            MediaContainerType(MEDIAMIMETYPE("audio/mp3")), nullptr) ==
          CANPLAY_MAYBE);
+  assert(DecoderTraits::CanHandleContainerType(
+           MediaContainerType(MEDIAMIMETYPE("video/webm")), nullptr) ==
+         CANPLAY_MAYBE);
+  assert(DecoderTraits::CanHandleContainerType(
+           MediaContainerType(MEDIAMIMETYPE("audio/webm")), nullptr) ==
+         CANPLAY_MAYBE);
 }
 
 class OwningBufferMediaResource : public BufferMediaResource

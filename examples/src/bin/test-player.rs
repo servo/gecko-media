@@ -627,12 +627,13 @@ fn main() {
         Some("ogg") => "audio/ogg; codecs=\"vorbis\"",
         Some("m4a") => "audio/mp4",
         Some("mp4") => "video/mp4",
+        Some("webm") => "video/webm",
         _ => "",
     };
     assert!(
         mime != "",
-        "Unknown file type. Currently supported: wav, mp3, m4a, flac and ogg/vorbis files.\
-                Video files supported: mp4."
+        "Unknown file type. Audio codecs currently supported: wav, mp3, m4a, flac and vorbis.\
+                Video codecs supported: h264, vp8 and vp9."
     );
 
     let mut app = if filename.starts_with("http://") {

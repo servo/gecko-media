@@ -65,11 +65,13 @@ mod tests {
         assert_eq!(gecko_media.can_play_type("audio/mp4"), CanPlayType::Maybe);
         assert_eq!(gecko_media.can_play_type("audio/flac"), CanPlayType::Maybe);
         assert_eq!(gecko_media.can_play_type("audio/ogg"), CanPlayType::Maybe);
+        assert_eq!(gecko_media.can_play_type("audio/webm"), CanPlayType::Maybe);
         assert_eq!(
             gecko_media.can_play_type("audio/ogg; codecs=\"vorbis\""),
             CanPlayType::Probably
         );
         assert_eq!(gecko_media.can_play_type("video/mp4"), CanPlayType::Maybe);
+        assert_eq!(gecko_media.can_play_type("video/webm"), CanPlayType::Maybe);
     }
 
     enum Status {
@@ -343,7 +345,6 @@ mod tests {
         );
         assert_eq!(gecko_media.is_type_supported("video/mp4"), true);
         assert_eq!(gecko_media.is_type_supported("audio/mp4"), true);
-        assert_eq!(gecko_media.is_type_supported("audio/webm"), false);
         assert_eq!(gecko_media.is_type_supported("audio/mp3"), false);
         assert_eq!(gecko_media.is_type_supported("audio/flac"), false);
         assert_eq!(gecko_media.is_type_supported("audio/ogg"), false);
