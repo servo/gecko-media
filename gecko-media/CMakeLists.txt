@@ -4,6 +4,8 @@ project (gecko_media)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
 
+enable_language(ASM)
+
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
   set(LINUX 1)
 else()
@@ -41,7 +43,6 @@ else()
 endif()
 
 if ($ENV{TARGET} MATCHES "arm")
-  enable_language(ASM)
   set(ARM 1)
 else()
   set(ARM 0)
@@ -66,6 +67,10 @@ endif()
 find_program(SCCACHE_PROGRAM sccache)
 if(SCCACHE_PROGRAM)
     set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${SCCACHE_PROGRAM}")
+endif()
+
+if (X86 OR X86_64)
+  find_program(YASM_EXE NAMES yasm)
 endif()
 
 add_definitions(-DGECKO_MEDIA_CRATE=1)
@@ -398,6 +403,7 @@ target_include_directories(gecko_core PRIVATE
     gecko/include/mozilla/media/libogg/include
     gecko/include/mozilla/media/libtheora/include
     gecko/include/mozilla/media/libtremor/include
+    gecko/include/mozilla/media/libvpx/libvpx
 )
 
 target_compile_definitions(gecko_core PRIVATE
@@ -426,6 +432,7 @@ target_include_directories(ffvpx PRIVATE
     gecko/include
     gecko/glue/include
     gecko/include/mozilla/
+    gecko/include/mozilla/media/libvpx/libvpx
 )
 target_compile_definitions(ffvpx PRIVATE
   FFVPX_VERSION=46465650
@@ -436,7 +443,7 @@ endif()
 ############
 # ffmpeg
 ############
-if (LINUX OR MACOS)
+if (LINUX OR MACOS AND NOT ANDROID)
 add_library(ffmpeg57 OBJECT
   gecko/src/dom/media/platforms/ffmpeg/FFmpegAudioDecoder.cpp
   gecko/src/dom/media/platforms/ffmpeg/FFmpegDataDecoder.cpp
@@ -450,6 +457,7 @@ target_include_directories(ffmpeg57 PRIVATE
     gecko/include
     gecko/glue/include
     gecko/include/mozilla/
+    gecko/include/mozilla/media/libvpx/libvpx
 )
 endif()
 
@@ -1016,6 +1024,577 @@ target_include_directories(cubeb PRIVATE
 )
 
 
+##########
+# libvpx
+##########
+set (VPX_OBJS )
+
+add_library(vpx OBJECT
+  gecko/src/media/libvpx/libvpx/vp8/common/alloccommon.c
+  gecko/src/media/libvpx/libvpx/vp8/common/blockd.c
+  gecko/src/media/libvpx/libvpx/vp8/common/copy_c.c
+  gecko/src/media/libvpx/libvpx/vp8/common/dequantize.c
+  gecko/src/media/libvpx/libvpx/vp8/common/entropy.c
+  gecko/src/media/libvpx/libvpx/vp8/common/entropymode.c
+  gecko/src/media/libvpx/libvpx/vp8/common/entropymv.c
+  gecko/src/media/libvpx/libvpx/vp8/common/extend.c
+  gecko/src/media/libvpx/libvpx/vp8/common/filter.c
+  gecko/src/media/libvpx/libvpx/vp8/common/findnearmv.c
+  gecko/src/media/libvpx/libvpx/vp8/common/generic/systemdependent.c
+  gecko/src/media/libvpx/libvpx/vp8/common/idct_blk.c
+  gecko/src/media/libvpx/libvpx/vp8/common/idctllm.c
+  gecko/src/media/libvpx/libvpx/vp8/common/loopfilter_filters.c
+  gecko/src/media/libvpx/libvpx/vp8/common/mbpitch.c
+  gecko/src/media/libvpx/libvpx/vp8/common/modecont.c
+  gecko/src/media/libvpx/libvpx/vp8/common/quant_common.c
+  gecko/src/media/libvpx/libvpx/vp8/common/reconinter.c
+  gecko/src/media/libvpx/libvpx/vp8/common/reconintra.c
+  gecko/src/media/libvpx/libvpx/vp8/common/reconintra4x4.c
+  gecko/src/media/libvpx/libvpx/vp8/common/rtcd.c
+  gecko/src/media/libvpx/libvpx/vp8/common/setupintrarecon.c
+  gecko/src/media/libvpx/libvpx/vp8/common/swapyv12buffer.c
+  gecko/src/media/libvpx/libvpx/vp8/common/treecoder.c
+  gecko/src/media/libvpx/libvpx/vp8/common/vp8_loopfilter.c
+  gecko/src/media/libvpx/libvpx/vp8/decoder/dboolhuff.c
+  gecko/src/media/libvpx/libvpx/vp8/decoder/decodeframe.c
+  gecko/src/media/libvpx/libvpx/vp8/decoder/decodemv.c
+  gecko/src/media/libvpx/libvpx/vp8/decoder/detokenize.c
+  gecko/src/media/libvpx/libvpx/vp8/decoder/onyxd_if.c
+  gecko/src/media/libvpx/libvpx/vp8/decoder/threading.c
+  gecko/src/media/libvpx/libvpx/vp8/encoder/bitstream.c
+  gecko/src/media/libvpx/libvpx/vp8/encoder/boolhuff.c
+  gecko/src/media/libvpx/libvpx/vp8/encoder/dct.c
+  gecko/src/media/libvpx/libvpx/vp8/encoder/denoising.c
+  gecko/src/media/libvpx/libvpx/vp8/encoder/encodeframe.c
+  gecko/src/media/libvpx/libvpx/vp8/encoder/encodeintra.c
+  gecko/src/media/libvpx/libvpx/vp8/encoder/encodemb.c
+  gecko/src/media/libvpx/libvpx/vp8/encoder/encodemv.c
+  gecko/src/media/libvpx/libvpx/vp8/encoder/ethreading.c
+  gecko/src/media/libvpx/libvpx/vp8/encoder/lookahead.c
+  gecko/src/media/libvpx/libvpx/vp8/encoder/mcomp.c
+  gecko/src/media/libvpx/libvpx/vp8/encoder/modecosts.c
+  gecko/src/media/libvpx/libvpx/vp8/encoder/mr_dissim.c
+  gecko/src/media/libvpx/libvpx/vp8/encoder/onyx_if.c
+  gecko/src/media/libvpx/libvpx/vp8/encoder/pickinter.c
+  gecko/src/media/libvpx/libvpx/vp8/encoder/picklpf.c
+  gecko/src/media/libvpx/libvpx/vp8/encoder/ratectrl.c
+  gecko/src/media/libvpx/libvpx/vp8/encoder/rdopt.c
+  gecko/src/media/libvpx/libvpx/vp8/encoder/segmentation.c
+  gecko/src/media/libvpx/libvpx/vp8/encoder/tokenize.c
+  gecko/src/media/libvpx/libvpx/vp8/encoder/treewriter.c
+  gecko/src/media/libvpx/libvpx/vp8/encoder/vp8_quantize.c
+  gecko/src/media/libvpx/libvpx/vp8/vp8_cx_iface.c
+  gecko/src/media/libvpx/libvpx/vp8/vp8_dx_iface.c
+  gecko/src/media/libvpx/libvpx/vp9/common/vp9_alloccommon.c
+  gecko/src/media/libvpx/libvpx/vp9/common/vp9_blockd.c
+  gecko/src/media/libvpx/libvpx/vp9/common/vp9_common_data.c
+  gecko/src/media/libvpx/libvpx/vp9/common/vp9_entropy.c
+  gecko/src/media/libvpx/libvpx/vp9/common/vp9_entropymode.c
+  gecko/src/media/libvpx/libvpx/vp9/common/vp9_entropymv.c
+  gecko/src/media/libvpx/libvpx/vp9/common/vp9_filter.c
+  gecko/src/media/libvpx/libvpx/vp9/common/vp9_frame_buffers.c
+  gecko/src/media/libvpx/libvpx/vp9/common/vp9_idct.c
+  gecko/src/media/libvpx/libvpx/vp9/common/vp9_loopfilter.c
+  gecko/src/media/libvpx/libvpx/vp9/common/vp9_mvref_common.c
+  gecko/src/media/libvpx/libvpx/vp9/common/vp9_pred_common.c
+  gecko/src/media/libvpx/libvpx/vp9/common/vp9_quant_common.c
+  gecko/src/media/libvpx/libvpx/vp9/common/vp9_reconinter.c
+  gecko/src/media/libvpx/libvpx/vp9/common/vp9_reconintra.c
+  gecko/src/media/libvpx/libvpx/vp9/common/vp9_rtcd.c
+  gecko/src/media/libvpx/libvpx/vp9/common/vp9_scale.c
+  gecko/src/media/libvpx/libvpx/vp9/common/vp9_scan.c
+  gecko/src/media/libvpx/libvpx/vp9/common/vp9_seg_common.c
+  gecko/src/media/libvpx/libvpx/vp9/common/vp9_thread_common.c
+  gecko/src/media/libvpx/libvpx/vp9/common/vp9_tile_common.c
+  gecko/src/media/libvpx/libvpx/vp9/decoder/vp9_decodeframe.c
+  gecko/src/media/libvpx/libvpx/vp9/decoder/vp9_decodemv.c
+  gecko/src/media/libvpx/libvpx/vp9/decoder/vp9_decoder.c
+  gecko/src/media/libvpx/libvpx/vp9/decoder/vp9_detokenize.c
+  gecko/src/media/libvpx/libvpx/vp9/decoder/vp9_dsubexp.c
+  gecko/src/media/libvpx/libvpx/vp9/decoder/vp9_dthread.c
+  gecko/src/media/libvpx/libvpx/vp9/encoder/vp9_alt_ref_aq.c
+  gecko/src/media/libvpx/libvpx/vp9/encoder/vp9_aq_360.c
+  gecko/src/media/libvpx/libvpx/vp9/encoder/vp9_aq_complexity.c
+  gecko/src/media/libvpx/libvpx/vp9/encoder/vp9_aq_cyclicrefresh.c
+  gecko/src/media/libvpx/libvpx/vp9/encoder/vp9_aq_variance.c
+  gecko/src/media/libvpx/libvpx/vp9/encoder/vp9_bitstream.c
+  gecko/src/media/libvpx/libvpx/vp9/encoder/vp9_context_tree.c
+  gecko/src/media/libvpx/libvpx/vp9/encoder/vp9_cost.c
+  gecko/src/media/libvpx/libvpx/vp9/encoder/vp9_dct.c
+  gecko/src/media/libvpx/libvpx/vp9/encoder/vp9_encodeframe.c
+  gecko/src/media/libvpx/libvpx/vp9/encoder/vp9_encodemb.c
+  gecko/src/media/libvpx/libvpx/vp9/encoder/vp9_encodemv.c
+  gecko/src/media/libvpx/libvpx/vp9/encoder/vp9_encoder.c
+  gecko/src/media/libvpx/libvpx/vp9/encoder/vp9_ethread.c
+  gecko/src/media/libvpx/libvpx/vp9/encoder/vp9_extend.c
+  gecko/src/media/libvpx/libvpx/vp9/encoder/vp9_firstpass.c
+  gecko/src/media/libvpx/libvpx/vp9/encoder/vp9_lookahead.c
+  gecko/src/media/libvpx/libvpx/vp9/encoder/vp9_mbgraph.c
+  gecko/src/media/libvpx/libvpx/vp9/encoder/vp9_mcomp.c
+  gecko/src/media/libvpx/libvpx/vp9/encoder/vp9_noise_estimate.c
+  gecko/src/media/libvpx/libvpx/vp9/encoder/vp9_picklpf.c
+  gecko/src/media/libvpx/libvpx/vp9/encoder/vp9_pickmode.c
+  gecko/src/media/libvpx/libvpx/vp9/encoder/vp9_quantize.c
+  gecko/src/media/libvpx/libvpx/vp9/encoder/vp9_ratectrl.c
+  gecko/src/media/libvpx/libvpx/vp9/encoder/vp9_rd.c
+  gecko/src/media/libvpx/libvpx/vp9/encoder/vp9_rdopt.c
+  gecko/src/media/libvpx/libvpx/vp9/encoder/vp9_resize.c
+  gecko/src/media/libvpx/libvpx/vp9/encoder/vp9_segmentation.c
+  gecko/src/media/libvpx/libvpx/vp9/encoder/vp9_skin_detection.c
+  gecko/src/media/libvpx/libvpx/vp9/encoder/vp9_speed_features.c
+  gecko/src/media/libvpx/libvpx/vp9/encoder/vp9_subexp.c
+  gecko/src/media/libvpx/libvpx/vp9/encoder/vp9_svc_layercontext.c
+  gecko/src/media/libvpx/libvpx/vp9/encoder/vp9_temporal_filter.c
+  gecko/src/media/libvpx/libvpx/vp9/encoder/vp9_tokenize.c
+  gecko/src/media/libvpx/libvpx/vp9/encoder/vp9_treewriter.c
+  gecko/src/media/libvpx/libvpx/vp9/vp9_cx_iface.c
+  gecko/src/media/libvpx/libvpx/vp9/vp9_dx_iface.c
+  gecko/src/media/libvpx/libvpx/vpx/src/vpx_codec.c
+  gecko/src/media/libvpx/libvpx/vpx/src/vpx_decoder.c
+  gecko/src/media/libvpx/libvpx/vpx/src/vpx_encoder.c
+  gecko/src/media/libvpx/libvpx/vpx/src/vpx_image.c
+  gecko/src/media/libvpx/libvpx/vpx_dsp/avg.c
+  gecko/src/media/libvpx/libvpx/vpx_dsp/bitreader.c
+  gecko/src/media/libvpx/libvpx/vpx_dsp/bitreader_buffer.c
+  gecko/src/media/libvpx/libvpx/vpx_dsp/bitwriter.c
+  gecko/src/media/libvpx/libvpx/vpx_dsp/bitwriter_buffer.c
+  gecko/src/media/libvpx/libvpx/vpx_dsp/fwd_txfm.c
+  gecko/src/media/libvpx/libvpx/vpx_dsp/intrapred.c
+  gecko/src/media/libvpx/libvpx/vpx_dsp/inv_txfm.c
+  gecko/src/media/libvpx/libvpx/vpx_dsp/loopfilter.c
+  gecko/src/media/libvpx/libvpx/vpx_dsp/prob.c
+  gecko/src/media/libvpx/libvpx/vpx_dsp/psnr.c
+  gecko/src/media/libvpx/libvpx/vpx_dsp/quantize.c
+  gecko/src/media/libvpx/libvpx/vpx_dsp/sad.c
+  gecko/src/media/libvpx/libvpx/vpx_dsp/subtract.c
+  gecko/src/media/libvpx/libvpx/vpx_dsp/sum_squares.c
+  gecko/src/media/libvpx/libvpx/vpx_dsp/variance.c
+  gecko/src/media/libvpx/libvpx/vpx_dsp/vpx_convolve.c
+  gecko/src/media/libvpx/libvpx/vpx_dsp/vpx_dsp_rtcd.c
+  gecko/src/media/libvpx/libvpx/vpx_mem/vpx_mem.c
+  gecko/src/media/libvpx/libvpx/vpx_scale/generic/gen_scalers.c
+  gecko/src/media/libvpx/libvpx/vpx_scale/generic/vpx_scale.c
+  gecko/src/media/libvpx/libvpx/vpx_scale/generic/yv12config.c
+  gecko/src/media/libvpx/libvpx/vpx_scale/generic/yv12extend.c
+  gecko/src/media/libvpx/libvpx/vpx_scale/vpx_scale_rtcd.c
+  gecko/src/media/libvpx/libvpx/vpx_util/vpx_thread.c
+)
+
+# TODO: set include path for windows.
+if (LINUX OR ANDROID)
+  if (ANDROID OR ARM)
+    set(vpx_asm_include_dir "gecko/src/media/libvpx/config/linux/arm/")
+    set(vpx_include_dir "gecko/include/mozilla/media/libvpx/config/linux/arm/")
+  elseif (X86_64)
+    set(vpx_asm_include_dir "gecko/src/media/libvpx/config/linux/x64/")
+    set(vpx_include_dir "gecko/include/mozilla/media/libvpx/config/linux/x64/")
+  else()
+    set(vpx_asm_include_dir "gecko/src/media/libvpx/config/linux/ia32/")
+    set(vpx_include_dir "gecko/include/mozilla/media/libvpx/config/linux/ia32/")
+  endif()
+elseif (MACOS)
+  if (X86_64)
+    set(vpx_asm_include_dir "gecko/src/media/libvpx/config/mac/x64/")
+    set(vpx_include_dir "gecko/include/mozilla/media/libvpx/config/mac/x64")
+  else()
+    set(vpx_asm_include_dir "gecko/src/media/libvpx/config/mac/ia32/")
+    set(vpx_include_dir "gecko/include/mozilla/media/libvpx/config/mac/ia32/")
+  endif()
+endif()
+
+target_include_directories(vpx PRIVATE
+  gecko/include/
+  gecko/include/mozilla/media/libvpx/config
+  gecko/include/mozilla/media/libvpx/libvpx
+  gecko/include/mozilla/media/libvpx/libvpx/vp8/
+  gecko/include/mozilla/media/libvpx/libvpx/vp8/common
+  gecko/include/mozilla/media/libvpx/libvpx/vp8/decoder
+  gecko/include/mozilla/media/libvpx/libvpx/vp8/encoder
+  gecko/include/mozilla/media/libvpx/libvpx/vpx_dsp
+  gecko/include/mozilla/media/libvpx/libvpx/vpx_mem
+  gecko/include/mozilla/media/libvpx/libvpx/vpx_util
+  ${vpx_include_dir}
+)
+
+if (X86_64)
+  target_sources(vpx PRIVATE
+    gecko/src/media/libvpx/libvpx/vp8/common/mfqe.c
+    gecko/src/media/libvpx/libvpx/vp8/common/postproc.c
+    gecko/src/media/libvpx/libvpx/vp8/common/x86/filter_x86.c
+    gecko/src/media/libvpx/libvpx/vp8/common/x86/idct_blk_mmx.c
+    gecko/src/media/libvpx/libvpx/vp8/common/x86/idct_blk_sse2.c
+    gecko/src/media/libvpx/libvpx/vp8/common/x86/loopfilter_x86.c
+    gecko/src/media/libvpx/libvpx/vp8/common/x86/vp8_asm_stubs.c
+    gecko/src/media/libvpx/libvpx/vp8/encoder/firstpass.c
+    gecko/src/media/libvpx/libvpx/vp8/encoder/temporal_filter.c
+    gecko/src/media/libvpx/libvpx/vp8/encoder/x86/denoising_sse2.c
+    gecko/src/media/libvpx/libvpx/vp8/encoder/x86/quantize_sse4.c
+    gecko/src/media/libvpx/libvpx/vp8/encoder/x86/quantize_ssse3.c
+    gecko/src/media/libvpx/libvpx/vp8/encoder/x86/vp8_enc_stubs_mmx.c
+    gecko/src/media/libvpx/libvpx/vp8/encoder/x86/vp8_enc_stubs_sse2.c
+    gecko/src/media/libvpx/libvpx/vp8/encoder/x86/vp8_quantize_sse2.c
+    gecko/src/media/libvpx/libvpx/vp9/common/vp9_mfqe.c
+    gecko/src/media/libvpx/libvpx/vp9/common/vp9_postproc.c
+    gecko/src/media/libvpx/libvpx/vp9/common/x86/vp9_idct_intrin_sse2.c
+    gecko/src/media/libvpx/libvpx/vp9/encoder/x86/vp9_dct_intrin_sse2.c
+    gecko/src/media/libvpx/libvpx/vp9/encoder/x86/vp9_dct_ssse3.c
+    gecko/src/media/libvpx/libvpx/vp9/encoder/x86/vp9_diamond_search_sad_avx.c
+    gecko/src/media/libvpx/libvpx/vp9/encoder/x86/vp9_error_intrin_avx2.c
+    gecko/src/media/libvpx/libvpx/vp9/encoder/x86/vp9_frame_scale_ssse3.c
+    gecko/src/media/libvpx/libvpx/vp9/encoder/x86/vp9_quantize_sse2.c
+    gecko/src/media/libvpx/libvpx/vpx_dsp/add_noise.c
+    gecko/src/media/libvpx/libvpx/vpx_dsp/deblock.c
+    gecko/src/media/libvpx/libvpx/vpx_dsp/x86/avg_intrin_sse2.c
+    gecko/src/media/libvpx/libvpx/vpx_dsp/x86/fwd_txfm_avx2.c
+    gecko/src/media/libvpx/libvpx/vpx_dsp/x86/fwd_txfm_sse2.c
+    gecko/src/media/libvpx/libvpx/vpx_dsp/x86/inv_txfm_sse2.c
+    gecko/src/media/libvpx/libvpx/vpx_dsp/x86/loopfilter_avx2.c
+    gecko/src/media/libvpx/libvpx/vpx_dsp/x86/loopfilter_intrin_sse2.c
+    gecko/src/media/libvpx/libvpx/vpx_dsp/x86/quantize_sse2.c
+    gecko/src/media/libvpx/libvpx/vpx_dsp/x86/sad4d_avx2.c
+    gecko/src/media/libvpx/libvpx/vpx_dsp/x86/sad_avx2.c
+    gecko/src/media/libvpx/libvpx/vpx_dsp/x86/sum_squares_sse2.c
+    gecko/src/media/libvpx/libvpx/vpx_dsp/x86/variance_avx2.c
+    gecko/src/media/libvpx/libvpx/vpx_dsp/x86/variance_impl_avx2.c
+    gecko/src/media/libvpx/libvpx/vpx_dsp/x86/variance_sse2.c
+    gecko/src/media/libvpx/libvpx/vpx_dsp/x86/vpx_asm_stubs.c
+    gecko/src/media/libvpx/libvpx/vpx_dsp/x86/vpx_subpixel_8t_intrin_avx2.c
+    gecko/src/media/libvpx/libvpx/vpx_dsp/x86/vpx_subpixel_8t_intrin_ssse3.c
+  )
+
+  set(asm_sources
+    gecko/src/media/libvpx/libvpx/vp8/common/x86/copy_sse2.asm
+    gecko/src/media/libvpx/libvpx/vp8/common/x86/copy_sse3.asm
+    gecko/src/media/libvpx/libvpx/vp8/common/x86/dequantize_mmx.asm
+    gecko/src/media/libvpx/libvpx/vp8/common/x86/idctllm_mmx.asm
+    gecko/src/media/libvpx/libvpx/vp8/common/x86/idctllm_sse2.asm
+    gecko/src/media/libvpx/libvpx/vp8/common/x86/iwalsh_sse2.asm
+    gecko/src/media/libvpx/libvpx/vp8/common/x86/loopfilter_block_sse2_x86_64.asm
+    gecko/src/media/libvpx/libvpx/vp8/common/x86/loopfilter_sse2.asm
+    gecko/src/media/libvpx/libvpx/vp8/common/x86/mfqe_sse2.asm
+    gecko/src/media/libvpx/libvpx/vp8/common/x86/recon_mmx.asm
+    gecko/src/media/libvpx/libvpx/vp8/common/x86/recon_sse2.asm
+    gecko/src/media/libvpx/libvpx/vp8/common/x86/subpixel_mmx.asm
+    gecko/src/media/libvpx/libvpx/vp8/common/x86/subpixel_sse2.asm
+    gecko/src/media/libvpx/libvpx/vp8/common/x86/subpixel_ssse3.asm
+    gecko/src/media/libvpx/libvpx/vp8/encoder/x86/dct_sse2.asm
+    gecko/src/media/libvpx/libvpx/vp8/encoder/x86/encodeopt.asm
+    gecko/src/media/libvpx/libvpx/vp8/encoder/x86/fwalsh_sse2.asm
+    gecko/src/media/libvpx/libvpx/vp8/encoder/x86/quantize_mmx.asm
+    gecko/src/media/libvpx/libvpx/vp8/encoder/x86/temporal_filter_apply_sse2.asm
+    gecko/src/media/libvpx/libvpx/vp9/common/x86/vp9_mfqe_sse2.asm
+    gecko/src/media/libvpx/libvpx/vp9/encoder/x86/vp9_dct_sse2.asm
+    gecko/src/media/libvpx/libvpx/vp9/encoder/x86/vp9_error_sse2.asm
+    gecko/src/media/libvpx/libvpx/vp9/encoder/x86/vp9_quantize_ssse3_x86_64.asm
+    gecko/src/media/libvpx/libvpx/vp9/encoder/x86/vp9_temporal_filter_apply_sse2.asm
+    gecko/src/media/libvpx/libvpx/vpx_dsp/x86/add_noise_sse2.asm
+    gecko/src/media/libvpx/libvpx/vpx_dsp/x86/avg_ssse3_x86_64.asm
+    gecko/src/media/libvpx/libvpx/vpx_dsp/x86/deblock_sse2.asm
+    gecko/src/media/libvpx/libvpx/vpx_dsp/x86/fwd_txfm_ssse3_x86_64.asm
+    gecko/src/media/libvpx/libvpx/vpx_dsp/x86/intrapred_sse2.asm
+    gecko/src/media/libvpx/libvpx/vpx_dsp/x86/intrapred_ssse3.asm
+    gecko/src/media/libvpx/libvpx/vpx_dsp/x86/inv_txfm_ssse3_x86_64.asm
+    gecko/src/media/libvpx/libvpx/vpx_dsp/x86/inv_wht_sse2.asm
+    gecko/src/media/libvpx/libvpx/vpx_dsp/x86/quantize_avx_x86_64.asm
+    gecko/src/media/libvpx/libvpx/vpx_dsp/x86/quantize_ssse3_x86_64.asm
+    gecko/src/media/libvpx/libvpx/vpx_dsp/x86/sad4d_sse2.asm
+    gecko/src/media/libvpx/libvpx/vpx_dsp/x86/sad_sse2.asm
+    gecko/src/media/libvpx/libvpx/vpx_dsp/x86/sad_sse3.asm
+    gecko/src/media/libvpx/libvpx/vpx_dsp/x86/sad_sse4.asm
+    gecko/src/media/libvpx/libvpx/vpx_dsp/x86/sad_ssse3.asm
+    gecko/src/media/libvpx/libvpx/vpx_dsp/x86/ssim_opt_x86_64.asm
+    gecko/src/media/libvpx/libvpx/vpx_dsp/x86/subpel_variance_sse2.asm
+    gecko/src/media/libvpx/libvpx/vpx_dsp/x86/subtract_sse2.asm
+    gecko/src/media/libvpx/libvpx/vpx_dsp/x86/vpx_convolve_copy_sse2.asm
+    gecko/src/media/libvpx/libvpx/vpx_dsp/x86/vpx_subpixel_8t_sse2.asm
+    gecko/src/media/libvpx/libvpx/vpx_dsp/x86/vpx_subpixel_8t_ssse3.asm
+    gecko/src/media/libvpx/libvpx/vpx_dsp/x86/vpx_subpixel_bilinear_sse2.asm
+    gecko/src/media/libvpx/libvpx/vpx_dsp/x86/vpx_subpixel_bilinear_ssse3.asm
+    gecko/src/media/libvpx/libvpx/vpx_ports/emms.asm
+    gecko/src/media/libvpx/libvpx/vpx_ports/x86_abi_support.asm
+  )
+
+  foreach(asm_file ${asm_sources})
+    get_filename_component(file_name ${asm_file} NAME)
+    set(obj_file ${CMAKE_CURRENT_BINARY_DIR}/${file_name}.o)
+    add_custom_command(OUTPUT ${obj_file}
+      COMMAND ${YASM_EXE}
+      ARGS -f ${yasm_binary_format} -Igecko/src/media/libvpx/libvpx/ -I${vpx_asm_include_dir} -o ${obj_file} ./${asm_file}
+      WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+      VERBATIM)
+    list(APPEND VPX_OBJS ${obj_file})
+  endforeach()
+
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vp8/common/x86/idct_blk_sse2.c PROPERTIES COMPILE_FLAGS "-I${vpx_asm_include_dir} -msse2")
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vp8/encoder/x86/denoising_sse2.c PROPERTIES COMPILE_FLAGS "-I${vpx_asm_include_dir} -msse2")
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vp8/encoder/x86/quantize_sse4.c PROPERTIES COMPILE_FLAGS "-I${vpx_asm_include_dir} -msse4.1")
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vp8/encoder/x86/quantize_ssse3.c PROPERTIES COMPILE_FLAGS "-I${vpx_asm_include_dir} -mssse3")
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vp8/encoder/x86/vp8_enc_stubs_sse2.c PROPERTIES COMPILE_FLAGS "-I${vpx_asm_include_dir} -msse2")
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vp8/encoder/x86/vp8_quantize_sse2.c PROPERTIES COMPILE_FLAGS "-I${vpx_asm_include_dir} -msse2")
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vp9/common/x86/vp9_idct_intrin_sse2.c PROPERTIES COMPILE_FLAGS "-I${vpx_asm_include_dir} -msse2")
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vp9/encoder/x86/vp9_dct_intrin_sse2.c PROPERTIES COMPILE_FLAGS "-I${vpx_asm_include_dir} -msse2")
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vp9/encoder/x86/vp9_dct_ssse3.c PROPERTIES COMPILE_FLAGS "-I${vpx_asm_include_dir} -mssse3")
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vp9/encoder/x86/vp9_diamond_search_sad_avx.c PROPERTIES COMPILE_FLAGS "-I${vpx_asm_include_dir} -mavx")
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vp9/encoder/x86/vp9_error_intrin_avx2.c PROPERTIES COMPILE_FLAGS "-I${vpx_asm_include_dir} -mavx2")
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vp9/encoder/x86/vp9_frame_scale_ssse3.c PROPERTIES COMPILE_FLAGS "-I${vpx_asm_include_dir} -mssse3")
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vp9/encoder/x86/vp9_quantize_sse2.c PROPERTIES COMPILE_FLAGS "-I${vpx_asm_include_dir} -msse2")
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vpx_dsp/x86/avg_intrin_sse2.c PROPERTIES COMPILE_FLAGS "-I${vpx_asm_include_dir} -msse2")
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vpx_dsp/x86/fwd_txfm_avx2.c PROPERTIES COMPILE_FLAGS "-I${vpx_asm_include_dir} -mavx2")
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vpx_dsp/x86/fwd_txfm_sse2.c PROPERTIES COMPILE_FLAGS "-I${vpx_asm_include_dir} -msse2")
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vpx_dsp/x86/inv_txfm_sse2.c PROPERTIES COMPILE_FLAGS "-I${vpx_asm_include_dir} -msse2")
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vpx_dsp/x86/loopfilter_avx2.c PROPERTIES COMPILE_FLAGS "-I${vpx_asm_include_dir} -mavx2")
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vpx_dsp/x86/loopfilter_intrin_sse2.c PROPERTIES COMPILE_FLAGS "-I${vpx_asm_include_dir} -msse2")
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vpx_dsp/x86/quantize_sse2.c PROPERTIES COMPILE_FLAGS "-I${vpx_asm_include_dir} -msse2")
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vpx_dsp/x86/sad4d_avx2.c PROPERTIES COMPILE_FLAGS "-I${vpx_asm_include_dir} -mavx2")
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vpx_dsp/x86/sad_avx2.c PROPERTIES COMPILE_FLAGS "-I${vpx_asm_include_dir} -mavx2")
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vpx_dsp/x86/sum_squares_sse2.c PROPERTIES COMPILE_FLAGS "-I${vpx_asm_include_dir} -msse2")
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vpx_dsp/x86/variance_avx2.c PROPERTIES COMPILE_FLAGS "-I${vpx_asm_include_dir} -mavx2")
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vpx_dsp/x86/variance_impl_avx2.c PROPERTIES COMPILE_FLAGS "-I${vpx_asm_include_dir} -mavx2")
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vpx_dsp/x86/variance_sse2.c PROPERTIES COMPILE_FLAGS "-I${vpx_asm_include_dir} -msse2")
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vpx_dsp/x86/vpx_subpixel_8t_intrin_avx2.c PROPERTIES COMPILE_FLAGS "-I${vpx_asm_include_dir} -mavx2")
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vpx_dsp/x86/vpx_subpixel_8t_intrin_ssse3.c PROPERTIES COMPILE_FLAGS "-I${vpx_asm_include_dir} -mssse3")
+
+  target_include_directories(vpx PRIVATE
+    gecko/include/mozilla/media/libvpx/libvpx/vp8/common/x86
+  )
+elseif (X86)
+  target_sources(vpx PRIVATE
+    gecko/src/media/libvpx/libvpx/vp8/common/mfqe.c
+    gecko/src/media/libvpx/libvpx/vp8/common/postproc.c
+    gecko/src/media/libvpx/libvpx/vp8/common/x86/filter_x86.c
+    gecko/src/media/libvpx/libvpx/vp8/common/x86/idct_blk_mmx.c
+    gecko/src/media/libvpx/libvpx/vp8/common/x86/idct_blk_sse2.c
+    gecko/src/media/libvpx/libvpx/vp8/common/x86/loopfilter_x86.c
+    gecko/src/media/libvpx/libvpx/vp8/common/x86/vp8_asm_stubs.c
+    gecko/src/media/libvpx/libvpx/vp8/encoder/firstpass.c
+    gecko/src/media/libvpx/libvpx/vp8/encoder/temporal_filter.c
+    gecko/src/media/libvpx/libvpx/vp8/encoder/x86/denoising_sse2.c
+    gecko/src/media/libvpx/libvpx/vp8/encoder/x86/quantize_sse4.c
+    gecko/src/media/libvpx/libvpx/vp8/encoder/x86/quantize_ssse3.c
+    gecko/src/media/libvpx/libvpx/vp8/encoder/x86/vp8_enc_stubs_mmx.c
+    gecko/src/media/libvpx/libvpx/vp8/encoder/x86/vp8_enc_stubs_sse2.c
+    gecko/src/media/libvpx/libvpx/vp8/encoder/x86/vp8_quantize_sse2.c
+    gecko/src/media/libvpx/libvpx/vp9/common/vp9_mfqe.c
+    gecko/src/media/libvpx/libvpx/vp9/common/vp9_postproc.c
+    gecko/src/media/libvpx/libvpx/vp9/common/x86/vp9_idct_intrin_sse2.c
+    gecko/src/media/libvpx/libvpx/vp9/encoder/x86/vp9_dct_intrin_sse2.c
+    gecko/src/media/libvpx/libvpx/vp9/encoder/x86/vp9_dct_ssse3.c
+    gecko/src/media/libvpx/libvpx/vp9/encoder/x86/vp9_diamond_search_sad_avx.c
+    gecko/src/media/libvpx/libvpx/vp9/encoder/x86/vp9_error_intrin_avx2.c
+    gecko/src/media/libvpx/libvpx/vp9/encoder/x86/vp9_frame_scale_ssse3.c
+    gecko/src/media/libvpx/libvpx/vp9/encoder/x86/vp9_quantize_sse2.c
+    gecko/src/media/libvpx/libvpx/vpx_dsp/add_noise.c
+    gecko/src/media/libvpx/libvpx/vpx_dsp/deblock.c
+    gecko/src/media/libvpx/libvpx/vpx_dsp/x86/avg_intrin_sse2.c
+    gecko/src/media/libvpx/libvpx/vpx_dsp/x86/fwd_txfm_avx2.c
+    gecko/src/media/libvpx/libvpx/vpx_dsp/x86/fwd_txfm_sse2.c
+    gecko/src/media/libvpx/libvpx/vpx_dsp/x86/inv_txfm_sse2.c
+    gecko/src/media/libvpx/libvpx/vpx_dsp/x86/loopfilter_avx2.c
+    gecko/src/media/libvpx/libvpx/vpx_dsp/x86/loopfilter_intrin_sse2.c
+    gecko/src/media/libvpx/libvpx/vpx_dsp/x86/quantize_sse2.c
+    gecko/src/media/libvpx/libvpx/vpx_dsp/x86/sad4d_avx2.c
+    gecko/src/media/libvpx/libvpx/vpx_dsp/x86/sad_avx2.c
+    gecko/src/media/libvpx/libvpx/vpx_dsp/x86/sum_squares_sse2.c
+    gecko/src/media/libvpx/libvpx/vpx_dsp/x86/variance_avx2.c
+    gecko/src/media/libvpx/libvpx/vpx_dsp/x86/variance_impl_avx2.c
+    gecko/src/media/libvpx/libvpx/vpx_dsp/x86/variance_sse2.c
+    gecko/src/media/libvpx/libvpx/vpx_dsp/x86/vpx_asm_stubs.c
+    gecko/src/media/libvpx/libvpx/vpx_dsp/x86/vpx_subpixel_8t_intrin_avx2.c
+    gecko/src/media/libvpx/libvpx/vpx_dsp/x86/vpx_subpixel_8t_intrin_ssse3.c
+  )
+
+  set(asm_sources
+    gecko/src/media/libvpx/libvpx/vp8/common/x86/copy_sse2.asm
+    gecko/src/media/libvpx/libvpx/vp8/common/x86/copy_sse3.asm
+    gecko/src/media/libvpx/libvpx/vp8/common/x86/dequantize_mmx.asm
+    gecko/src/media/libvpx/libvpx/vp8/common/x86/idctllm_mmx.asm
+    gecko/src/media/libvpx/libvpx/vp8/common/x86/idctllm_sse2.asm
+    gecko/src/media/libvpx/libvpx/vp8/common/x86/iwalsh_sse2.asm
+    gecko/src/media/libvpx/libvpx/vp8/common/x86/loopfilter_sse2.asm
+    gecko/src/media/libvpx/libvpx/vp8/common/x86/mfqe_sse2.asm
+    gecko/src/media/libvpx/libvpx/vp8/common/x86/recon_mmx.asm
+    gecko/src/media/libvpx/libvpx/vp8/common/x86/recon_sse2.asm
+    gecko/src/media/libvpx/libvpx/vp8/common/x86/subpixel_mmx.asm
+    gecko/src/media/libvpx/libvpx/vp8/common/x86/subpixel_sse2.asm
+    gecko/src/media/libvpx/libvpx/vp8/common/x86/subpixel_ssse3.asm
+    gecko/src/media/libvpx/libvpx/vp8/encoder/x86/dct_sse2.asm
+    gecko/src/media/libvpx/libvpx/vp8/encoder/x86/encodeopt.asm
+    gecko/src/media/libvpx/libvpx/vp8/encoder/x86/fwalsh_sse2.asm
+    gecko/src/media/libvpx/libvpx/vp8/encoder/x86/quantize_mmx.asm
+    gecko/src/media/libvpx/libvpx/vp8/encoder/x86/temporal_filter_apply_sse2.asm
+    gecko/src/media/libvpx/libvpx/vp9/common/x86/vp9_mfqe_sse2.asm
+    gecko/src/media/libvpx/libvpx/vp9/encoder/x86/vp9_dct_sse2.asm
+    gecko/src/media/libvpx/libvpx/vp9/encoder/x86/vp9_temporal_filter_apply_sse2.asm
+    gecko/src/media/libvpx/libvpx/vp9/encoder/x86/vp9_error_sse2.asm
+    gecko/src/media/libvpx/libvpx/vpx_dsp/x86/add_noise_sse2.asm
+    gecko/src/media/libvpx/libvpx/vpx_dsp/x86/deblock_sse2.asm
+    gecko/src/media/libvpx/libvpx/vpx_dsp/x86/intrapred_sse2.asm
+    gecko/src/media/libvpx/libvpx/vpx_dsp/x86/intrapred_ssse3.asm
+    gecko/src/media/libvpx/libvpx/vpx_dsp/x86/inv_wht_sse2.asm
+    gecko/src/media/libvpx/libvpx/vpx_dsp/x86/sad4d_sse2.asm
+    gecko/src/media/libvpx/libvpx/vpx_dsp/x86/sad_sse2.asm
+    gecko/src/media/libvpx/libvpx/vpx_dsp/x86/sad_sse3.asm
+    gecko/src/media/libvpx/libvpx/vpx_dsp/x86/sad_sse4.asm
+    gecko/src/media/libvpx/libvpx/vpx_dsp/x86/sad_ssse3.asm
+    gecko/src/media/libvpx/libvpx/vpx_dsp/x86/subpel_variance_sse2.asm
+    gecko/src/media/libvpx/libvpx/vpx_dsp/x86/subtract_sse2.asm
+    gecko/src/media/libvpx/libvpx/vpx_dsp/x86/vpx_convolve_copy_sse2.asm
+    gecko/src/media/libvpx/libvpx/vpx_dsp/x86/vpx_subpixel_8t_sse2.asm
+    gecko/src/media/libvpx/libvpx/vpx_dsp/x86/vpx_subpixel_8t_ssse3.asm
+    gecko/src/media/libvpx/libvpx/vpx_dsp/x86/vpx_subpixel_bilinear_sse2.asm
+    gecko/src/media/libvpx/libvpx/vpx_dsp/x86/vpx_subpixel_bilinear_ssse3.asm
+    gecko/src/media/libvpx/libvpx/vpx_ports/emms.asm
+    gecko/src/media/libvpx/libvpx/vpx_ports/x86_abi_support.asm
+  )
+  foreach(asm_file ${asm_sources})
+    get_filename_component(file_name ${asm_file} NAME)
+    set(obj_file ${CMAKE_CURRENT_BINARY_DIR}/${file_name}.o)
+    add_custom_command(OUTPUT ${obj_file}
+      COMMAND ${YASM_EXE}
+      ARGS -f ${yasm_binary_format} -Igecko/src/media/libvpx/libvpx/ -I${vpx_asm_include_dir} -o ${obj_file} ./${asm_file}
+      WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+      VERBATIM)
+    list(APPEND VPX_OBJS ${obj_file})
+  endforeach()
+
+elseif (ARM)
+  set(asm_sources
+    gecko/src/media/libvpx/libvpx/vpx_dsp/arm/idct16x16_1_add_neon.asm
+    gecko/src/media/libvpx/libvpx/vpx_dsp/arm/idct16x16_add_neon.asm
+    gecko/src/media/libvpx/libvpx/vpx_dsp/arm/idct4x4_1_add_neon.asm
+    gecko/src/media/libvpx/libvpx/vpx_dsp/arm/idct4x4_add_neon.asm
+    gecko/src/media/libvpx/libvpx/vpx_dsp/arm/idct8x8_1_add_neon.asm
+    gecko/src/media/libvpx/libvpx/vpx_dsp/arm/idct8x8_add_neon.asm
+    gecko/src/media/libvpx/libvpx/vpx_dsp/arm/idct_neon.asm
+    gecko/src/media/libvpx/libvpx/vpx_dsp/arm/intrapred_neon_asm.asm
+    gecko/src/media/libvpx/libvpx/vpx_dsp/arm/loopfilter_16_neon.asm
+    gecko/src/media/libvpx/libvpx/vpx_dsp/arm/loopfilter_4_neon.asm
+    gecko/src/media/libvpx/libvpx/vpx_dsp/arm/loopfilter_8_neon.asm
+    gecko/src/media/libvpx/libvpx/vpx_dsp/arm/save_reg_neon.asm
+    gecko/src/media/libvpx/libvpx/vpx_dsp/arm/vpx_convolve8_avg_neon_asm.asm
+    gecko/src/media/libvpx/libvpx/vpx_dsp/arm/vpx_convolve8_neon_asm.asm
+    gecko/src/media/libvpx/libvpx/vpx_dsp/arm/vpx_convolve_avg_neon_asm.asm
+    gecko/src/media/libvpx/libvpx/vpx_dsp/arm/vpx_convolve_copy_neon_asm.asm
+  )
+
+  set(VPX_GENERATED_AS_SRCS )
+  foreach(asm_file ${asm_sources})
+    get_filename_component(file_name ${asm_file} NAME)
+    get_filename_component(directory ${asm_file} DIRECTORY)
+    set(asm_dst_path ${CMAKE_CURRENT_BINARY_DIR}/${asm_file}.S)
+    add_custom_target(build-time-make-directory-${file_name} ALL
+      COMMAND ${CMAKE_COMMAND} -E make_directory ${directory})
+    add_custom_command(OUTPUT ${asm_dst_path}
+      COMMAND gecko/src/media/libvpx/libvpx/build/make/ads2gas.pl
+      ARGS < ./${asm_file} > ${asm_dst_path}
+      WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+      DEPENDS build-time-make-directory-${file_name}
+      VERBATIM)
+    set_source_files_properties(${asm_dst_path} PROPERTIES COMPILE_FLAGS "-I${CMAKE_CURRENT_BINARY_DIR}/gecko/src/media/libvpx/libvpx/ -I${vpx_asm_include_dir} -march=armv7-a -mfpu=neon")
+    list(APPEND VPX_GENERATED_AS_SRCS ${asm_dst_path})
+  endforeach()
+
+  target_sources(vpx PRIVATE
+    gecko/src/media/libvpx/libvpx/vp8/common/arm/loopfilter_arm.c
+    gecko/src/media/libvpx/libvpx/vp8/common/arm/neon/bilinearpredict_neon.c
+    gecko/src/media/libvpx/libvpx/vp8/common/arm/neon/copymem_neon.c
+    gecko/src/media/libvpx/libvpx/vp8/common/arm/neon/dc_only_idct_add_neon.c
+    gecko/src/media/libvpx/libvpx/vp8/common/arm/neon/dequant_idct_neon.c
+    gecko/src/media/libvpx/libvpx/vp8/common/arm/neon/dequantizeb_neon.c
+    gecko/src/media/libvpx/libvpx/vp8/common/arm/neon/idct_blk_neon.c
+    gecko/src/media/libvpx/libvpx/vp8/common/arm/neon/idct_dequant_0_2x_neon.c
+    gecko/src/media/libvpx/libvpx/vp8/common/arm/neon/idct_dequant_full_2x_neon.c
+    gecko/src/media/libvpx/libvpx/vp8/common/arm/neon/iwalsh_neon.c
+    gecko/src/media/libvpx/libvpx/vp8/common/arm/neon/loopfiltersimplehorizontaledge_neon.c
+    gecko/src/media/libvpx/libvpx/vp8/common/arm/neon/loopfiltersimpleverticaledge_neon.c
+    gecko/src/media/libvpx/libvpx/vp8/common/arm/neon/mbloopfilter_neon.c
+    gecko/src/media/libvpx/libvpx/vp8/common/arm/neon/shortidct4x4llm_neon.c
+    gecko/src/media/libvpx/libvpx/vp8/common/arm/neon/sixtappredict_neon.c
+    gecko/src/media/libvpx/libvpx/vp8/common/arm/neon/vp8_loopfilter_neon.c
+    gecko/src/media/libvpx/libvpx/vp8/encoder/arm/neon/denoising_neon.c
+    gecko/src/media/libvpx/libvpx/vp8/encoder/arm/neon/fastquantizeb_neon.c
+    gecko/src/media/libvpx/libvpx/vp8/encoder/arm/neon/shortfdct_neon.c
+    gecko/src/media/libvpx/libvpx/vp8/encoder/arm/neon/vp8_shortwalsh4x4_neon.c
+    gecko/src/media/libvpx/libvpx/vp9/common/arm/neon/vp9_iht4x4_add_neon.c
+    gecko/src/media/libvpx/libvpx/vp9/common/arm/neon/vp9_iht8x8_add_neon.c
+    gecko/src/media/libvpx/libvpx/vp9/encoder/arm/neon/vp9_dct_neon.c
+    gecko/src/media/libvpx/libvpx/vp9/encoder/arm/neon/vp9_error_neon.c
+    gecko/src/media/libvpx/libvpx/vp9/encoder/arm/neon/vp9_quantize_neon.c
+    gecko/src/media/libvpx/libvpx/vpx_dsp/arm/avg_neon.c
+    gecko/src/media/libvpx/libvpx/vpx_dsp/arm/fwd_txfm_neon.c
+    gecko/src/media/libvpx/libvpx/vpx_dsp/arm/hadamard_neon.c
+    gecko/src/media/libvpx/libvpx/vpx_dsp/arm/idct16x16_neon.c
+    gecko/src/media/libvpx/libvpx/vpx_dsp/arm/idct32x32_135_add_neon.c
+    gecko/src/media/libvpx/libvpx/vpx_dsp/arm/idct32x32_1_add_neon.c
+    gecko/src/media/libvpx/libvpx/vpx_dsp/arm/idct32x32_34_add_neon.c
+    gecko/src/media/libvpx/libvpx/vpx_dsp/arm/idct32x32_add_neon.c
+    gecko/src/media/libvpx/libvpx/vpx_dsp/arm/intrapred_neon.c
+    gecko/src/media/libvpx/libvpx/vpx_dsp/arm/sad4d_neon.c
+    gecko/src/media/libvpx/libvpx/vpx_dsp/arm/sad_neon.c
+    gecko/src/media/libvpx/libvpx/vpx_dsp/arm/subpel_variance_neon.c
+    gecko/src/media/libvpx/libvpx/vpx_dsp/arm/subtract_neon.c
+    gecko/src/media/libvpx/libvpx/vpx_dsp/arm/variance_neon.c
+    gecko/src/media/libvpx/libvpx/vpx_dsp/arm/vpx_convolve_neon.c
+    gecko/src/media/libvpx/libvpx/vpx_ports/arm_cpudetect.c
+    ${VPX_GENERATED_AS_SRCS}
+  )
+
+  target_include_directories(vpx PRIVATE
+    gecko/include/mozilla/media/libvpx/config/linux/arm
+    ${vpx_asm_include_dir}
+  )
+
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vpx_ports/arm_cpudetect.c PROPERTIES COMPILE_FLAGS "-I$ENV{ANDROID_NDK_HOME}/sources/android/cpufeatures/")
+
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vp8/common/arm/neon/bilinearpredict_neon.c PROPERTIES COMPILE_FLAGS "-I${vpx_asm_include_dir} -march=armv7-a -mfpu=neon")
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vp8/common/arm/neon/copymem_neon.c PROPERTIES COMPILE_FLAGS "-I${vpx_asm_include_dir}  -march=armv7-a -mfpu=neon")
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vp8/common/arm/neon/dc_only_idct_add_neon.c PROPERTIES COMPILE_FLAGS "-I${vpx_asm_include_dir} -march=armv7-a -mfpu=neon")
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vp8/common/arm/neon/dequant_idct_neon.c PROPERTIES COMPILE_FLAGS "-I${vpx_asm_include_dir}  -march=armv7-a -mfpu=neon")
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vp8/common/arm/neon/dequantizeb_neon.c PROPERTIES COMPILE_FLAGS "-I${vpx_asm_include_dir}  -march=armv7-a -mfpu=neon")
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vp8/common/arm/neon/idct_blk_neon.c PROPERTIES COMPILE_FLAGS "-march=armv7-a -mfpu=neon")
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vp8/common/arm/neon/idct_dequant_0_2x_neon.c PROPERTIES COMPILE_FLAGS "-march=armv7-a -mfpu=neon")
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vp8/common/arm/neon/idct_dequant_full_2x_neon.c PROPERTIES COMPILE_FLAGS "-march=armv7-a -mfpu=neon")
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vp8/common/arm/neon/iwalsh_neon.c PROPERTIES COMPILE_FLAGS "-march=armv7-a -mfpu=neon")
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vp8/common/arm/neon/loopfiltersimplehorizontaledge_neon.c PROPERTIES COMPILE_FLAGS "-march=armv7-a -mfpu=neon")
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vp8/common/arm/neon/loopfiltersimpleverticaledge_neon.c PROPERTIES COMPILE_FLAGS "-march=armv7-a -mfpu=neon")
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vp8/common/arm/neon/mbloopfilter_neon.c PROPERTIES COMPILE_FLAGS "-march=armv7-a -mfpu=neon")
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vp8/common/arm/neon/shortidct4x4llm_neon.c PROPERTIES COMPILE_FLAGS "-march=armv7-a -mfpu=neon")
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vp8/common/arm/neon/sixtappredict_neon.c PROPERTIES COMPILE_FLAGS "-march=armv7-a -mfpu=neon")
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vp8/common/arm/neon/vp8_loopfilter_neon.c PROPERTIES COMPILE_FLAGS "-march=armv7-a -mfpu=neon")
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vp8/encoder/arm/neon/denoising_neon.c PROPERTIES COMPILE_FLAGS "-march=armv7-a -mfpu=neon")
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vp8/encoder/arm/neon/fastquantizeb_neon.c PROPERTIES COMPILE_FLAGS "-march=armv7-a -mfpu=neon")
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vp8/encoder/arm/neon/shortfdct_neon.c PROPERTIES COMPILE_FLAGS "-march=armv7-a -mfpu=neon")
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vp8/encoder/arm/neon/vp8_shortwalsh4x4_neon.c PROPERTIES COMPILE_FLAGS "-march=armv7-a -mfpu=neon")
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vp9/common/arm/neon/vp9_iht4x4_add_neon.c PROPERTIES COMPILE_FLAGS "-march=armv7-a -mfpu=neon")
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vp9/common/arm/neon/vp9_iht8x8_add_neon.c PROPERTIES COMPILE_FLAGS "-march=armv7-a -mfpu=neon")
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vp9/encoder/arm/neon/vp9_dct_neon.c PROPERTIES COMPILE_FLAGS "-march=armv7-a -mfpu=neon")
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vp9/encoder/arm/neon/vp9_error_neon.c PROPERTIES COMPILE_FLAGS "-march=armv7-a -mfpu=neon")
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vp9/encoder/arm/neon/vp9_quantize_neon.c PROPERTIES COMPILE_FLAGS "-march=armv7-a -mfpu=neon")
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vpx_dsp/arm/avg_neon.c PROPERTIES COMPILE_FLAGS "-march=armv7-a -mfpu=neon")
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vpx_dsp/arm/fwd_txfm_neon.c PROPERTIES COMPILE_FLAGS "-march=armv7-a -mfpu=neon")
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vpx_dsp/arm/hadamard_neon.c PROPERTIES COMPILE_FLAGS "-march=armv7-a -mfpu=neon")
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vpx_dsp/arm/idct16x16_neon.c PROPERTIES COMPILE_FLAGS "-march=armv7-a -mfpu=neon")
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vpx_dsp/arm/idct32x32_135_add_neon.c PROPERTIES COMPILE_FLAGS "-march=armv7-a -mfpu=neon")
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vpx_dsp/arm/idct32x32_1_add_neon.c PROPERTIES COMPILE_FLAGS "-march=armv7-a -mfpu=neon")
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vpx_dsp/arm/idct32x32_34_add_neon.c PROPERTIES COMPILE_FLAGS "-march=armv7-a -mfpu=neon")
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vpx_dsp/arm/idct32x32_add_neon.c PROPERTIES COMPILE_FLAGS "-march=armv7-a -mfpu=neon")
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vpx_dsp/arm/intrapred_neon.c PROPERTIES COMPILE_FLAGS "-march=armv7-a -mfpu=neon")
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vpx_dsp/arm/sad4d_neon.c PROPERTIES COMPILE_FLAGS "-march=armv7-a -mfpu=neon")
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vpx_dsp/arm/sad_neon.c PROPERTIES COMPILE_FLAGS "-march=armv7-a -mfpu=neon")
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vpx_dsp/arm/subpel_variance_neon.c PROPERTIES COMPILE_FLAGS "-march=armv7-a -mfpu=neon")
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vpx_dsp/arm/subtract_neon.c PROPERTIES COMPILE_FLAGS "-march=armv7-a -mfpu=neon")
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vpx_dsp/arm/variance_neon.c PROPERTIES COMPILE_FLAGS "-march=armv7-a -mfpu=neon")
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vpx_dsp/arm/vpx_convolve_neon.c PROPERTIES COMPILE_FLAGS "-march=armv7-a -mfpu=neon")
+
+else()
+  target_include_directories(vpx PRIVATE gecko/include/mozilla/media/libvpx/config/generic)
+endif()
+
+if (ANDROID)
+  target_sources(vpx PRIVATE
+    $ENV{ANDROID_NDK_HOME}/sources/android/cpufeatures/cpu-features.c
+  )
+endif()
 
 ##########
 # Tests
@@ -1051,6 +1630,9 @@ set(FFVPX_OBJS )
 set(FFMPEG57_OBJS )
 if (LINUX OR MACOS)
   set(FFVPX_OBJS $<TARGET_OBJECTS:ffvpx>)
+endif()
+
+if (NOT ANDROID)
   set(FFMPEG57_OBJS $<TARGET_OBJECTS:ffmpeg57>)
 endif()
 
@@ -1070,6 +1652,8 @@ add_library(gecko_media_cmake STATIC
   $<TARGET_OBJECTS:soundtouch>
   $<TARGET_OBJECTS:speex_resampler>
   $<TARGET_OBJECTS:cubeb>
+  $<TARGET_OBJECTS:vpx>
+  ${VPX_OBJS}
   $<TARGET_OBJECTS:tests>
   ${FFVPX_OBJS}
   ${FFMPEG57_OBJS}

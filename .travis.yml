@@ -38,12 +38,19 @@ addons:
       - libswscale-dev
       - libavutil-dev
       - libswresample-dev
+      - yasm
 
 env:
   - CARGO_FLAGS="" ANDROID_NDK_VERSION=r15c
   - CARGO_FLAGS="--release" ANDROID_NDK_VERSION=r15c
 
 before_install:
+  - |
+    # Update Homebrew on macOS and install yasm.
+    if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+      brew update
+      brew install yasm
+    fi
   - |
     # Install servo-tidy.
     virtualenv ../venv
