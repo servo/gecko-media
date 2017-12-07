@@ -14,7 +14,7 @@ cubeb-pulse = { git = "https://github.com/djg/cubeb-pulse-rs", branch = "dev", f
 [build-dependencies]
 bindgen = "0.31.0"
 walkdir = "1.0"
-cmake = "0.1.26"
+cmake = "0.1.29"
 
 [dependencies]
 mime = "0.3.5"
