@@ -32,6 +32,11 @@ enum PlaneType
   Cr
 };
 
+struct ByteSlice {
+  const uint8_t* mData;
+  size_t mLength;
+};
+
 struct GeckoPlanarYCbCrImage
 {
   // Luminance buffer
@@ -59,6 +64,7 @@ struct GeckoPlanarYCbCrImage
   void (*mAddRefPixelData)(uint32_t aFrameID);
   void (*mFreePixelData)(uint32_t aFrameID);
   const uint8_t* (*mGetPixelData)(uint32_t aFrameID, PlaneType aPlaneType);
+  ByteSlice (*mGetSliceData)(uint32_t aFrameID);
 };
 
 struct PlayerCallbackObject

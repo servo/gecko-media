@@ -16,6 +16,7 @@ use std::mem;
 use std::ops::Range;
 use std::os::raw::c_char;
 use std::slice;
+use std::sync::Arc;
 use timestamp::TimeStamp;
 
 /// Holds useful metadata extracted from a media resource during loading.
@@ -28,26 +29,16 @@ pub struct Metadata {
     pub video_dimensions: Option<(i32, i32)>,
 }
 
-/// Holds pixel data and coordinates of a non-interleaved plane of data.
-///
-pub struct Plane {
-    pub pixels: *const u8,
+/// Holds pixel data and geometry of a non-interleaved plane of data.
+pub struct Plane<'a> {
+    /// Pixel sample data. One byte per sample. Will contain stride*height byte.
+    pub pixels: &'a [u8],
     /// The width of a line of pixels in bytes.
     pub width: i32,
     /// The stride of a line of pixels in bytes.
     pub stride: i32,
     /// The height of the plane in lines.
     pub height: i32,
-}
-
-impl Plane {
-    /// Returns a slice storing the raw pixel data.
-    pub fn data<'a>(&'a self) -> &'a [u8] {
-        unsafe {
-            let size = self.stride as usize * self.height as usize;
-            slice::from_raw_parts(self.pixels, size)
-        }
-    }
 }
 
 /// A subregion of an image buffer.
@@ -79,11 +70,12 @@ pub struct Region {
 pub struct PlanarYCbCrImage {
     /// The sub-region of the buffer which contains the image to be rendered.
     pub picture: Region,
-    /// The time at which this image should be renderd.
+    /// The time at which this image should be rendered.
     pub time_stamp: TimeStamp,
     /// A stream-unique identifier.
     pub frame_id: u32,
-    pub gecko_image: GeckoPlanarYCbCrImage,
+    gecko_image: GeckoPlanarYCbCrImage,
+    pixel_buffer: Arc<Vec<u8>>,
 }
 
 // When cloning, we need to ensure we increment the reference count on
@@ -99,41 +91,38 @@ impl Clone for PlanarYCbCrImage {
             time_stamp: self.time_stamp.clone(),
             frame_id: self.frame_id,
             gecko_image: self.gecko_image,
+            pixel_buffer: self.pixel_buffer.clone(),
         }
     }
 }
 
 impl PlanarYCbCrImage {
-    /// Returns a slice storing the raw pixel data.
-    pub fn pixel_data<'a>(&'a self, channel_index: u8) -> &'a [u8] {
+    fn pixel_slice_for_channel<'a>(&'a self, channel_index: u8) -> &'a [u8] {
         let img = &self.gecko_image;
-        let (pixels, size) = match channel_index {
-            0 => (
-                self.get_pixels(PlaneType_Y),
-                img.mYStride as usize * img.mYHeight as usize,
-            ),
-            1 => (
-                self.get_pixels(PlaneType_Cb),
-                img.mCbCrStride as usize * img.mCbCrHeight as usize,
-            ),
-            2 => (
-                self.get_pixels(PlaneType_Cr),
-                img.mCbCrStride as usize * img.mCbCrHeight as usize,
-            ),
+        let y_plane_size = (img.mYStride * img.mYHeight) as usize;
+        let cbcr_plane_size = (img.mCbCrStride * img.mCbCrHeight) as usize;
+        let (start, size) = match channel_index {
+            0 => (0, y_plane_size),
+            1 => (y_plane_size, cbcr_plane_size),
+            2 => (y_plane_size + cbcr_plane_size, cbcr_plane_size),
             _ => panic!("Invalid channel_index"),
         };
-        unsafe { slice::from_raw_parts(pixels, size) }
+        &self.pixel_buffer[start..(start + size)]
     }
 
-    fn get_pixels(&self, plane: u32) -> *const u8 {
-        let img = &self.gecko_image;
-        let f = img.mGetPixelData.unwrap();
-        unsafe { f(img.mFrameID, plane) as *const u8 }
+    pub fn plane_for_channel(&self, channel_index: u8) -> Plane {
+        match channel_index {
+            0 => self.y_plane(),
+            1 => self.cb_plane(),
+            2 => self.cr_plane(),
+            _ => panic!("Invalid planar index"),
+        }
     }
+
     pub fn y_plane(&self) -> Plane {
         let img = &self.gecko_image;
         Plane {
-            pixels: self.get_pixels(PlaneType_Y),
+            pixels: self.pixel_slice_for_channel(0),
             width: img.mYWidth,
             stride: img.mYStride,
             height: img.mYHeight,
@@ -143,7 +132,7 @@ impl PlanarYCbCrImage {
     pub fn cb_plane(&self) -> Plane {
         let img = &self.gecko_image;
         Plane {
-            pixels: self.get_pixels(PlaneType_Cb),
+            pixels: self.pixel_slice_for_channel(1),
             width: img.mCbCrWidth,
             stride: img.mCbCrStride,
             height: img.mCbCrHeight,
@@ -153,7 +142,7 @@ impl PlanarYCbCrImage {
     pub fn cr_plane(&self) -> Plane {
         let img = &self.gecko_image;
         Plane {
-            pixels: self.get_pixels(PlaneType_Cr),
+            pixels: self.pixel_slice_for_channel(2),
             width: img.mCbCrWidth,
             stride: img.mCbCrStride,
             height: img.mCbCrHeight,
@@ -529,6 +518,11 @@ fn to_ffi_planar_ycbycr_images(size: usize, elements: *mut GeckoPlanarYCbCrImage
     elements
         .iter()
         .map(|&img| -> PlanarYCbCrImage {
+            let byte_slice = unsafe {
+                let f = img.mGetSliceData.unwrap();
+                f(img.mFrameID)
+            };
+            let pixels = unsafe { slice::from_raw_parts(byte_slice.mData, byte_slice.mLength) };
             PlanarYCbCrImage {
                 picture: Region {
                     x: img.mPicX,
@@ -539,6 +533,7 @@ fn to_ffi_planar_ycbycr_images(size: usize, elements: *mut GeckoPlanarYCbCrImage
                 time_stamp: TimeStamp(img.mTimeStamp),
                 frame_id: img.mFrameID,
                 gecko_image: img,
+                pixel_buffer: Arc::new(pixels.to_vec()),
             }
         })
         .collect::<Vec<PlanarYCbCrImage>>()

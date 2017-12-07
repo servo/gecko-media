@@ -272,7 +272,7 @@ impl webrender::ExternalImageHandler for ImageGenerator {
             source: webrender::ExternalImageSource::RawData(
                 self.current_image
                     .as_ref()
-                    .map(|p| p.pixel_data(channel_index))
+                    .map(|img| img.plane_for_channel(channel_index).pixels)
                     .unwrap(),
             ),
         }

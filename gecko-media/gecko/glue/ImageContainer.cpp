@@ -430,6 +430,29 @@ PlanarYCbCrImage_GetPixelData(uint32_t aFrameID, PlaneType aPlaneType)
   return nullptr;
 }
 
+ByteSlice
+PlanarYCbCrImage_GetSliceData(uint32_t aFrameID)
+{
+  RefPtr<Image> img;
+  {
+    StaticMutexAutoLock lock(sImageMutex);
+    ExportedImage* i = sImages.Get(aFrameID);
+    if (!i) {
+      return ByteSlice { nullptr, 0 };
+    }
+    img = i->mImage;
+  }
+  PlanarYCbCrImage* planarImage = img->AsPlanarYCbCrImage();
+  MOZ_ASSERT(planarImage);
+  if (!planarImage) {
+    return ByteSlice { nullptr, 0 };
+  }
+  const PlanarYCbCrData* data = planarImage->GetData();
+  const uint8_t* ptr = data->mYChannel;
+  size_t length = planarImage->GetDataSize();
+  return ByteSlice { ptr, length };
+}
+
 void
 ImageContainer::DeallocateExportedImages()
 {
@@ -509,6 +532,7 @@ ImageContainer::NotifyOwnerOfNewImages()
     img->mAddRefPixelData = &PlanarYCbCrImage_AddRefPixelData;
     img->mFreePixelData = &PlanarYCbCrImage_FreeData;
     img->mGetPixelData = &PlanarYCbCrImage_GetPixelData;
+    img->mGetSliceData = &PlanarYCbCrImage_GetSliceData;
   }
 
   RefPtr<Runnable> task = new UpdateCurrentImagesRunnable(mOwner, Move(images));
