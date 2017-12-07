@@ -55,10 +55,10 @@ fn to_ffi_callbacks(callbacks: Rc<MediaSourceImpl>) -> GeckoMediaSourceImpl {
 
     def_gecko_callbacks_ffi_wrapper!(Rc<MediaSourceImpl>);
 
-    impl_simple_ffi_callback_wrapper!(get_ready_state, i32);
-    impl_simple_ffi_callback_wrapper!(get_duration, f64);
-    impl_simple_ffi_callback_wrapper!(has_live_seekable_range, bool);
-    impl_simple_ffi_callback_wrapper!(get_live_seekable_range, GeckoMediaTimeInterval);
+    impl_simple_ffi_getter_wrapper!(get_ready_state, i32);
+    impl_simple_ffi_getter_wrapper!(get_duration, f64);
+    impl_simple_ffi_getter_wrapper!(has_live_seekable_range, bool);
+    impl_simple_ffi_getter_wrapper!(get_live_seekable_range, GeckoMediaTimeInterval);
 
     GeckoMediaSourceImpl {
         mContext: Box::into_raw(Box::new(Wrapper {

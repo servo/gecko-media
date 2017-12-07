@@ -28,7 +28,7 @@ pub fn to_ffi_callbacks(callbacks: Rc<SourceBufferListImpl>) -> GeckoMediaSource
 
     def_gecko_callbacks_ffi_wrapper!(Rc<SourceBufferListImpl>);
 
-    impl_simple_ffi_callback_wrapper!(length, u32);
+    impl_simple_ffi_getter_wrapper!(length, u32);
 
     unsafe extern "C" fn indexed_getter(ptr: *mut c_void, index: u32, id: *mut usize) -> bool {
         let wrapper = &*(ptr as *mut Wrapper);

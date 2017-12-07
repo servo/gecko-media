@@ -451,11 +451,14 @@ fn to_ffi_callback(
         drop(Box::from_raw(ptr as *mut Wrapper));
     }
 
-    impl_simple_ffi_callback_wrapper!(decode_error, ());
-    impl_simple_ffi_callback_wrapper!(playback_ended, ());
-    impl_simple_ffi_callback_wrapper!(loaded_data, ());
-    impl_simple_ffi_callback_wrapper!(seek_started, ());
-    impl_simple_ffi_callback_wrapper!(seek_completed, ());
+    impl_simple_ffi_callback_wrapper!(decode_error);
+    impl_simple_ffi_callback_wrapper!(playback_ended);
+    impl_simple_ffi_callback_wrapper!(loaded_data);
+    impl_simple_ffi_callback_wrapper!(seek_started);
+    impl_simple_ffi_callback_wrapper!(seek_completed);
+
+    impl_simple_ffi_setter_wrapper!(duration_changed, f64);
+    impl_simple_ffi_setter_wrapper!(time_update, f64);
 
     unsafe extern "C" fn async_event(ptr: *mut c_void, name: *const c_char) {
         let wrapper = &*(ptr as *mut Wrapper);
@@ -472,14 +475,6 @@ fn to_ffi_callback(
             metadata.video_dimensions = Some((gecko_metadata.mVideoWidth, gecko_metadata.mVideoHeight));
         }
         wrapper.callbacks.metadata_loaded(metadata);
-    }
-    unsafe extern "C" fn duration_changed(ptr: *mut c_void, duration: f64) {
-        let wrapper = &*(ptr as *mut Wrapper);
-        wrapper.callbacks.duration_changed(duration);
-    }
-    unsafe extern "C" fn time_update(ptr: *mut c_void, time: f64) {
-        let wrapper = &*(ptr as *mut Wrapper);
-        wrapper.callbacks.time_update(time);
     }
     unsafe extern "C" fn update_current_images(ptr: *mut c_void, size: usize, elements: *mut GeckoPlanarYCbCrImage) {
         let wrapper = &*(ptr as *mut Wrapper);
