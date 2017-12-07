@@ -63,4 +63,49 @@
   IMPL_GECKO_MEDIA_REFLECTOR_CONSTRUCTOR(GMClass, Class, Callbacks)            \
   IMPL_GECKO_MEDIA_REFLECTOR_SHUTDOWN(GMClass, Class)
 
-#endif
+#define DEF_GECKO_MEDIA_CALLBACK(Name, ReturnType)                             \
+  ReturnType Name()                                                            \
+  {
+#define CALLBACK_MEMBER(Name) mImpl.m##Name
+#define CALLBACK_GUARD_CONDITION(Name)                                         \
+  if (NS_WARN_IF(!mImpl.mContext || !CALLBACK_MEMBER(Name))) {
+#define CALLBACK_GUARD(Name, ReturnValue)                                      \
+  CALLBACK_GUARD_CONDITION(Name)                                               \
+  return ReturnValue;                                                          \
+  }
+#define CALLBACK_GUARD_VOID(Name)                                              \
+  CALLBACK_GUARD_CONDITION(Name)                                               \
+  return;                                                                      \
+  }
+#define CALLBACK_CALL(Name) (*CALLBACK_MEMBER(Name))(mImpl.mContext);
+#define CALLBACK_CALL_WITH_PARAM(Name)                                         \
+  (*CALLBACK_MEMBER(Name))(mImpl.mContext, aParam);
+
+#define IMPL_GECKO_MEDIA_CALLBACK(Name)                                        \
+  DEF_GECKO_MEDIA_CALLBACK(Name, void)                                         \
+  CALLBACK_GUARD_VOID(Name)                                                    \
+  CALLBACK_CALL(Name)                                                          \
+  }
+
+#define IMPL_GECKO_MEDIA_SIMPLE_GETTER(Name, ReturnType, ReturnValue)          \
+  DEF_GECKO_MEDIA_CALLBACK(Name, ReturnType)                                   \
+  CALLBACK_GUARD(Name, ReturnValue)                                            \
+  return CALLBACK_CALL(Name)                                                   \
+  }
+
+#define IMPL_GECKO_MEDIA_SIMPLE_SETTER(Name, ParamType)                        \
+  void Name(const ParamType aParam)                                            \
+  {                                                                            \
+    CALLBACK_GUARD_VOID(Name)                                                  \
+    CALLBACK_CALL_WITH_PARAM(Name)                                             \
+  }
+
+#define IMPL_GECKO_MEDIA_GETTER_WITH_CAST(                                     \
+  Name, ReturnType, ReturnValue, CastType, CastFunction)                       \
+  DEF_GECKO_MEDIA_CALLBACK(Name, ReturnType)                                   \
+  CALLBACK_GUARD(Name, CastFunction(ReturnValue))                              \
+  CastType value = CALLBACK_CALL(Name);                                        \
+  return CastFunction(value);                                                  \
+  }
+
+#endif // _GECKO_MEDIA_MACROS_H_

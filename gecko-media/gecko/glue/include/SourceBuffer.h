@@ -9,6 +9,7 @@
 
 #include "GeckoMediaSourceBuffer.h"
 #include "nsISupportsImpl.h"
+#include "SourceBufferAttributes.h"
 #include "TimeUnits.h"
 #include "TrackBuffersManager.h"
 
@@ -22,16 +23,17 @@ public:
 
   SourceBuffer(GeckoMediaSourceBufferImpl aImpl,
                size_t aParentId,
-               const char* aMimeType);
+               const char* aMimeType,
+               bool aGenerateTimestamps);
 
   media::TimeIntervals GetTimeIntervals();
 
   void EvictData(size_t aParentId, size_t aLength, bool* aBufferFull);
 
 private:
-  ~SourceBuffer();
+  ~SourceBuffer(){};
 
-  GeckoMediaSourceBufferImpl mImpl;
+  SourceBufferAttributes mCurrentAttributes;
 
   RefPtr<TrackBuffersManager> mTrackBuffersManager;
 };

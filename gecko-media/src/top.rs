@@ -154,11 +154,12 @@ impl GeckoMedia {
         callbacks: Weak<SourceBufferImpl>,
         parent_id: usize,
         mime: &str,
+        generate_timestamps: bool,
     ) -> Result<SourceBuffer, ()> {
         let handle = GeckoMedia::get()?;
         let id = NEXT_SOURCE_BUFFER_ID.fetch_add(1, Ordering::SeqCst);
         if let Some(callbacks) = callbacks.upgrade() {
-            SourceBuffer::new(handle, id, callbacks, parent_id, mime)
+            SourceBuffer::new(handle, id, callbacks, parent_id, mime, generate_timestamps)
         } else {
             panic!("Callbacks gone")
         }

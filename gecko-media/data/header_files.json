@@ -140,7 +140,6 @@
   "SharedBuffer.h": "dom/media/SharedBuffer.h",
   "SimpleMap.h": "dom/media/platforms/SimpleMap.h",
   "SinfParser.h": "dom/media/mp4/SinfParser.h",
-  "SourceBufferAttributes.h": "dom/media/mediasource/SourceBufferAttributes.h",
   "SourceBufferResource.h": "dom/media/mediasource/SourceBufferResource.h",
   "SourceBufferTask.h": "dom/media/mediasource/SourceBufferTask.h",
   "SpecialSystemDirectory.h": "xpcom/io/SpecialSystemDirectory.h",

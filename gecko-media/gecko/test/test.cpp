@@ -656,7 +656,7 @@ TestGeckoMediaSourceBuffer()
     &SourceBufferFree /* mFree */
   };
   MOZ_ASSERT(GetSourceBuffer(test1.id) == nullptr);
-  GeckoMedia_SourceBuffer_Create(test1.id, test1_impl, 0, "video/mp4");
+  GeckoMedia_SourceBuffer_Create(test1.id, test1_impl, 0, "video/mp4", true);
   auto sourceBuffer = GetSourceBuffer(test1.id);
   MOZ_ASSERT(sourceBuffer != nullptr);
   MOZ_ASSERT(test1.released == false);
@@ -704,7 +704,7 @@ TestGeckoMediaSourceBufferList()
     &SourceBufferFree /* mFree */
   };
   MOZ_ASSERT(GetSourceBuffer(test.id) == nullptr);
-  GeckoMedia_SourceBuffer_Create(test.id, test_impl, 0, "video/mp4");
+  GeckoMedia_SourceBuffer_Create(test.id, test_impl, 0, "video/mp4", true);
   DummySourceBufferList test1{ 3333,  /* id */
                                false, /* released */
                                test.id /* sourceBuffer id */ };

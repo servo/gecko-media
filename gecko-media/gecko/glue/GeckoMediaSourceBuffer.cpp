@@ -17,8 +17,10 @@ struct GeckoMediaSourceBuffer
   GeckoMediaSourceBuffer(size_t aId,
                          GeckoMediaSourceBufferImpl aImpl,
                          size_t aParentId,
-                         const char* aMimeType)
-    : mSourceBuffer(new SourceBuffer(aImpl, aParentId, aMimeType))
+                         const char* aMimeType,
+                         bool aGenerateTimestamps)
+    : mSourceBuffer(
+        new SourceBuffer(aImpl, aParentId, aMimeType, aGenerateTimestamps))
     , mId(aId)
   {
   }
@@ -35,10 +37,12 @@ void
 GeckoMedia_SourceBuffer_Create(size_t aId,
                                GeckoMediaSourceBufferImpl aImpl,
                                size_t aParentId,
-                               const char* aMimeType)
+                               const char* aMimeType,
+                               bool aGenerateTimestamps)
 {
-  GeckoMediaSourceBuffer* reflector = sReflectors.AppendElement(
-    GeckoMediaSourceBuffer(aId, aImpl, aParentId, aMimeType));
+  GeckoMediaSourceBuffer* reflector =
+    sReflectors.AppendElement(GeckoMediaSourceBuffer(
+      aId, aImpl, aParentId, aMimeType, aGenerateTimestamps));
   MOZ_ASSERT(GetReflector(aId) == reflector);
 }
 

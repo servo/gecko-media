@@ -24,8 +24,9 @@ namespace dom {
 
 SourceBuffer::SourceBuffer(GeckoMediaSourceBufferImpl aImpl,
                            size_t aParentId,
-                           const char* aMimeType)
-  : mImpl(aImpl)
+                           const char* aMimeType,
+                           bool aGenerateTimestamps)
+  : mCurrentAttributes(aImpl, aGenerateTimestamps)
 {
   mozilla::Maybe<MediaContainerType> mime = MakeMediaContainerType(aMimeType);
   if (NS_WARN_IF(!mime)) {
@@ -43,13 +44,6 @@ SourceBuffer::SourceBuffer(GeckoMediaSourceBufferImpl aImpl,
   MSE_DEBUG("Create mTrackBuffersManager=%p", mTrackBuffersManager.get());
 
   parent->GetDecoder()->GetDemuxer()->AttachSourceBuffer(mTrackBuffersManager);
-}
-
-SourceBuffer::~SourceBuffer()
-{
-  if (mImpl.mContext && mImpl.mFree) {
-    (*mImpl.mFree)(mImpl.mContext);
-  }
 }
 
 media::TimeIntervals
