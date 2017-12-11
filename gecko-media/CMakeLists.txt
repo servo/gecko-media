@@ -645,7 +645,7 @@ else()
     gecko/src/media/libopus/silk/fixed/noise_shape_analysis_FIX.c
     gecko/src/media/libopus/silk/fixed/pitch_analysis_core_FIX.c
     gecko/src/media/libopus/silk/fixed/process_gains_FIX.c
-    gecko/src/media/libopus/silk/fixed/regularize_correlations_FIX.,
+    gecko/src/media/libopus/silk/fixed/regularize_correlations_FIX.c
     gecko/src/media/libopus/silk/fixed/residual_energy16_FIX.c
     gecko/src/media/libopus/silk/fixed/residual_energy_FIX.c
     gecko/src/media/libopus/silk/fixed/schur64_FIX.c
