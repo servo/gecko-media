@@ -33,14 +33,13 @@ impl SourceBuffer {
         })
     }
 
-    pub fn evict_coded_frames(&self, parent_id: usize, len: usize, buffer_full: &mut bool) {
+    pub fn evict_coded_frames(&self, len: usize, buffer_full: &mut bool) {
         let id = self.id;
         let (sender, receiver) = mpsc::channel();
         self.gecko_media.queue_task(move || unsafe {
             sender
                 .send(GeckoMedia_SourceBuffer_EvictData(
                     id,
-                    parent_id,
                     len as i64,
                     buffer_full,
                 ))

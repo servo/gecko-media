@@ -78,7 +78,6 @@ GeckoMedia_SourceBuffer_Shutdown(size_t aId);
 
 void
 GeckoMedia_SourceBuffer_EvictData(size_t aId,
-                                  size_t aParentId,
                                   int64_t aLength,
                                   bool* aBufferFull);
 }

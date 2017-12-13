@@ -8,6 +8,7 @@
 #define mozilla_dom_SourceBuffer_h_
 
 #include "GeckoMediaSourceBuffer.h"
+#include "MediaSource.h"
 #include "nsISupportsImpl.h"
 #include "SourceBufferAttributes.h"
 #include "TimeUnits.h"
@@ -28,12 +29,14 @@ public:
 
   media::TimeIntervals GetTimeIntervals();
 
-  void EvictData(size_t aParentId, size_t aLength, bool* aBufferFull);
+  void EvictData(size_t aLength, bool* aBufferFull);
 
 private:
   ~SourceBuffer(){};
 
   SourceBufferAttributes mCurrentAttributes;
+
+  RefPtr<MediaSource> mMediaSource;
 
   RefPtr<TrackBuffersManager> mTrackBuffersManager;
 };

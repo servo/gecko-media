@@ -48,13 +48,12 @@ GeckoMedia_SourceBuffer_Create(size_t aId,
 
 void
 GeckoMedia_SourceBuffer_EvictData(size_t aId,
-                                  size_t aParentId,
                                   int64_t aLength,
                                   bool* aBufferFull)
 {
   IMPL_GECKO_MEDIA_REFLECTOR_GET(GeckoMediaSourceBuffer)
 
-  reflector->mSourceBuffer->EvictData(aParentId, aLength, aBufferFull);
+  reflector->mSourceBuffer->EvictData(aLength, aBufferFull);
 }
 
 SourceBuffer*

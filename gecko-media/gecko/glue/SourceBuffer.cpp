@@ -7,7 +7,6 @@
 #include "SourceBuffer.h"
 
 #include "GeckoMediaSource.h"
-#include "MediaSource.h"
 #include "MediaSourceDemuxer.h"
 #include "mozilla/Logging.h"
 
@@ -33,38 +32,34 @@ SourceBuffer::SourceBuffer(GeckoMediaSourceBufferImpl aImpl,
     return;
   }
 
-  auto parent = GetMediaSource(aParentId);
-  if (NS_WARN_IF(!parent)) {
-    return;
-  }
+  mMediaSource = GetMediaSource(aParentId);
+  MOZ_ASSERT(mMediaSource);
 
   mTrackBuffersManager =
-    new TrackBuffersManager(parent->GetDecoder(), mime.value());
+    new TrackBuffersManager(mMediaSource->GetDecoder(), mime.value());
 
   MSE_DEBUG("Create mTrackBuffersManager=%p", mTrackBuffersManager.get());
 
-  parent->GetDecoder()->GetDemuxer()->AttachSourceBuffer(mTrackBuffersManager);
+  mMediaSource->GetDecoder()->GetDemuxer()->AttachSourceBuffer(mTrackBuffersManager);
 }
 
 media::TimeIntervals
 SourceBuffer::GetTimeIntervals()
 {
+  MOZ_ASSERT(NS_IsMainThread());
   return mTrackBuffersManager->Buffered();
 }
 
 void
-SourceBuffer::EvictData(size_t aParentId, size_t aLength, bool* aBufferFull)
+SourceBuffer::EvictData(size_t aLength, bool* aBufferFull)
 {
+  MOZ_ASSERT(NS_IsMainThread());
+  MOZ_ASSERT(mMediaSource);
+
   typedef TrackBuffersManager::EvictDataResult Result;
 
-  auto parent = GetMediaSource(aParentId);
-  if (NS_WARN_IF(!parent)) {
-    *aBufferFull = true;
-    return;
-  }
-
   Result evicted = mTrackBuffersManager->EvictData(
-    media::TimeUnit::FromSeconds(parent->GetDecoder()->GetCurrentTime()),
+    media::TimeUnit::FromSeconds(mMediaSource->GetDecoder()->GetCurrentTime()),
     aLength);
 
   *aBufferFull = (evicted == Result::BUFFER_FULL);
