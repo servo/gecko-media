@@ -47,6 +47,12 @@ pub trait MediaSourceImpl {
     fn has_live_seekable_range(&self) -> bool;
     /// MediaSource live seekable range getter.
     fn get_live_seekable_range(&self) -> GeckoMediaTimeInterval;
+    /// Get the list of SourceBuffer objects associated with this MediaSource.
+    fn get_source_buffers(&self) -> *mut usize;
+    /// Get the subset of sourceBuffers that are providing the selected video
+    /// track, the enabled audio track(s), and the "showing" or "hidden" text
+    /// track(s).
+    fn get_active_source_buffers(&self) -> *mut usize;
 }
 
 fn to_ffi_callbacks(callbacks: Rc<MediaSourceImpl>) -> GeckoMediaSourceImpl {
@@ -59,6 +65,8 @@ fn to_ffi_callbacks(callbacks: Rc<MediaSourceImpl>) -> GeckoMediaSourceImpl {
     impl_simple_ffi_getter_wrapper!(get_duration, f64);
     impl_simple_ffi_getter_wrapper!(has_live_seekable_range, bool);
     impl_simple_ffi_getter_wrapper!(get_live_seekable_range, GeckoMediaTimeInterval);
+    impl_simple_ffi_getter_wrapper!(get_source_buffers, *mut usize);
+    impl_simple_ffi_getter_wrapper!(get_active_source_buffers, *mut usize);
 
     GeckoMediaSourceImpl {
         mContext: Box::into_raw(Box::new(Wrapper {
@@ -69,5 +77,7 @@ fn to_ffi_callbacks(callbacks: Rc<MediaSourceImpl>) -> GeckoMediaSourceImpl {
         mGetDuration: Some(get_duration),
         mHasLiveSeekableRange: Some(has_live_seekable_range),
         mGetLiveSeekableRange: Some(get_live_seekable_range),
+        mGetSourceBuffers: Some(get_source_buffers),
+        mGetActiveSourceBuffers: Some(get_active_source_buffers),
     }
 }

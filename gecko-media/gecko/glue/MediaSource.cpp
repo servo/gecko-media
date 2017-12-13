@@ -10,6 +10,7 @@
 #include "AOMDecoder.h"
 #endif
 #include "DecoderTraits.h"
+#include "GeckoMediaMacros.h"
 #include "MediaContainerType.h"
 #include "MediaMIMETypes.h"
 #include "mozilla/Logging.h"
@@ -79,14 +80,40 @@ MediaSource::~MediaSource()
   (*mImpl.mFree)(mImpl.mContext);
 }
 
+SourceBufferList*
+MediaSource::SourceBuffers()
+{
+  MOZ_ASSERT(NS_IsMainThread());
+
+  CALLBACK_GUARD(GetSourceBuffers, nullptr);
+  size_t* id = (*mImpl.mGetSourceBuffers)(mImpl.mContext);
+  if (NS_WARN_IF(!id)) {
+    return nullptr;
+  }
+
+  return GetSourceBufferList(*id);
+}
+
+SourceBufferList*
+MediaSource::ActiveSourceBuffers()
+{
+  MOZ_ASSERT(NS_IsMainThread());
+
+  CALLBACK_GUARD(GetActiveSourceBuffers, nullptr);
+  size_t* id = (*mImpl.mGetActiveSourceBuffers)(mImpl.mContext);
+  if (NS_WARN_IF(!id)) {
+    return nullptr;
+  }
+
+  return GetSourceBufferList(*id);
+}
+
 double
 MediaSource::Duration()
 {
   MOZ_ASSERT(NS_IsMainThread());
-  if (NS_WARN_IF(!mImpl.mContext || !mImpl.mGetDuration)) {
-    return 0;
-  }
-  return (*mImpl.mGetDuration)(mImpl.mContext);
+  CALLBACK_GUARD(GetDuration, 0);
+  return CALLBACK_CALL(GetDuration);
 }
 
 void
@@ -104,22 +131,16 @@ MediaSourceReadyState
 MediaSource::ReadyState()
 {
   MOZ_ASSERT(NS_IsMainThread());
-  if (NS_WARN_IF(!mImpl.mContext || !mImpl.mGetReadyState)) {
-    return MediaSourceReadyState::Unknown;
-  }
-
-  return (*mImpl.mGetReadyState)(mImpl.mContext);
+  CALLBACK_GUARD(GetReadyState, MediaSourceReadyState::Unknown);
+  return CALLBACK_CALL(GetReadyState);
 }
 
 bool
 MediaSource::HasLiveSeekableRange()
 {
   MOZ_ASSERT(NS_IsMainThread());
-  if (NS_WARN_IF(!mImpl.mContext || !mImpl.mHasLiveSeekableRange)) {
-    return false;
-  }
-
-  return (*mImpl.mHasLiveSeekableRange)(mImpl.mContext);
+  CALLBACK_GUARD(HasLiveSeekableRange, false);
+  return CALLBACK_CALL(HasLiveSeekableRange);
 }
 
 media::TimeInterval

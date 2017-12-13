@@ -23,13 +23,8 @@ public:
 
   MediaSource(GeckoMediaSourceImpl aGeckoMediaSourceImpl);
 
-  SourceBufferList* ActiveSourceBuffers()
-  {
-    // TODO get from mImpl.
-    RefPtr<SourceBufferList> list =
-      new SourceBufferList(GeckoMediaSourceBufferListImpl());
-    return list;
-  }
+  SourceBufferList* SourceBuffers();
+  SourceBufferList* ActiveSourceBuffers();
 
   double Duration();
   void DurationChange(const double aDuration);
