@@ -6,7 +6,7 @@ authors = ["Chris Pearce <cpearce@mozilla.com>", "Philippe Normand <philn@igalia
 
 [dependencies]
 gecko-media = { path = "../gecko-media" }
-webrender = { git = "https://github.com/servo/webrender/" }
+webrender = { git = "https://github.com/servo/webrender/", rev="e558d41b" }
 gleam = "0.4.8"
 servo-glutin = "0.12"
 time = "0.1.17"
