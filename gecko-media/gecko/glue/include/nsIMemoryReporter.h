@@ -510,7 +510,7 @@ class NS_NO_VTABLE nsIMemoryReporterManager : public nsISupports {
 
 
 /* #include "js/TypeDecls.h" */
-#include "nsStringGlue.h"
+#include "nsString.h"
 #include "nsTArray.h"
 class nsPIDOMWindowOuter;
 // nsIHandleReportCallback is a better name, but keep nsIMemoryReporterCallback

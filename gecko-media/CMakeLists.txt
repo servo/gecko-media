@@ -211,6 +211,17 @@ add_library(gecko_core OBJECT
   gecko/src/dom/media/ReaderProxy.cpp
   gecko/src/dom/media/SeekJob.cpp
   gecko/src/dom/media/StreamTracks.cpp
+  gecko/src/dom/media/doctor/DDLifetime.cpp
+  gecko/src/dom/media/doctor/DDLifetimes.cpp
+  gecko/src/dom/media/doctor/DDLogCategory.cpp
+  gecko/src/dom/media/doctor/DDLogMessage.cpp
+  gecko/src/dom/media/doctor/DDLogObject.cpp
+  gecko/src/dom/media/doctor/DDLogUtils.cpp
+  gecko/src/dom/media/doctor/DDLogValue.cpp
+  gecko/src/dom/media/doctor/DDMediaLog.cpp
+  gecko/src/dom/media/doctor/DDMediaLogs.cpp
+  gecko/src/dom/media/doctor/DDTimeStamp.cpp
+  gecko/src/dom/media/doctor/DecoderDoctorLogger.cpp
   gecko/src/dom/media/mp4/MP4Decoder.cpp
   gecko/src/dom/media/mp4/MP4Demuxer.cpp
   gecko/src/dom/media/mediasink/AudioSink.cpp
@@ -264,14 +275,22 @@ add_library(gecko_core OBJECT
   gecko/src/dom/media/webm/WebMBufferedParser.cpp
   gecko/src/dom/media/webm/WebMDecoder.cpp
   gecko/src/dom/media/webm/WebMDemuxer.cpp
-  gecko/src/memory/fallible/fallible.cpp
   gecko/src/memory/mozalloc/mozalloc.cpp
   gecko/src/memory/mozalloc/mozalloc_oom.cpp
   gecko/src/mfbt/Assertions.cpp
   gecko/src/mfbt/ChaosMode.cpp
   gecko/src/mfbt/HashFunctions.cpp
+  gecko/src/mfbt/JSONWriter.cpp
   gecko/src/mfbt/Poison.cpp
   gecko/src/mfbt/Unused.cpp
+  gecko/src/mfbt/double-conversion/double-conversion/bignum.cc
+  gecko/src/mfbt/double-conversion/double-conversion/bignum-dtoa.cc
+  gecko/src/mfbt/double-conversion/double-conversion/cached-powers.cc
+  gecko/src/mfbt/double-conversion/double-conversion/diy-fp.cc
+  gecko/src/mfbt/double-conversion/double-conversion/double-conversion.cc
+  gecko/src/mfbt/double-conversion/double-conversion/fast-dtoa.cc
+  gecko/src/mfbt/double-conversion/double-conversion/fixed-dtoa.cc
+  gecko/src/mfbt/double-conversion/double-conversion/strtod.cc
   gecko/src/mozglue/misc/ConditionVariable_posix.cpp
   gecko/src/mozglue/misc/Printf.cpp
   gecko/src/mozglue/misc/TimeStamp.cpp

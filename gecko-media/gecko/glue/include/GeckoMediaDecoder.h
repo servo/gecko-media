@@ -55,7 +55,6 @@ private:
   MediaDecoderStateMachine* CreateStateMachine();
   media::TimeInterval ClampIntervalToEnd(const media::TimeInterval& aInterval);
   bool CanPlayThroughImpl() override;
-  bool IsLiveStream() override final { return !mEnded; }
 
   void NotifyBuffered();
   void CheckSeekable();

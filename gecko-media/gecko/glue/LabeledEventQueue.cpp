@@ -171,7 +171,7 @@ LabeledEventQueue::GetEvent(EventPriority* aPriority,
   // Move visible tabs to the front of the queue. The mAvoidVisibleTabCount field
   // prevents us from preferentially processing events from visible tabs twice in
   // a row. This scheme is designed to prevent starvation.
-	#ifndef GECKO_MEDIA_CRATE
+#ifndef GECKO_MEDIA_CRATE
   if (TabChild::HasVisibleTabs() && mAvoidVisibleTabCount <= 0) {
     for (auto iter = TabChild::GetVisibleTabs().ConstIter();
          !iter.Done(); iter.Next()) {
@@ -199,7 +199,7 @@ LabeledEventQueue::GetEvent(EventPriority* aPriority,
   SchedulerGroup* firstGroup = sCurrentSchedulerGroup;
   SchedulerGroup* group = firstGroup;
   do {
-    mAvoidVisibleTabCount--;
+    mAvoidActiveTabCount--;
 
     auto queueEntry = mLabeled.Lookup(group);
     if (!queueEntry) {
