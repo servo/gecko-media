@@ -1,9 +1,6 @@
 cmake_minimum_required (VERSION 2.8)
 project (gecko_media)
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
-
 enable_language(ASM)
 
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
@@ -25,7 +22,7 @@ else()
 endif()
 
 if($ENV{TARGET} MATCHES "android")
-  set(ANDROID 1)
+  set(ANDROID 1) # Note: *Doesn't* imply LINUX nor MACOS nor WINDOWS
 else()
   set(ANDROID 0)
 endif()
@@ -66,11 +63,29 @@ endif()
 
 find_program(SCCACHE_PROGRAM sccache)
 if(SCCACHE_PROGRAM)
-    set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${SCCACHE_PROGRAM}")
+  set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${SCCACHE_PROGRAM}")
 endif()
 
 if (X86 OR X86_64)
   find_program(YASM_EXE NAMES yasm)
+endif()
+
+if (X86_64)
+  add_definitions(-DHAVE_64BIT_BUILD=1)
+endif()
+
+if (MACOS AND NOT ANDROID)
+  add_definitions(-DXP_DARWIN=1)
+  add_definitions(-DDARWIN=1)
+endif()
+
+if (LINUX OR ANDROID)
+  add_definitions(-DXP_UNIX=1)
+endif()
+
+if (ANDROID)
+  add_definitions(-DANDROID=1)
+  add_definitions(-DHAVE_FCNTL_FILE_LOCKING=1)
 endif()
 
 add_definitions(-DGECKO_MEDIA_CRATE=1)
@@ -78,47 +93,439 @@ add_definitions(-DMOZILLA_INTERNAL_API=1)
 add_definitions(-D_PR_PTHREADS=1)
 add_definitions(-DRUST_BINDGEN=1)
 
-include_directories(
-  gecko/include
-  gecko/glue/include
+if (LINUX)
+  if (X86_64)
+    set(yasm_binary_format elf64)
+  else()
+    set(yasm_binary_format elf32)
+  endif()
+elseif (MACOS)
+  if (X86_64)
+    set(yasm_binary_format macho64)
+  else()
+    set(yasm_binary_format macho32)
+  endif()
+endif()
+
+############
+# ffvpx
+############
+
+set(yasm_flags -P${CMAKE_CURRENT_SOURCE_DIR}/gecko/src/media/ffvpx/defaults_disabled.asm)
+if (MACOS AND NOT ANDROID)
+  set(yasm_config -P${CMAKE_CURRENT_SOURCE_DIR}/gecko/src/media/ffvpx/config_darwin64.asm)
+  set(yasm_flags ${yasm_flags} -DPREFIX)
+elseif (LINUX)
+  set(yasm_config -P${CMAKE_CURRENT_SOURCE_DIR}/gecko/src/media/ffvpx/config_unix64.asm)
+elseif (WINDOWS)
+  if (X86_64)
+    set(yasm_config -P${CMAKE_CURRENT_SOURCE_DIR}/gecko/src/media/ffvpx/config_win64.asm)
+  else()
+    set(yasm_config -P${CMAKE_CURRENT_SOURCE_DIR}/gecko/src/media/ffvpx/config_win32.asm)
+  endif()
+endif()
+
+
+set(LIBAVUTIL_ASM_OBJS )
+
+add_library(libavutil OBJECT
+  gecko/src/media/ffvpx/libavutil/adler32.c
+  gecko/src/media/ffvpx/libavutil/atomic.c
+  gecko/src/media/ffvpx/libavutil/avstring.c
+  gecko/src/media/ffvpx/libavutil/base64.c
+  gecko/src/media/ffvpx/libavutil/bprint.c
+  gecko/src/media/ffvpx/libavutil/buffer.c
+  gecko/src/media/ffvpx/libavutil/channel_layout.c
+  gecko/src/media/ffvpx/libavutil/color_utils.c
+  gecko/src/media/ffvpx/libavutil/cpu.c
+  gecko/src/media/ffvpx/libavutil/crc.c
+  gecko/src/media/ffvpx/libavutil/dict.c
+  gecko/src/media/ffvpx/libavutil/dummy_funcs.c
+  gecko/src/media/ffvpx/libavutil/error.c
+  gecko/src/media/ffvpx/libavutil/eval.c
+  gecko/src/media/ffvpx/libavutil/fifo.c
+  gecko/src/media/ffvpx/libavutil/fixed_dsp.c
+  gecko/src/media/ffvpx/libavutil/float_dsp.c
+  gecko/src/media/ffvpx/libavutil/frame.c
+  gecko/src/media/ffvpx/libavutil/imgutils.c
+  gecko/src/media/ffvpx/libavutil/integer.c
+  gecko/src/media/ffvpx/libavutil/intmath.c
+  gecko/src/media/ffvpx/libavutil/lls.c
+  gecko/src/media/ffvpx/libavutil/log.c
+  gecko/src/media/ffvpx/libavutil/log2_tab.c
+  gecko/src/media/ffvpx/libavutil/mathematics.c
+  gecko/src/media/ffvpx/libavutil/mem.c
+  gecko/src/media/ffvpx/libavutil/opt.c
+  gecko/src/media/ffvpx/libavutil/parseutils.c
+  gecko/src/media/ffvpx/libavutil/pixdesc.c
+  gecko/src/media/ffvpx/libavutil/pixelutils.c
+  gecko/src/media/ffvpx/libavutil/rational.c
+  gecko/src/media/ffvpx/libavutil/reverse.c
+  gecko/src/media/ffvpx/libavutil/samplefmt.c
+  gecko/src/media/ffvpx/libavutil/slicethread.c
+  gecko/src/media/ffvpx/libavutil/threadmessage.c
+  gecko/src/media/ffvpx/libavutil/time.c
+  gecko/src/media/ffvpx/libavutil/timecode.c
+  gecko/src/media/ffvpx/libavutil/utils.c
 )
 
-if(X86_64)
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE")
-endif()
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_GNU_SOURCE")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-exceptions")
+target_compile_definitions(libavutil PRIVATE
+  HAVE_AV_CONFIG_H=1
+  HAVE_LOCALTIME_R=1
+)
 
-if(LINUX AND NOT ANDROID)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --include ${CMAKE_SOURCE_DIR}/gecko/glue/include/mozilla-config-x86_64-linux.h")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --include ${CMAKE_SOURCE_DIR}/gecko/glue/include/undefs.h")
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --include ${CMAKE_SOURCE_DIR}/gecko/glue/include/undefs.h")
-endif()
-
-if(MACOS AND NOT ANDROID)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Xpreprocessor -include${CMAKE_SOURCE_DIR}/gecko/glue/include/mozilla-config-x86_64-apple-darwin.h")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Xpreprocessor -include${CMAKE_SOURCE_DIR}/gecko/glue/include/undefs.h")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-inline-new-delete")
-
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Xpreprocessor -include${CMAKE_SOURCE_DIR}/gecko/glue/include/mozilla-config-x86_64-apple-darwin.h")
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Xpreprocessor -include${CMAKE_SOURCE_DIR}/gecko/glue/include/undefs.h")
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-inline-new-delete")
-
-  add_definitions(-DDARWIN=1)
+if (X64_64)
+  target_compile_definitions(libavutil PRIVATE
+    HAVE_64BIT_BUILD=
+  )
 endif()
 
 if (ANDROID)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --include ${CMAKE_SOURCE_DIR}/gecko/glue/include/mozilla-config-android.h")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --include ${CMAKE_SOURCE_DIR}/gecko/glue/include/undefs.h")
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --include ${CMAKE_SOURCE_DIR}/gecko/glue/include/undefs.h")
+  # This define is needed to enable the config_android32.h #include in config.h.
+  set(ffvpx_compile_flags "-DMOZ_WIDGET_ANDROID")
+elseif (LINUX)
+  set(ffvpx_compile_flags "-Wno-parentheses -Wno-pointer-sign -Wno-sign-compare -Wno-switch -Wno-type-limits -Wno-unused-function -Wno-deprecated-declarations -Wno-maybe-uninitialized -U_GNU_SOURCE -D_XOPEN_SOURCE=600  --include ${CMAKE_SOURCE_DIR}/gecko/include/mozilla/media/ffvpx/libavutil_visibility.h")
+elseif (MACOS)
+  set(ffvpx_compile_flags "-Xpreprocessor -include${CMAKE_SOURCE_DIR}/gecko/include/mozilla/media/ffvpx/libavutil_visibility.h")
+endif()
+
+set_target_properties(libavutil PROPERTIES
+  COMPILE_FLAGS ${ffvpx_compile_flags}
+)
+
+target_include_directories(libavutil PRIVATE
+  gecko/include/mozilla/media/ffvpx/
+  gecko/include/mozilla/media/ffvpx/libavutil/
+)
+
+if (ARM)
+  add_library(libavutil-arm OBJECT
+    gecko/src/media/ffvpx/libavutil/arm/cpu.c
+    gecko/src/media/ffvpx/libavutil/arm/float_dsp_init_arm.c
+    gecko/src/media/ffvpx/libavutil/arm/float_dsp_init_neon.c
+    gecko/src/media/ffvpx/libavutil/arm/float_dsp_init_vfp.c
+    gecko/src/media/ffvpx/libavutil/arm/float_dsp_neon.S
+    gecko/src/media/ffvpx/libavutil/arm/float_dsp_vfp.S
+  )
+  target_include_directories(libavutil-arm PRIVATE
+    gecko/src/media/ffvpx/
+    gecko/include/mozilla/media/ffvpx/
+    gecko/include/mozilla/media/ffvpx/libavutil/arm/
+    gecko/include/mozilla/media/ffvpx/libavutil/
+  )
+  set(LIBAVUTIL_ARCH_OBJS $<TARGET_OBJECTS:libavutil-arm>)
+endif()
+
+if (X86)
+  add_library(libavutil-x86 OBJECT
+    gecko/src/media/ffvpx/libavutil/x86/cpu.c
+    gecko/src/media/ffvpx/libavutil/x86/fixed_dsp_init.c
+    gecko/src/media/ffvpx/libavutil/x86/float_dsp_init.c
+    gecko/src/media/ffvpx/libavutil/x86/imgutils_init.c
+    gecko/src/media/ffvpx/libavutil/x86/lls_init.c
+    gecko/src/media/ffvpx/libavutil/x86/pixelutils_init.c
+  )
+  set(asm_sources
+    gecko/src/media/ffvpx/libavutil/x86/cpuid.asm
+    gecko/src/media/ffvpx/libavutil/x86/emms.asm
+    gecko/src/media/ffvpx/libavutil/x86/fixed_dsp.asm
+    gecko/src/media/ffvpx/libavutil/x86/float_dsp.asm
+    gecko/src/media/ffvpx/libavutil/x86/imgutils.asm
+    gecko/src/media/ffvpx/libavutil/x86/lls.asm
+    gecko/src/media/ffvpx/libavutil/x86/pixelutils.asm
+    gecko/src/media/ffvpx/libavutil/x86/x86inc.asm
+    gecko/src/media/ffvpx/libavutil/x86/x86util.asm
+  )
+  target_include_directories(libavutil-x86 PRIVATE
+    gecko/include/mozilla/media/ffvpx/
+    gecko/include/mozilla/media/ffvpx/libavutil/x86/
+    gecko/include/mozilla/media/ffvpx/libavutil/
+  )
+  set(LIBAVUTIL_ARCH_OBJS $<TARGET_OBJECTS:libavutil-x86>)
+
+  set(LIBAVUTIL_ASM_OBJS )
+  foreach(asm_file ${asm_sources})
+    get_filename_component(file_name ${asm_file} NAME)
+    set(compiled_object ${CMAKE_CURRENT_BINARY_DIR}/ffvpx-${file_name}.o)
+    add_custom_command(OUTPUT ${compiled_object}
+      COMMAND ${YASM_EXE}
+      ARGS -f ${yasm_binary_format} ${yasm_config} ${yasm_flags} -DPIC -Igecko/src/media/ffvpx/ -o ${compiled_object} ./${asm_file}
+      WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+      VERBATIM)
+    list(APPEND LIBAVUTIL_ASM_OBJS ${compiled_object})
+  endforeach()
+
+  set_source_files_properties(
+    ${LIBAVUTIL_ASM_OBJS}
+    PROPERTIES
+    EXTERNAL_OBJECT true
+    GENERATED true
+  )
+  set_target_properties(libavutil-x86 PROPERTIES COMPILE_FLAGS ${ffvpx_compile_flags})
+
+endif()
+
+add_library(mozavutil SHARED
+  $<TARGET_OBJECTS:libavutil>
+  ${LIBAVUTIL_ARCH_OBJS}
+  ${LIBAVUTIL_ASM_OBJS}
+)
+
+install(TARGETS mozavutil
+  DESTINATION ${CMAKE_INSTALL_PREFIX}
+  LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}
+)
+
+set_target_properties(mozavutil PROPERTIES
+  LINKER_LANGUAGE C
+  POSITION_INDEPENDENT_CODE ON
+  SOVERSION 57
+  ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/lib
+)
+
+
+set(LIBAVCODEC_ASM_OBJS )
+
+add_library(gecko_media_mozavcodec OBJECT
+  gecko/src/media/ffvpx/libavcodec/allcodecs.c
+  gecko/src/media/ffvpx/libavcodec/audioconvert.c
+  gecko/src/media/ffvpx/libavcodec/avpacket.c
+  gecko/src/media/ffvpx/libavcodec/avpicture.c
+  gecko/src/media/ffvpx/libavcodec/bitstream.c
+  gecko/src/media/ffvpx/libavcodec/bitstream_filter.c
+  gecko/src/media/ffvpx/libavcodec/bitstream_filters.c
+  gecko/src/media/ffvpx/libavcodec/bsf.c
+  gecko/src/media/ffvpx/libavcodec/codec_desc.c
+  gecko/src/media/ffvpx/libavcodec/decode.c
+  gecko/src/media/ffvpx/libavcodec/dummy_funcs.c
+  gecko/src/media/ffvpx/libavcodec/flac.c
+  gecko/src/media/ffvpx/libavcodec/flacdata.c
+  gecko/src/media/ffvpx/libavcodec/flacdec.c
+  gecko/src/media/ffvpx/libavcodec/flacdsp.c
+  gecko/src/media/ffvpx/libavcodec/golomb.c
+  gecko/src/media/ffvpx/libavcodec/h264pred.c
+  gecko/src/media/ffvpx/libavcodec/imgconvert.c
+  gecko/src/media/ffvpx/libavcodec/log2_tab.c
+  gecko/src/media/ffvpx/libavcodec/mathtables.c
+  gecko/src/media/ffvpx/libavcodec/null_bsf.c
+  gecko/src/media/ffvpx/libavcodec/options.c
+  gecko/src/media/ffvpx/libavcodec/parser.c
+  gecko/src/media/ffvpx/libavcodec/profiles.c
+  gecko/src/media/ffvpx/libavcodec/pthread.c
+  gecko/src/media/ffvpx/libavcodec/pthread_frame.c
+  gecko/src/media/ffvpx/libavcodec/pthread_slice.c
+  gecko/src/media/ffvpx/libavcodec/qsv_api.c
+  gecko/src/media/ffvpx/libavcodec/raw.c
+  gecko/src/media/ffvpx/libavcodec/resample.c
+  gecko/src/media/ffvpx/libavcodec/resample2.c
+  gecko/src/media/ffvpx/libavcodec/reverse.c
+  gecko/src/media/ffvpx/libavcodec/utils.c
+  gecko/src/media/ffvpx/libavcodec/videodsp.c
+  gecko/src/media/ffvpx/libavcodec/vorbis_parser.c
+  gecko/src/media/ffvpx/libavcodec/vp56rac.c
+  gecko/src/media/ffvpx/libavcodec/vp8.c
+  gecko/src/media/ffvpx/libavcodec/vp8_parser.c
+  gecko/src/media/ffvpx/libavcodec/vp8dsp.c
+  gecko/src/media/ffvpx/libavcodec/vp9.c
+  gecko/src/media/ffvpx/libavcodec/vp9_parser.c
+  gecko/src/media/ffvpx/libavcodec/vp9block.c
+  gecko/src/media/ffvpx/libavcodec/vp9data.c
+  gecko/src/media/ffvpx/libavcodec/vp9dsp.c
+  gecko/src/media/ffvpx/libavcodec/vp9dsp_10bpp.c
+  gecko/src/media/ffvpx/libavcodec/vp9dsp_12bpp.c
+  gecko/src/media/ffvpx/libavcodec/vp9dsp_8bpp.c
+  gecko/src/media/ffvpx/libavcodec/vp9lpf.c
+  gecko/src/media/ffvpx/libavcodec/vp9mvs.c
+  gecko/src/media/ffvpx/libavcodec/vp9prob.c
+  gecko/src/media/ffvpx/libavcodec/vp9recon.c
+  gecko/src/media/ffvpx/libavcodec/xiph.c
+)
+
+target_compile_definitions(gecko_media_mozavcodec PRIVATE
+  HAVE_AV_CONFIG_H=1
+)
+
+target_include_directories(gecko_media_mozavcodec PRIVATE
+  gecko/src/media/ffvpx/
+  gecko/include/mozilla/media/ffvpx/
+  gecko/include/mozilla/media/ffvpx/libavcodec/
+)
+
+if (X64_64)
+  target_compile_definitions(gecko_media_mozavcodec PRIVATE
+    HAVE_64BIT_BUILD=
+  )
+endif()
+
+if (LINUX OR ANDROID)
+  target_compile_definitions(gecko_media_mozavcodec PRIVATE
+    HAVE_LOCALTIME_R=1
+)
+endif()
+
+if (ANDROID)
+  # This define is needed to enable the config_android32.h #include in config.h.
+  set_target_properties(gecko_media_mozavcodec PROPERTIES COMPILE_FLAGS "-DMOZ_WIDGET_ANDROID")
+endif()
+
+if (ARM)
+  add_library(libavcodec-arm OBJECT
+    gecko/src/media/ffvpx/libavcodec/arm/flacdsp_arm.S
+    gecko/src/media/ffvpx/libavcodec/arm/flacdsp_init_arm.c
+  )
+  target_include_directories(libavcodec-arm PRIVATE
+    gecko/src/media/ffvpx/
+    gecko/include/mozilla/media/ffvpx/libavcodec/arm/
+    gecko/include/mozilla/media/ffvpx
+  )
+
+  target_compile_definitions(libavcodec-arm PRIVATE
+    HAVE_AV_CONFIG_H=1
+  )
+  set(LIBAVCODEC_ARCH_OBJS $<TARGET_OBJECTS:libavcodec-arm>)
+endif()
+
+if (X86)
+  add_library(libavcodec-x86 OBJECT
+    gecko/src/media/ffvpx/libavcodec/x86/constants.c
+    gecko/src/media/ffvpx/libavcodec/x86/flacdsp_init.c
+    gecko/src/media/ffvpx/libavcodec/x86/h264_intrapred_init.c
+    gecko/src/media/ffvpx/libavcodec/x86/videodsp_init.c
+    gecko/src/media/ffvpx/libavcodec/x86/vp8dsp_init.c
+    gecko/src/media/ffvpx/libavcodec/x86/vp9dsp_init.c
+    gecko/src/media/ffvpx/libavcodec/x86/vp9dsp_init_10bpp.c
+    gecko/src/media/ffvpx/libavcodec/x86/vp9dsp_init_12bpp.c
+    gecko/src/media/ffvpx/libavcodec/x86/vp9dsp_init_16bpp.c
+  )
+
+  set_source_files_properties(gecko/src/media/ffvpx/libavcodec/x86/constants.c PROPERTIES
+    COMPILE_FLAGS "-fvisibility=hidden"
+  )
+
+  set(asm_sources
+    gecko/src/media/ffvpx/libavcodec/x86/flacdsp.asm
+    gecko/src/media/ffvpx/libavcodec/x86/h264_intrapred.asm
+    gecko/src/media/ffvpx/libavcodec/x86/h264_intrapred_10bit.asm
+    gecko/src/media/ffvpx/libavcodec/x86/videodsp.asm
+    gecko/src/media/ffvpx/libavcodec/x86/vp8dsp.asm
+    gecko/src/media/ffvpx/libavcodec/x86/vp8dsp_loopfilter.asm
+    gecko/src/media/ffvpx/libavcodec/x86/vp9intrapred.asm
+    gecko/src/media/ffvpx/libavcodec/x86/vp9intrapred_16bpp.asm
+    gecko/src/media/ffvpx/libavcodec/x86/vp9itxfm.asm
+    gecko/src/media/ffvpx/libavcodec/x86/vp9itxfm_16bpp.asm
+    gecko/src/media/ffvpx/libavcodec/x86/vp9lpf.asm
+    gecko/src/media/ffvpx/libavcodec/x86/vp9lpf_16bpp.asm
+    gecko/src/media/ffvpx/libavcodec/x86/vp9mc.asm
+    gecko/src/media/ffvpx/libavcodec/x86/vp9mc_16bpp.asm
+  )
+  target_include_directories(libavcodec-x86 PRIVATE
+    gecko/include/mozilla/media/ffvpx/libavutil/x86/
+    gecko/include/mozilla/media/ffvpx/libavcodec/x86/
+    gecko/include/mozilla/media/ffvpx
+  )
+  target_compile_definitions(libavcodec-x86 PRIVATE
+    HAVE_AV_CONFIG_H=1
+  )
+  set(LIBAVCODEC_ARCH_OBJS $<TARGET_OBJECTS:libavcodec-x86>)
+
+  foreach(asm_file ${asm_sources})
+    get_filename_component(file_name ${asm_file} NAME)
+    set(compiled_object ${CMAKE_CURRENT_BINARY_DIR}/ffvpx-${file_name}.o)
+    add_custom_command(OUTPUT ${compiled_object}
+      COMMAND ${YASM_EXE}
+      ARGS -f ${yasm_binary_format} ${yasm_config} ${yasm_flags} -DPIC -Igecko/src/media/ffvpx/ -o ${compiled_object} ./${asm_file}
+      WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+      VERBATIM)
+    list(APPEND LIBAVCODEC_ASM_OBJS ${compiled_object})
+  endforeach()
+
+  set_source_files_properties(
+    ${LIBAVCODEC_ASM_OBJS}
+    PROPERTIES
+    EXTERNAL_OBJECT true
+    GENERATED true
+  )
+  set_target_properties(libavcodec-x86 PROPERTIES
+    COMPILE_FLAGS ${ffvpx_compile_flags}
+  )
+
+endif()
+
+add_library(mozavcodec SHARED
+  $<TARGET_OBJECTS:gecko_media_mozavcodec>
+  ${LIBAVCODEC_ARCH_OBJS}
+  ${LIBAVCODEC_ASM_OBJS}
+)
+
+target_link_libraries(mozavcodec mozavutil)
+
+install(TARGETS mozavcodec
+  DESTINATION ${CMAKE_INSTALL_PREFIX}
+  LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}
+)
+
+set_target_properties(mozavcodec PROPERTIES
+  LINKER_LANGUAGE C
+  POSITION_INDEPENDENT_CODE ON
+  SOVERSION 57
+  ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/lib
+)
+
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11 -fno-exceptions")
+
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_GNU_SOURCE")
+if(X86_64)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64")
+endif()
+
+if (ANDROID)
+  set(GECKO_MEDIA_PREPROCESSOR_INCLUDES "--include ${CMAKE_SOURCE_DIR}/gecko/glue/include/mozilla-config-android.h --include ${CMAKE_SOURCE_DIR}/gecko/glue/include/undefs.h")
+elseif (LINUX)
+  set(GECKO_MEDIA_PREPROCESSOR_INCLUDES "--include ${CMAKE_SOURCE_DIR}/gecko/glue/include/mozilla-config-x86_64-linux.h --include ${CMAKE_SOURCE_DIR}/gecko/glue/include/undefs.h")
+else(MACOS)
+  set(GECKO_MEDIA_PREPROCESSOR_INCLUDES "-Xpreprocessor -include${CMAKE_SOURCE_DIR}/gecko/glue/include/mozilla-config-x86_64-apple-darwin.h -Xpreprocessor -include${CMAKE_SOURCE_DIR}/gecko/glue/include/undefs.h")
+endif()
+
+if(MACOS AND NOT ANDROID)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-inline-new-delete")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-inline-new-delete")
+endif()
+
+if (ANDROID)
   if (ARM)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mfloat-abi=softfp -mfpu=neon")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfloat-abi=softfp -mfpu=neon")
   endif()
-  add_definitions(-DANDROID=1)
-  add_definitions(-DHAVE_FCNTL_FILE_LOCKING=1)
 endif()
 
+
+if (LINUX OR MACOS)
+  add_library(ffvpx OBJECT
+    gecko/src/dom/media/platforms/ffmpeg/FFmpegAudioDecoder.cpp
+    gecko/src/dom/media/platforms/ffmpeg/FFmpegDataDecoder.cpp
+    gecko/src/dom/media/platforms/ffmpeg/FFmpegDecoderModule.cpp
+    gecko/glue/FFmpegVideoDecoder.cpp
+    gecko/src/dom/media/platforms/ffmpeg/ffvpx/FFVPXRuntimeLinker.cpp
+  )
+  target_include_directories(ffvpx PRIVATE
+    gecko/include/ffmpeg57/include
+    gecko/include/nspr
+    gecko/include/nspr/private
+    gecko/include
+    gecko/glue/include
+    gecko/include/mozilla/
+    gecko/include/mozilla/media/libvpx/libvpx
+  )
+  target_compile_definitions(ffvpx PRIVATE
+    FFVPX_VERSION=46465650
+    USING_MOZFFVPX=1
+  )
+
+  set_target_properties(ffvpx PROPERTIES COMPILE_FLAGS ${GECKO_MEDIA_PREPROCESSOR_INCLUDES})
+endif()
 
 
 ############
@@ -130,7 +537,10 @@ add_library(ogg OBJECT
   gecko/src/media/libogg/src/ogg_bitwise.c
   gecko/src/media/libogg/src/ogg_framing.c
   )
-target_include_directories(ogg PRIVATE gecko/include/mozilla/media/libogg/include)
+target_include_directories(ogg PRIVATE
+  gecko/include
+  gecko/include/mozilla/media/libogg/include
+)
 
 
 
@@ -414,8 +824,10 @@ if(ANDROID)
 endif()
 
 target_include_directories(gecko_core PRIVATE
+    gecko/glue/include/
     gecko/glue/include/stl_wrappers
     gecko/include/system_wrappers
+    gecko/include/
     gecko/include/nspr
     gecko/include/nspr/private
     gecko/include/mediasink
@@ -437,32 +849,8 @@ target_compile_definitions(gecko_core PRIVATE
   RUST_BINDGEN=1
 )
 
-############
-# ffvpx
-############
+set_target_properties(gecko_core PROPERTIES COMPILE_FLAGS ${GECKO_MEDIA_PREPROCESSOR_INCLUDES})
 
-if (LINUX OR MACOS)
-add_library(ffvpx OBJECT
-  gecko/src/dom/media/platforms/ffmpeg/FFmpegAudioDecoder.cpp
-  gecko/src/dom/media/platforms/ffmpeg/FFmpegDataDecoder.cpp
-  gecko/src/dom/media/platforms/ffmpeg/FFmpegDecoderModule.cpp
-  gecko/glue/FFmpegVideoDecoder.cpp
-  gecko/src/dom/media/platforms/ffmpeg/ffvpx/FFVPXRuntimeLinker.cpp
-)
-target_include_directories(ffvpx PRIVATE
-    gecko/include/ffmpeg57/include
-    gecko/include/nspr
-    gecko/include/nspr/private
-    gecko/include
-    gecko/glue/include
-    gecko/include/mozilla/
-    gecko/include/mozilla/media/libvpx/libvpx
-)
-target_compile_definitions(ffvpx PRIVATE
-  FFVPX_VERSION=46465650
-  USING_MOZFFVPX=1
-)
-endif()
 
 ############
 # ffmpeg
@@ -483,6 +871,9 @@ target_include_directories(ffmpeg57 PRIVATE
     gecko/include/mozilla/
     gecko/include/mozilla/media/libvpx/libvpx
 )
+
+set_target_properties(ffmpeg57 PROPERTIES COMPILE_FLAGS ${GECKO_MEDIA_PREPROCESSOR_INCLUDES})
+
 endif()
 
 ############
@@ -494,6 +885,7 @@ add_library(nestegg OBJECT
 )
 
 target_include_directories(nestegg PRIVATE
+  gecko/include/
   gecko/include/mozilla/media/libnestegg/include
 )
 
@@ -736,6 +1128,7 @@ if(MACOS OR LINUX)
 endif()
 
 target_include_directories(opus PRIVATE
+  gecko/include/
   gecko/include/mozilla/media/libopus
   gecko/include/mozilla/media/libopus/celt
   gecko/include/mozilla/media/libopus/include
@@ -810,6 +1203,7 @@ if (NOT ANDROID)
   add_library(vorbis OBJECT ${vorbis_srcs})
 
   target_include_directories(vorbis PRIVATE
+    gecko/include/
     gecko/include/mozilla/media/libvorbis/lib
     gecko/include/mozilla/media/libvorbis/include
     gecko/include/mozilla/media/libogg/include/
@@ -887,6 +1281,7 @@ if (ARM)
 endif()
 
 target_include_directories(theora PRIVATE
+  gecko/include/
   gecko/include/mozilla/media/libvorbis/lib
   gecko/include/mozilla/media/libvorbis/include
   gecko/include/mozilla/media/libogg/include/
@@ -922,8 +1317,8 @@ if(X86)
     )
     target_compile_definitions(soundtouch PRIVATE
       SOUNDTOUCH_ALLOW_SSE=1
-      #TODO: set SSE2 cflags
     )
+    set_source_files_properties(gecko/src/media/libsoundtouch/src/sse_optimized.cpp PROPERTIES COMPILE_FLAGS "-msse2")
   else()
     # TODO: Set MMX CFlags?
     target_sources(soundtouch PRIVATE
@@ -948,7 +1343,7 @@ target_include_directories(soundtouch PRIVATE
   gecko/include
 )
 
-
+set_target_properties(soundtouch PROPERTIES COMPILE_FLAGS ${GECKO_MEDIA_PREPROCESSOR_INCLUDES})
 
 
 ##########
@@ -1057,6 +1452,8 @@ target_include_directories(cubeb PRIVATE
   gecko/include
   gecko/glue/include/
 )
+
+set_target_properties(cubeb PROPERTIES COMPILE_FLAGS ${GECKO_MEDIA_PREPROCESSOR_INCLUDES})
 
 
 ##########
@@ -1581,11 +1978,11 @@ elseif (ARM)
 
   set_source_files_properties(gecko/src/media/libvpx/libvpx/vpx_ports/arm_cpudetect.c PROPERTIES COMPILE_FLAGS "-I$ENV{ANDROID_NDK_HOME}/sources/android/cpufeatures/")
 
-  set_source_files_properties(gecko/src/media/libvpx/libvpx/vp8/common/arm/neon/bilinearpredict_neon.c PROPERTIES COMPILE_FLAGS "-I${vpx_asm_include_dir} -march=armv7-a -mfpu=neon")
-  set_source_files_properties(gecko/src/media/libvpx/libvpx/vp8/common/arm/neon/copymem_neon.c PROPERTIES COMPILE_FLAGS "-I${vpx_asm_include_dir}  -march=armv7-a -mfpu=neon")
-  set_source_files_properties(gecko/src/media/libvpx/libvpx/vp8/common/arm/neon/dc_only_idct_add_neon.c PROPERTIES COMPILE_FLAGS "-I${vpx_asm_include_dir} -march=armv7-a -mfpu=neon")
-  set_source_files_properties(gecko/src/media/libvpx/libvpx/vp8/common/arm/neon/dequant_idct_neon.c PROPERTIES COMPILE_FLAGS "-I${vpx_asm_include_dir}  -march=armv7-a -mfpu=neon")
-  set_source_files_properties(gecko/src/media/libvpx/libvpx/vp8/common/arm/neon/dequantizeb_neon.c PROPERTIES COMPILE_FLAGS "-I${vpx_asm_include_dir}  -march=armv7-a -mfpu=neon")
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vp8/common/arm/neon/bilinearpredict_neon.c PROPERTIES COMPILE_FLAGS "-march=armv7-a -mfpu=neon")
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vp8/common/arm/neon/copymem_neon.c PROPERTIES COMPILE_FLAGS "-march=armv7-a -mfpu=neon")
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vp8/common/arm/neon/dc_only_idct_add_neon.c PROPERTIES COMPILE_FLAGS "-march=armv7-a -mfpu=neon")
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vp8/common/arm/neon/dequant_idct_neon.c PROPERTIES COMPILE_FLAGS "-march=armv7-a -mfpu=neon")
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vp8/common/arm/neon/dequantizeb_neon.c PROPERTIES COMPILE_FLAGS "-march=armv7-a -mfpu=neon")
   set_source_files_properties(gecko/src/media/libvpx/libvpx/vp8/common/arm/neon/idct_blk_neon.c PROPERTIES COMPILE_FLAGS "-march=armv7-a -mfpu=neon")
   set_source_files_properties(gecko/src/media/libvpx/libvpx/vp8/common/arm/neon/idct_dequant_0_2x_neon.c PROPERTIES COMPILE_FLAGS "-march=armv7-a -mfpu=neon")
   set_source_files_properties(gecko/src/media/libvpx/libvpx/vp8/common/arm/neon/idct_dequant_full_2x_neon.c PROPERTIES COMPILE_FLAGS "-march=armv7-a -mfpu=neon")
@@ -1655,7 +2052,7 @@ target_include_directories(tests PRIVATE
     gecko/include/mozilla/media/libtheora/include
 )
 
-
+set_target_properties(tests PROPERTIES COMPILE_FLAGS ${GECKO_MEDIA_PREPROCESSOR_INCLUDES})
 
 
 ##########
