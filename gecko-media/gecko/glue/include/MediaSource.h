@@ -7,6 +7,7 @@
 #ifndef mozilla_dom_MediaSource_h_
 #define mozilla_dom_MediaSource_h_
 
+#include "GeckoMediaMacros.h"
 #include "GeckoMediaSource.h"
 #include "MediaSourceDecoder.h"
 #include "nsISupportsImpl.h"
@@ -46,6 +47,8 @@ public:
 
 private:
   ~MediaSource();
+
+  IMPL_GECKO_MEDIA_SIMPLE_SETTER(SetReadyState, MediaSourceReadyState);
 
   GeckoMediaSourceImpl mImpl;
 

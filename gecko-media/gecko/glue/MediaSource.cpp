@@ -10,7 +10,6 @@
 #include "AOMDecoder.h"
 #endif
 #include "DecoderTraits.h"
-#include "GeckoMediaMacros.h"
 #include "MediaContainerType.h"
 #include "MediaMIMETypes.h"
 #include "mozilla/Logging.h"

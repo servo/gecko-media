@@ -580,6 +580,12 @@ GetReadyState(void* aContext)
   return static_cast<DummyMediaSource*>(aContext)->readyState;
 }
 
+void
+SetReadyState(void* aContext, MediaSourceReadyState aState)
+{
+  static_cast<DummyMediaSource*>(aContext)->readyState = aState;
+}
+
 bool
 HasLiveSeekableRange(void* aContext)
 {
@@ -616,6 +622,7 @@ TestGeckoMediaSource()
     &test1,                /* mContext */
     &MediaSourceFree,      /* mFree */
     &GetReadyState,        /* mGetReadyState */
+    &SetReadyState,        /* mSetReadyState */
     &GetDuration,          /* mGetDuration */
     &HasLiveSeekableRange, /* mHasLiveSeekableRange */
     &LiveSeekableRange     /* mGetLiveSeekableRange */
