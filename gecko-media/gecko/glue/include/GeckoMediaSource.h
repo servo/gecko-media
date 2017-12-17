@@ -41,6 +41,8 @@ struct GeckoMediaSourceImpl
   GeckoMediaTimeInterval (*mGetLiveSeekableRange)(void*);
   size_t* (*mGetSourceBuffers)(void*);
   size_t* (*mGetActiveSourceBuffers)(void*);
+  void (*mClearSourceBuffers)(void*);
+  void (*mClearActiveSourceBuffers)(void*);
 };
 
 mozilla::dom::MediaSource*

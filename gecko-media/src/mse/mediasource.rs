@@ -55,6 +55,10 @@ pub trait MediaSourceImpl {
     /// track, the enabled audio track(s), and the "showing" or "hidden" text
     /// track(s).
     fn get_active_source_buffers(&self) -> *mut usize;
+    // Clear the list of SourceBuffer objects.
+    fn clear_source_buffers(&self);
+    // Clear the list of active SourceBuffer objects.
+    fn clear_active_source_buffers(&self);
 }
 
 fn to_ffi_callbacks(callbacks: Rc<MediaSourceImpl>) -> GeckoMediaSourceImpl {
@@ -70,6 +74,8 @@ fn to_ffi_callbacks(callbacks: Rc<MediaSourceImpl>) -> GeckoMediaSourceImpl {
     impl_simple_ffi_getter_wrapper!(get_live_seekable_range, GeckoMediaTimeInterval);
     impl_simple_ffi_getter_wrapper!(get_source_buffers, *mut usize);
     impl_simple_ffi_getter_wrapper!(get_active_source_buffers, *mut usize);
+    impl_simple_ffi_callback_wrapper!(clear_source_buffers);
+    impl_simple_ffi_callback_wrapper!(clear_active_source_buffers);
 
     GeckoMediaSourceImpl {
         mContext: Box::into_raw(Box::new(Wrapper {
@@ -83,5 +89,7 @@ fn to_ffi_callbacks(callbacks: Rc<MediaSourceImpl>) -> GeckoMediaSourceImpl {
         mGetLiveSeekableRange: Some(get_live_seekable_range),
         mGetSourceBuffers: Some(get_source_buffers),
         mGetActiveSourceBuffers: Some(get_active_source_buffers),
+        mClearSourceBuffers: Some(clear_source_buffers),
+        mClearActiveSourceBuffers: Some(clear_active_source_buffers),
     }
 }

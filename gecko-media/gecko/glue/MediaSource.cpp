@@ -135,6 +135,43 @@ MediaSource::ReadyState()
 }
 
 bool
+MediaSource::Attach(MediaSourceDecoder* aDecoder)
+{
+  MOZ_ASSERT(NS_IsMainThread());
+  MSE_DEBUG("Attach(aDecoder=%p) owner=%p", aDecoder, aDecoder->GetOwner());
+  MOZ_ASSERT(aDecoder);
+  MOZ_ASSERT(aDecoder->GetOwner());
+  if (ReadyState() != MediaSourceReadyState::Closed) {
+    return false;
+  }
+  MOZ_ASSERT(!mDecoder);
+  mDecoder = aDecoder;
+  mDecoder->AttachMediaSource(this);
+  SetReadyState(MediaSourceReadyState::Open);
+  return true;
+}
+
+void
+MediaSource::Detach()
+{
+  MOZ_ASSERT(NS_IsMainThread());
+  // TODO MOZ_RELEASE_ASSERT(mCompletionPromises.IsEmpty());
+  MSE_DEBUG("mDecoder=%p owner=%p",
+            mDecoder.get(), mDecoder ? mDecoder->GetOwner() : nullptr);
+  if (!mDecoder) {
+    MOZ_ASSERT(ReadyState() == MediaSourceReadyState::Closed);
+    MOZ_ASSERT(ActiveSourceBuffers()->Length() ==0 &&
+               SourceBuffers()->Length() == 0);
+    return;
+  }
+  SetReadyState(MediaSourceReadyState::Closed);
+//  mImpl.ClearActiveSourceBuffers();
+//  mImpl.ClearSourceBuffers();
+  mDecoder->DetachMediaSource();
+  mDecoder = nullptr;
+}
+
+bool
 MediaSource::HasLiveSeekableRange()
 {
   MOZ_ASSERT(NS_IsMainThread());

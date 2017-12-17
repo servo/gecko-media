@@ -32,7 +32,10 @@ public:
 
   MediaSourceReadyState ReadyState();
 
-  void Detach() { /* TODO */}
+  // Attach this MediaSource to Decoder aDecoder.  Returns false if already attached.
+  // FIXME This will likely get a GeckoMediaSourceDecoder at some point.
+  bool Attach(MediaSourceDecoder* aDecoder);
+  void Detach();
 
   bool HasLiveSeekableRange();
   media::TimeInterval LiveSeekableRange();
