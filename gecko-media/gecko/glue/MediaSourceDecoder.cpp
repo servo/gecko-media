@@ -27,7 +27,7 @@ using namespace mozilla::media;
 namespace mozilla {
 
 MediaSourceDecoder::MediaSourceDecoder(MediaDecoderInit& aInit)
-  : MediaDecoder(aInit)
+  : GeckoMediaDecoder(aInit)
   , mMediaSource(nullptr)
   , mEnded(false)
 {
@@ -177,7 +177,7 @@ MediaSourceDecoder::Shutdown()
   }
   mDemuxer = nullptr;
 
-  MediaDecoder::Shutdown();
+  GeckoMediaDecoder::Shutdown();
 }
 
 void

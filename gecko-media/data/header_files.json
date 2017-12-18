@@ -103,7 +103,6 @@
   "MediaResult.h": "dom/media/MediaResult.h",
   "MediaSegment.h": "dom/media/MediaSegment.h",
   "MediaShutdownManager.h": "dom/media/MediaShutdownManager.h",
-  "MediaSourceDecoder.h": "dom/media/mediasource/MediaSourceDecoder.h",
   "MediaSourceDemuxer.h": "dom/media/mediasource/MediaSourceDemuxer.h",
   "MediaSourceUtils.h": "dom/media/mediasource/MediaSourceUtils.h",
   "MediaStatistics.h": "dom/media/MediaStatistics.h",

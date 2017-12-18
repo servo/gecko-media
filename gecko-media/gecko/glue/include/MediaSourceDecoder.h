@@ -7,7 +7,7 @@
 #ifndef MOZILLA_MEDIASOURCEDECODER_H_
 #define MOZILLA_MEDIASOURCEDECODER_H_
 
-#include "MediaDecoder.h"
+#include "GeckoMediaDecoder.h"
 #include "mozilla/RefPtr.h"
 
 namespace mozilla {
@@ -24,7 +24,7 @@ class MediaSource;
 DDLoggedTypeDeclNameAndBase(MediaSourceDecoder, MediaDecoder);
 
 class MediaSourceDecoder
-  : public MediaDecoder
+  : public GeckoMediaDecoder
   , public DecoderDoctorLifeLogger<MediaSourceDecoder>
 {
 public:
