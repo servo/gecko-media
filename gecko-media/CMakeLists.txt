@@ -1317,6 +1317,7 @@ if(X86)
     )
     target_compile_definitions(soundtouch PRIVATE
       SOUNDTOUCH_ALLOW_SSE=1
+      MOZ_SAMPLE_TYPE_FLOAT32=
     )
     set_source_files_properties(gecko/src/media/libsoundtouch/src/sse_optimized.cpp PROPERTIES COMPILE_FLAGS "-msse2")
   else()
@@ -1339,7 +1340,6 @@ target_compile_definitions(soundtouch PRIVATE
 target_include_directories(soundtouch PRIVATE
   gecko/include/mozilla/media/libsoundtouch/src
   gecko/glue/include/soundtouch
-  gecko/glue/include/stl_wrappers
   gecko/include
 )
 
@@ -2028,6 +2028,26 @@ if (ANDROID)
   )
 endif()
 
+
+#########
+# lgpllibs
+#########
+
+add_library(lgpllibs SHARED
+  $<TARGET_OBJECTS:soundtouch>
+)
+
+install(TARGETS lgpllibs
+  DESTINATION ${CMAKE_INSTALL_PREFIX}
+  LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}
+)
+
+set_target_properties(lgpllibs PROPERTIES
+  ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/lib
+)
+
+
 ##########
 # Tests
 ##########
@@ -2082,7 +2102,6 @@ add_library(gecko_media_cmake STATIC
   $<TARGET_OBJECTS:opus>
   ${VORBIS_OBJS}
   $<TARGET_OBJECTS:theora>
-  $<TARGET_OBJECTS:soundtouch>
   $<TARGET_OBJECTS:speex_resampler>
   $<TARGET_OBJECTS:cubeb>
   $<TARGET_OBJECTS:vpx>
@@ -2098,3 +2117,5 @@ install(TARGETS gecko_media_cmake
   LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}
   ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}
 )
+
+target_link_libraries(gecko_media_cmake lgpllibs)

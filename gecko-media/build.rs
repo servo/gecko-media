@@ -55,6 +55,9 @@ fn compile_gecko_media() {
     } else if let Some(_) = target.find("windows") {
         println!("cargo:rustc-link-lib=avrt");
     }
+
+    println!("cargo:rustc-link-lib=lgpllibs");
+
 }
 
 fn print_rerun_if() {
