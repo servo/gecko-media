@@ -155,6 +155,8 @@ void
 MediaSource::Detach()
 {
   MOZ_ASSERT(NS_IsMainThread());
+  CALLBACK_GUARD_VOID(ClearActiveSourceBuffers);
+  CALLBACK_GUARD_VOID(ClearSourceBuffers);
   // TODO MOZ_RELEASE_ASSERT(mCompletionPromises.IsEmpty());
   MSE_DEBUG("mDecoder=%p owner=%p",
             mDecoder.get(), mDecoder ? mDecoder->GetOwner() : nullptr);
@@ -165,8 +167,8 @@ MediaSource::Detach()
     return;
   }
   SetReadyState(MediaSourceReadyState::Closed);
-//  mImpl.ClearActiveSourceBuffers();
-//  mImpl.ClearSourceBuffers();
+  CALLBACK_CALL(ClearActiveSourceBuffers);
+  CALLBACK_CALL(ClearSourceBuffers);
   mDecoder->DetachMediaSource();
   mDecoder = nullptr;
 }
