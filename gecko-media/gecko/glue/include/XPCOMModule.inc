@@ -45,7 +45,7 @@
 //     COMPONENT_SUPPORTS(INTERFACE_POINTER, InterfacePointer)
 
 // #undef COMPONENT_SUPPORTS
-    // COMPONENT(LOCAL_FILE, nsLocalFile::nsLocalFileConstructor)
+    COMPONENT(LOCAL_FILE, nsLocalFile::nsLocalFileConstructor)
     // COMPONENT(DIRECTORY_SERVICE, nsDirectoryService::Create)
     // COMPONENT(PROCESS, nsProcessConstructor)
     // COMPONENT(ENVIRONMENT, nsEnvironment::Create)

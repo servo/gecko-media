@@ -38,6 +38,7 @@ fn compile_gecko_media() {
     } else if let Some(_) = target.find("darwin") {
         println!("cargo:rustc-link-lib=c++");
         let frameworks = vec![
+            "Cocoa",
             "CoreFoundation",
             "CoreAudio",
             "AudioUnit",

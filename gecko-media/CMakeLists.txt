@@ -582,6 +582,8 @@ add_library(gecko_core OBJECT
   gecko/glue/nsContentTypeParser.cpp
   gecko/glue/nsCategoryManager.cpp
   gecko/glue/nsComponentManager.cpp
+  gecko/glue/nsLocalFileCommon.cpp
+  gecko/glue/nsLocalFileUnix.cpp
   gecko/glue/nsObserverList.cpp
   gecko/glue/nsObserverService.cpp
   gecko/glue/nsThread.cpp
@@ -719,6 +721,7 @@ add_library(gecko_core OBJECT
   gecko/src/xpcom/components/GenericFactory.cpp
   gecko/src/xpcom/ds/PLDHashTable.cpp
   gecko/src/xpcom/ds/nsCOMArray.cpp
+  gecko/src/xpcom/ds/nsCRT.cpp
   gecko/src/xpcom/ds/nsDeque.cpp
   gecko/src/xpcom/ds/nsEnumeratorUtils.cpp
   gecko/src/xpcom/ds/nsQuickSort.cpp
@@ -726,6 +729,7 @@ add_library(gecko_core OBJECT
   gecko/src/xpcom/ds/nsTArray.cpp
   gecko/src/xpcom/ds/nsTObserverArray.cpp
   gecko/src/xpcom/io/nsDirectoryService.cpp
+  gecko/src/xpcom/io/nsNativeCharsetUtils.cpp
   gecko/src/xpcom/string/unified.cpp
   gecko/src/xpcom/threads/AbstractThread.cpp
   gecko/src/xpcom/threads/BlockingResourceBase.cpp
@@ -744,6 +748,7 @@ add_library(gecko_core OBJECT
   gecko/src/xpcom/threads/TaskQueue.cpp
   gecko/src/xpcom/threads/ThreadEventTarget.cpp
   gecko/src/xpcom/threads/TimerThread.cpp
+  gecko/src/nsprpub/lib/libc/src/base64.c
   gecko/src/nsprpub/lib/libc/src/strcase.c
   gecko/src/nsprpub/pr/src/io/priometh.c
   gecko/src/nsprpub/pr/src/io/prfdcach.c
@@ -806,7 +811,10 @@ if(MACOS AND NOT ANDROID)
     gecko/src/mozglue/misc/TimeStamp_darwin.cpp
     gecko/src/dom/media/systemservices/OSXRunLoopSingleton.cpp
     gecko/src/nsprpub/pr/src/md/unix/darwin.c
+    gecko/glue/CocoaFileUtils.mm
   )
+  set_source_files_properties(gecko/glue/CocoaFileUtils.mm PROPERTIES COMPILE_FLAGS "-fno-objc-exceptions")
+
 endif()
 if(WINDOWS)
   target_sources(gecko_core PRIVATE
