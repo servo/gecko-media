@@ -34,6 +34,7 @@
 #include "nsDataHashtable.h"
 #include "mozilla/EnumeratedArray.h"
 #include "mozilla/UniquePtr.h"
+#include "Player.h"
 
 #ifndef XPCOM_GLUE_AVOID_NSPR
 /**
@@ -163,6 +164,7 @@ class PlanarYCbCrImage;
 class TextureClient;
 class KnowsCompositor;
 class NVImage;
+class RustPlanarYCbCrImage;
 #ifdef XP_WIN
 class D3D11YCbCrRecycleAllocator;
 #endif
@@ -243,6 +245,7 @@ public:
 //   virtual MacIOSurfaceImage* AsMacIOSurfaceImage() { return nullptr; }
 // #endif
   virtual PlanarYCbCrImage* AsPlanarYCbCrImage() { return nullptr; }
+  virtual RustPlanarYCbCrImage* AsRustPlanarYCbCrImage() { return nullptr; }
 
   // virtual NVImage* AsNVImage() { return nullptr; }
 
@@ -355,6 +358,7 @@ protected:
 //   ImageContainer* mImageContainer;
 // };
 
+
 /**
  * A class that manages Images for an ImageLayer. The only reason
  * we need a separate class here is that ImageLayers aren't threadsafe
@@ -383,6 +387,9 @@ class ImageContainer final : public SupportsWeakPtr<ImageContainer>
 
   NS_INLINE_DECL_THREADSAFE_REFCOUNTING(ImageContainer)
 
+  ImageContainer(GeckoMediaDecoderOwner* aOwner,
+                 ImageFactory* aImageFactory);
+
 public:
   MOZ_DECLARE_WEAKREFERENCE_TYPENAME(ImageContainer)
 
@@ -391,6 +398,9 @@ public:
   static const uint64_t sInvalidAsyncContainerId = 0;
 
   explicit ImageContainer(GeckoMediaDecoderOwner* aOwner);
+
+  ImageContainer(GeckoMediaDecoderOwner* aOwner,
+                 FrameAllocatorObject aAllocator);
 
   /**
    * Create ImageContainer just to hold another ASYNCHRONOUS ImageContainer's
@@ -621,9 +631,6 @@ public:
   static ProducerID AllocateProducerID();
 
   // void DropImageClient();
-
-  void DeallocateExportedImages();
-  void RecordImageDropped(size_t aFrameID);
 
 private:
   typedef mozilla::RecursiveMutex RecursiveMutex;

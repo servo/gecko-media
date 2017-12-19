@@ -30,10 +30,10 @@ class HTMLMediaElement;
 class GeckoMediaDecoderOwner : public MediaDecoderOwner
 {
 public:
-
   NS_INLINE_DECL_THREADSAFE_REFCOUNTING(GeckoMediaDecoderOwner)
 
-  GeckoMediaDecoderOwner(PlayerCallbackObject aCallback);
+  GeckoMediaDecoderOwner(PlayerCallbackObject aCallback,
+                         FrameAllocatorObject aAllocator);
   GeckoMediaDecoderOwner();
 
   // Called by the media decoder to indicate that the download is progressing.
@@ -208,6 +208,7 @@ private:
 
   bool mHasError = false;
   PlayerCallbackObject mCallback = { 0 };
+  FrameAllocatorObject mAllocator = { 0 };
   RefPtr<GeckoMediaDecoder> mDecoder;
   RefPtr<VideoFrameContainer> mVideoFrameContainer;
 };

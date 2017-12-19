@@ -2,13 +2,13 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use bindings::CachedRangesObserverObject;
-use bindings::{GeckoMediaByteRange, GeckoPlanarYCbCrImage};
+use bindings::{CachedRangesObserverObject, FrameAllocatorObject, GeckoImagePlane};
+use bindings::{GeckoMediaByteRange, GeckoPlanarYCbCrImage, GeckoPlanarYCbCrImageData};
 use bindings::{GeckoMediaMetadata, GeckoMediaTimeInterval};
 use bindings::{GeckoMedia_Player_CreateBlobPlayer, GeckoMedia_Player_CreateNetworkPlayer};
 use bindings::{GeckoMedia_Player_Pause, GeckoMedia_Player_Play};
 use bindings::{GeckoMedia_Player_Seek, GeckoMedia_Player_SetVolume};
-use bindings::{NetworkResourceObject, PlaneType_Cb, PlaneType_Cr, PlaneType_Y};
+use bindings::NetworkResourceObject;
 use bindings::{PlayerCallbackObject, RustVecU8Object};
 use std::ffi::CStr;
 use std::ffi::CString;
@@ -16,7 +16,7 @@ use std::mem;
 use std::ops::Range;
 use std::os::raw::c_char;
 use std::slice;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use timestamp::TimeStamp;
 
 /// Holds useful metadata extracted from a media resource during loading.
@@ -30,28 +30,35 @@ pub struct Metadata {
 }
 
 /// Holds pixel data and geometry of a non-interleaved plane of data.
-pub struct Plane<'a> {
+pub struct Plane {
     /// Pixel sample data. One byte per sample. Will contain stride*height byte.
-    pub pixels: &'a [u8],
+    pub pixels: Vec<u8>,
     /// The width of a line of pixels in bytes.
-    pub width: i32,
+    pub width: usize,
     /// The stride of a line of pixels in bytes.
-    pub stride: i32,
+    pub stride: usize,
     /// The height of the plane in lines.
-    pub height: i32,
+    pub height: usize,
+}
+
+struct PlanarYCbCrImageData {
+    pub y_plane: Plane,
+    pub cb_plane: Plane,
+    pub cr_plane: Plane,
+    pub picture: Region,
 }
 
 /// A subregion of an image buffer.
 #[derive(Clone)]
 pub struct Region {
-    // X coordinate of theExternalImage origin of the region.
-    pub x: u32,
-    // Y coordinate of the origin of the region.
-    pub y: u32,
-    // Width of region.
-    pub width: i32,
-    // Height of the region.
-    pub height: i32,
+    /// X coordinate of the origin of the region.
+    pub x: usize,
+    /// Y coordinate of the origin of the region.
+    pub y: usize,
+    /// Width of region.
+    pub width: usize,
+    /// Height of the region.
+    pub height: usize,
 }
 
 /// Stores a planar YCbCr image.
@@ -68,14 +75,9 @@ pub struct Region {
 /// The color format is detected based on the height/width ratios
 /// defined above.
 pub struct PlanarYCbCrImage {
-    /// The sub-region of the buffer which contains the image to be rendered.
-    pub picture: Region,
-    /// The time at which this image should be rendered.
-    pub time_stamp: TimeStamp,
-    /// A stream-unique identifier.
-    pub frame_id: u32,
-    gecko_image: GeckoPlanarYCbCrImage,
-    pixel_buffer: Arc<Vec<u8>>,
+    timestamp: TimeStamp,
+    frame_id: u32,
+    image_data: Arc<PlanarYCbCrImageData>,
 }
 
 // When cloning, we need to ensure we increment the reference count on
@@ -83,34 +85,32 @@ pub struct PlanarYCbCrImage {
 // the reference count appropriately.
 impl Clone for PlanarYCbCrImage {
     fn clone(&self) -> Self {
-        unsafe {
-            (self.gecko_image.mAddRefPixelData.unwrap())(self.frame_id);
-        }
         PlanarYCbCrImage {
-            picture: self.picture.clone(),
-            time_stamp: self.time_stamp.clone(),
+            timestamp: self.timestamp.clone(),
             frame_id: self.frame_id,
-            gecko_image: self.gecko_image,
-            pixel_buffer: self.pixel_buffer.clone(),
+            image_data: self.image_data.clone(),
         }
     }
 }
 
 impl PlanarYCbCrImage {
-    fn pixel_slice_for_channel<'a>(&'a self, channel_index: u8) -> &'a [u8] {
-        let img = &self.gecko_image;
-        let y_plane_size = (img.mYStride * img.mYHeight) as usize;
-        let cbcr_plane_size = (img.mCbCrStride * img.mCbCrHeight) as usize;
-        let (start, size) = match channel_index {
-            0 => (0, y_plane_size),
-            1 => (y_plane_size, cbcr_plane_size),
-            2 => (y_plane_size + cbcr_plane_size, cbcr_plane_size),
-            _ => panic!("Invalid channel_index"),
-        };
-        &self.pixel_buffer[start..(start + size)]
+    /// Returns the time at which this image should be rendered.
+    pub fn timestamp(&self) -> TimeStamp {
+        self.timestamp.clone()
     }
-
-    pub fn plane_for_channel(&self, channel_index: u8) -> Plane {
+    /// Returns the image identifier, which is a stream-unique identifier
+    /// for this frame. This can be used to distinguish images.
+    pub fn frame_id(&self) -> u32 {
+        self.frame_id
+    }
+    /// Returns the sub-region of the buffer which contains the image to
+    /// be rendered.
+    pub fn picture_region(&self) -> &Region {
+        &self.image_data.picture
+    }
+    /// Returns the image plane for the image channels.
+    /// Pass 0 for Y, 1 for Cb, 2 for Cr. Other values panic.
+    pub fn plane_for_channel(&self, channel_index: u8) -> &Plane {
         match channel_index {
             0 => self.y_plane(),
             1 => self.cb_plane(),
@@ -118,44 +118,17 @@ impl PlanarYCbCrImage {
             _ => panic!("Invalid planar index"),
         }
     }
-
-    pub fn y_plane(&self) -> Plane {
-        let img = &self.gecko_image;
-        Plane {
-            pixels: self.pixel_slice_for_channel(0),
-            width: img.mYWidth,
-            stride: img.mYStride,
-            height: img.mYHeight,
-        }
+    /// Returns the Y plane data.
+    pub fn y_plane(&self) -> &Plane {
+        &self.image_data.y_plane
     }
-
-    pub fn cb_plane(&self) -> Plane {
-        let img = &self.gecko_image;
-        Plane {
-            pixels: self.pixel_slice_for_channel(1),
-            width: img.mCbCrWidth,
-            stride: img.mCbCrStride,
-            height: img.mCbCrHeight,
-        }
+    /// Returns the Cb plane data.
+    pub fn cb_plane(&self) -> &Plane {
+        &self.image_data.cb_plane
     }
-
-    pub fn cr_plane(&self) -> Plane {
-        let img = &self.gecko_image;
-        Plane {
-            pixels: self.pixel_slice_for_channel(2),
-            width: img.mCbCrWidth,
-            stride: img.mCbCrStride,
-            height: img.mCbCrHeight,
-        }
-    }
-}
-
-impl Drop for PlanarYCbCrImage {
-    fn drop(&mut self) {
-        let frame_id = self.gecko_image.mFrameID;
-        unsafe {
-            (self.gecko_image.mFreePixelData.unwrap())(frame_id);
-        };
+    /// Returns the Cr plane data.
+    pub fn cr_plane(&self) -> &Plane {
+        &self.image_data.cr_plane
     }
 }
 
@@ -215,6 +188,84 @@ pub trait PlayerEventSink: Send + Sync {
     fn seekable(&self, ranges: Vec<Range<f64>>);
 }
 
+struct SharedVideoFrame {
+    id: usize,
+    frame: Arc<PlanarYCbCrImageData>,
+}
+
+// Allocates video frames in Rust code that can be referenced via ID
+// in C++ code.
+struct VideoFrameAllocator {
+    allocated_frames: Vec<SharedVideoFrame>,
+    next_frame_id: usize,
+}
+
+impl VideoFrameAllocator {
+    pub fn new() -> VideoFrameAllocator {
+        VideoFrameAllocator {
+            allocated_frames: vec![],
+            next_frame_id: 1,
+        }
+    }
+
+    unsafe fn to_plane(plane: &GeckoImagePlane) -> Plane {
+        assert!((*plane).mWidth > 0);
+        assert!((*plane).mHeight > 0);
+        assert!((*plane).mStride > 0);
+        let size = (*plane).mStride as usize * (*plane).mHeight as usize;
+        let src = slice::from_raw_parts((*plane).mPixelData, size);
+        Plane {
+            pixels: src.to_vec(),
+            width: (*plane).mWidth as usize,
+            stride: (*plane).mStride as usize,
+            height: (*plane).mHeight as usize,
+        }
+    }
+
+    pub fn allocate_and_copy_image(&mut self, image: *const GeckoPlanarYCbCrImageData) -> usize {
+        let id = self.next_frame_id;
+        self.next_frame_id += 1;
+
+        let frame = unsafe {
+            assert!((*image).mPicWidth > 0);
+            assert!((*image).mPicHeight > 0);
+            SharedVideoFrame {
+                id,
+                frame: Arc::new(PlanarYCbCrImageData {
+                    y_plane: Self::to_plane(&(*image).mYPlane),
+                    cb_plane: Self::to_plane(&(*image).mCbPlane),
+                    cr_plane: Self::to_plane(&(*image).mCrPlane),
+                    picture: Region {
+                        x: (*image).mPicX as usize,
+                        y: (*image).mPicY as usize,
+                        width: (*image).mPicWidth as usize,
+                        height: (*image).mPicHeight as usize,
+                    },
+                }),
+            }
+        };
+        self.allocated_frames.push(frame);
+        id
+    }
+
+    fn frame_position(&self, id: usize) -> Option<usize> {
+        self.allocated_frames.iter().position(|p| p.id == id)
+    }
+
+    pub fn drop_frame(&mut self, id: usize) {
+        if let Some(index) = self.frame_position(id) {
+            self.allocated_frames.remove(index);
+        }
+    }
+
+    pub fn get_frame(&self, id: usize) -> Option<Arc<PlanarYCbCrImageData>> {
+        match self.frame_position(id) {
+            Some(index) => Some(self.allocated_frames[index].frame.clone()),
+            None => None,
+        }
+    }
+}
+
 /// Plays a media resource.
 def_gecko_media_struct!(Player);
 
@@ -228,19 +279,28 @@ impl Player {
         mime_type: &str,
         sink: Box<PlayerEventSink>,
     ) -> Result<Player, ()> {
-        let callback = to_ffi_callback(sink);
+        let video_frame_allocator = Arc::new(Mutex::new(VideoFrameAllocator::new()));
+        let callback = to_ffi_callback(sink, video_frame_allocator.clone());
         let media_data = to_ffi_vec(media_data);
         let mime_type = match CString::new(mime_type.as_bytes()) {
             Ok(mime_type) => mime_type,
             _ => return Err(()),
         };
-        gecko_media.queue_task(move || unsafe {
-            GeckoMedia_Player_CreateBlobPlayer(id, media_data, mime_type.as_ptr(), callback);
-        });
-        Ok(Player {
+        let ffi_frame_allocator = to_ffi_frame_allocator(video_frame_allocator.clone());
+        let player = Player {
             gecko_media,
             id,
-        })
+        };
+        player.gecko_media.queue_task(move || unsafe {
+            GeckoMedia_Player_CreateBlobPlayer(
+                id,
+                media_data,
+                mime_type.as_ptr(),
+                callback,
+                ffi_frame_allocator,
+            );
+        });
+        Ok(player)
     }
 
     pub fn from_network_resource(
@@ -254,15 +314,24 @@ impl Player {
             Ok(mime_type) => mime_type,
             _ => return Err(()),
         };
-        let callback = to_ffi_callback(sink);
+        let video_frame_allocator = Arc::new(Mutex::new(VideoFrameAllocator::new()));
+        let callback = to_ffi_callback(sink, video_frame_allocator.clone());
+        let ffi_frame_allocator = to_ffi_frame_allocator(video_frame_allocator.clone());
         let resource = to_ffi_resource(resource);
-        gecko_media.queue_task(move || unsafe {
-            GeckoMedia_Player_CreateNetworkPlayer(id, resource, mime_type.as_ptr(), callback);
-        });
-        Ok(Player {
+        let player = Player {
             gecko_media,
             id,
-        })
+        };
+        player.gecko_media.queue_task(move || unsafe {
+            GeckoMedia_Player_CreateNetworkPlayer(
+                id,
+                resource,
+                mime_type.as_ptr(),
+                callback,
+                ffi_frame_allocator,
+            );
+        });
+        Ok(player)
     }
 
     /// Starts playback of the media resource. While playing,
@@ -357,11 +426,20 @@ pub trait NetworkResource: Send + Sync {
     fn read_from_cache(&self, offset: u64, buffer: &mut [u8]) -> Result<(), ()>;
 }
 
-fn to_ffi_callback(callbacks: Box<PlayerEventSink>) -> PlayerCallbackObject {
+fn to_ffi_callback(
+    callbacks: Box<PlayerEventSink>,
+    video_frame_allocator: Arc<Mutex<VideoFrameAllocator>>,
+) -> PlayerCallbackObject {
     // Can't cast from *c_void to a Trait, so wrap in a concrete type
     // when we pass into C++ code.
-
-    def_gecko_callbacks_ffi_wrapper!(Box<PlayerEventSink>);
+    use std::os::raw::c_void;
+    struct Wrapper {
+        callbacks: Box<PlayerEventSink>,
+        video_frame_allocator: Arc<Mutex<VideoFrameAllocator>>,
+    }
+    unsafe extern "C" fn free(ptr: *mut c_void) {
+        drop(Box::from_raw(ptr as *mut Wrapper));
+    }
 
     impl_simple_ffi_callback_wrapper!(decode_error, ());
     impl_simple_ffi_callback_wrapper!(playback_ended, ());
@@ -395,7 +473,7 @@ fn to_ffi_callback(callbacks: Box<PlayerEventSink>) -> PlayerCallbackObject {
     }
     unsafe extern "C" fn update_current_images(ptr: *mut c_void, size: usize, elements: *mut GeckoPlanarYCbCrImage) {
         let wrapper = &*(ptr as *mut Wrapper);
-        let images = to_ffi_planar_ycbycr_images(size, elements);
+        let images = to_ffi_planar_ycbycr_images(size, elements, &wrapper.video_frame_allocator);
         wrapper.callbacks.update_current_images(images);
     }
     unsafe extern "C" fn notify_buffered(ptr: *mut c_void, size: usize, ranges: *mut GeckoMediaTimeInterval) {
@@ -412,6 +490,7 @@ fn to_ffi_callback(callbacks: Box<PlayerEventSink>) -> PlayerCallbackObject {
     PlayerCallbackObject {
         mContext: Box::into_raw(Box::new(Wrapper {
             callbacks,
+            video_frame_allocator,
         })) as *mut c_void,
         mPlaybackEnded: Some(playback_ended),
         mDecodeError: Some(decode_error),
@@ -425,6 +504,31 @@ fn to_ffi_callback(callbacks: Box<PlayerEventSink>) -> PlayerCallbackObject {
         mUpdateCurrentImages: Some(update_current_images),
         mNotifyBuffered: Some(notify_buffered),
         mNotifySeekable: Some(notify_seekable),
+        mFree: Some(free),
+    }
+}
+
+fn to_ffi_frame_allocator(video_frame_allocator: Arc<Mutex<VideoFrameAllocator>>) -> FrameAllocatorObject {
+    def_gecko_callbacks_ffi_wrapper!(Arc<Mutex<VideoFrameAllocator>>);
+
+    unsafe extern "C" fn drop_frame(ptr: *mut c_void, id: usize) {
+        let wrapper = &*(ptr as *mut Wrapper);
+        let mut allocator = wrapper.callbacks.lock().unwrap();
+        allocator.drop_frame(id)
+    }
+
+    unsafe extern "C" fn allocate_and_copy_image(ptr: *mut c_void, image: *const GeckoPlanarYCbCrImageData) -> usize {
+        let wrapper = &*(ptr as *mut Wrapper);
+        let mut allocator = wrapper.callbacks.lock().unwrap();
+        allocator.allocate_and_copy_image(image)
+    }
+
+    FrameAllocatorObject {
+        mContext: Box::into_raw(Box::new(Wrapper {
+            callbacks: video_frame_allocator,
+        })) as *mut c_void,
+        mAllocateFrame: Some(allocate_and_copy_image),
+        mDropFrame: Some(drop_frame),
         mFree: Some(free),
     }
 }
@@ -513,30 +617,26 @@ fn to_ffi_vec(bytes: Vec<u8>) -> RustVecU8Object {
     }
 }
 
-fn to_ffi_planar_ycbycr_images(size: usize, elements: *mut GeckoPlanarYCbCrImage) -> Vec<PlanarYCbCrImage> {
+fn to_ffi_planar_ycbycr_images(
+    size: usize,
+    elements: *mut GeckoPlanarYCbCrImage,
+    video_frame_allocator: &Arc<Mutex<VideoFrameAllocator>>,
+) -> Vec<PlanarYCbCrImage> {
     let elements = unsafe { slice::from_raw_parts(elements, size) };
-    elements
-        .iter()
-        .map(|&img| -> PlanarYCbCrImage {
-            let byte_slice = unsafe {
-                let f = img.mGetSliceData.unwrap();
-                f(img.mFrameID)
-            };
-            let pixels = unsafe { slice::from_raw_parts(byte_slice.mData, byte_slice.mLength) };
-            PlanarYCbCrImage {
-                picture: Region {
-                    x: img.mPicX,
-                    y: img.mPicY,
-                    width: img.mPicWidth,
-                    height: img.mPicHeight,
-                },
-                time_stamp: TimeStamp(img.mTimeStamp),
-                frame_id: img.mFrameID,
-                gecko_image: img,
-                pixel_buffer: Arc::new(pixels.to_vec()),
-            }
-        })
-        .collect::<Vec<PlanarYCbCrImage>>()
+    let mut frames = vec![];
+    let video_frame_allocator = video_frame_allocator.lock().unwrap();
+    for &img in elements {
+        let image_data = match video_frame_allocator.get_frame(img.mImageHandle) {
+            Some(image_data) => image_data,
+            None => continue,
+        };
+        frames.push(PlanarYCbCrImage {
+            timestamp: TimeStamp(img.mTimeStamp),
+            frame_id: img.mFrameID,
+            image_data,
+        });
+    }
+    frames
 }
 
 fn to_ffi_time_ranges(size: usize, elements: *mut GeckoMediaTimeInterval) -> Vec<Range<f64>> {
