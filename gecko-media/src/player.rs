@@ -2,13 +2,13 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+use bindings::NetworkResourceObject;
 use bindings::{CachedRangesObserverObject, FrameAllocatorObject, GeckoImagePlane};
 use bindings::{GeckoMediaByteRange, GeckoPlanarYCbCrImage, GeckoPlanarYCbCrImageData};
 use bindings::{GeckoMediaMetadata, GeckoMediaTimeInterval};
 use bindings::{GeckoMedia_Player_CreateBlobPlayer, GeckoMedia_Player_CreateNetworkPlayer};
 use bindings::{GeckoMedia_Player_Pause, GeckoMedia_Player_Play};
 use bindings::{GeckoMedia_Player_Seek, GeckoMedia_Player_SetVolume};
-use bindings::NetworkResourceObject;
 use bindings::{PlayerCallbackObject, RustVecU8Object};
 use std::ffi::CStr;
 use std::ffi::CString;
