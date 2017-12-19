@@ -252,6 +252,10 @@ ConstructPlanarYCbCrData(const VideoInfo& aInfo,
   data.mPicX = aPicture.x;
   data.mPicY = aPicture.y;
   data.mPicSize = aPicture.Size();
+  MOZ_ASSERT(aPicture.width > 0);
+  MOZ_ASSERT(aPicture.height > 0);
+  MOZ_ASSERT(data.mPicSize.width > 0);
+  MOZ_ASSERT(data.mPicSize.height > 0);
   data.mStereoMode = aInfo.mStereoMode;
   data.mYUVColorSpace = aBuffer.mYUVColorSpace;
   // data.mBitDepth = aBuffer.mBitDepth;
@@ -308,6 +312,9 @@ VideoData::CreateAndCopyData(const VideoInfo& aInfo,
   if (!ValidateBufferAndPicture(aBuffer, aPicture)) {
     return nullptr;
   }
+
+  MOZ_ASSERT(aPicture.width > 0);
+  MOZ_ASSERT(aPicture.height > 0);
 
   RefPtr<VideoData> v(new VideoData(aOffset,
                                     aTime,

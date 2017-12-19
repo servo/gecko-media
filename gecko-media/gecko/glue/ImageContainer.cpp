@@ -38,11 +38,10 @@
 // #include "mozilla/layers/D3D11YCbCrImage.h"
 // #endif
 
-#include "mozilla/AbstractThread.h"
 #include "GeckoMediaDecoderOwner.h"
-#include "RustServices.h"
-#include "nsClassHashtable.h"
+#include "mozilla/AbstractThread.h"
 #include "mozilla/Assertions.h"
+#include "RustServices.h"
 
 namespace mozilla {
 
@@ -201,70 +200,158 @@ BufferRecycleBin::ClearRecycledBuffers()
 //   }
 // }
 
-ImageContainer::ImageContainer(GeckoMediaDecoderOwner* aOwner)
-: mRecursiveMutex("ImageContainer.mRecursiveMutex"),
-  mGenerationCounter(++sGenerationCounter),
-  mPaintCount(0),
-  mDroppedImageCount(0),
-  mImageFactory(new ImageFactory()),
-  mRecycleBin(new BufferRecycleBin()),
-  // mIsAsync(flag == ASYNCHRONOUS),
-  mCurrentProducerID(-1),
-  mOwner(aOwner)
+class RustBufferAllocator {
+  NS_INLINE_DECL_THREADSAFE_REFCOUNTING(RustBufferAllocator)
+public:
+  explicit RustBufferAllocator(FrameAllocatorObject aAllocator)
+    : mAllocator(aAllocator)
+  {
+  }
+  size_t Allocate(GeckoPlanarYCbCrImageData* aImage) {
+    if (!mAllocator.mContext || !mAllocator.mAllocateFrame) {
+      return 0;
+    }
+    (*mAllocator.mAllocateFrame)(mAllocator.mContext, aImage);
+  }
+  void DropFrame(size_t aHandle) {
+    if (aHandle && mAllocator.mContext && mAllocator.mDropFrame) {
+      mAllocator.mDropFrame(mAllocator.mContext, aHandle);
+    }
+  }
+private:
+  ~RustBufferAllocator() {
+    if (mAllocator.mContext && mAllocator.mFree) {
+      (*mAllocator.mFree)(mAllocator.mContext);
+      mAllocator = { 0 };
+    }
+  }
+  FrameAllocatorObject mAllocator;
+};
+
+class RustPlanarYCbCrImage : public PlanarYCbCrImage {
+public:
+  explicit RustPlanarYCbCrImage(RustBufferAllocator* aContainer)
+    : mAllocator(aContainer)
+  {
+  }
+
+  ~RustPlanarYCbCrImage() override {
+    if (mAllocator && mHandle) {
+      mAllocator->DropFrame(mHandle);
+    }
+  }
+
+  uint8_t* AllocateAndGetNewBuffer(uint32_t aSize) override {
+    return nullptr;
+  }
+
+  size_t SizeOfExcludingThis(MallocSizeOf aMallocSizeOf) const override {
+    return 0;
+  }
+
+  RustPlanarYCbCrImage* AsRustPlanarYCbCrImage() override { return this; }
+
+  bool IsValid() { return mHandle != 0; }
+
+  bool CopyData(const Data& aData) override
+  {
+    // We can only handle non-interleaved image formats.
+    // Fortunately, our decoders only output planar i420
+    // images.
+    MOZ_ASSERT(aData.mYSkip == 0);
+    MOZ_ASSERT(aData.mCbSkip == 0);
+    MOZ_ASSERT(aData.mCrSkip == 0);
+    MOZ_ASSERT(aData.mPicSize.width > 0);
+    MOZ_ASSERT(aData.mPicSize.height > 0);
+
+    GeckoPlanarYCbCrImageData img;
+
+    img.mYPlane.mStride = aData.mYStride;
+    img.mYPlane.mWidth = aData.mYSize.width;
+    img.mYPlane.mHeight = aData.mYSize.height;
+    img.mYPlane.mPixelData = aData.mYChannel;
+
+    img.mCbPlane.mStride = aData.mCbCrStride;
+    img.mCbPlane.mWidth = aData.mCbCrSize.width;
+    img.mCbPlane.mHeight = aData.mCbCrSize.height;
+    img.mCbPlane.mPixelData = aData.mCbChannel;
+
+    img.mCrPlane.mStride = aData.mCbCrStride;
+    img.mCrPlane.mWidth = aData.mCbCrSize.width;
+    img.mCrPlane.mHeight = aData.mCbCrSize.height;
+    img.mCrPlane.mPixelData = aData.mCrChannel;
+
+    img.mPicX = aData.mPicX;
+    img.mPicY = aData.mPicY;
+    img.mPicWidth = aData.mPicSize.width;
+    img.mPicHeight = aData.mPicSize.height;
+
+    mHandle = mAllocator->Allocate(&img);
+
+    mOrigin = gfx::IntPoint(aData.mPicX, aData.mPicY);
+    mSize = gfx::IntSize(aData.mPicSize.width, aData.mPicSize.height);
+
+    return mHandle != 0;
+  }
+  size_t Handle() const { return mHandle; }
+private:
+  size_t mHandle = 0;
+  RefPtr<RustBufferAllocator> mAllocator;
+};
+
+class RustImageFactory : public ImageFactory
 {
-  // if (flag == ASYNCHRONOUS) {
-  //   mNotifyCompositeListener = new ImageContainerListener(this);
-  //   EnsureImageClient();
-  // }
+protected:
+  friend class ImageContainer;
+
+  explicit RustImageFactory(FrameAllocatorObject aAllocator)
+    : mAllocator(new RustBufferAllocator(aAllocator))
+  {}
+
+  RefPtr<PlanarYCbCrImage> CreatePlanarYCbCrImage(
+    const gfx::IntSize& aScaleHint,
+    BufferRecycleBin *aRecycleBin)
+  {
+    return new RustPlanarYCbCrImage(mAllocator);
+  }
+private:
+  RefPtr<RustBufferAllocator> mAllocator;
+};
+
+ImageContainer::ImageContainer(GeckoMediaDecoderOwner* aOwner,
+                               ImageFactory* aImageFactory)
+  : mRecursiveMutex("ImageContainer.mRecursiveMutex")
+  , mGenerationCounter(++sGenerationCounter)
+  , mPaintCount(0)
+  , mDroppedImageCount(0)
+  , mImageFactory(aImageFactory)
+  , mRecycleBin(new BufferRecycleBin())
+  , mCurrentProducerID(-1)
+  , mOwner(aOwner)
+{
 }
 
-// ImageContainer::ImageContainer(const CompositableHandle& aHandle)
-//   : mRecursiveMutex("ImageContainer.mRecursiveMutex"),
-//   mGenerationCounter(++sGenerationCounter),
-//   mPaintCount(0),
-//   mDroppedImageCount(0),
-//   mImageFactory(nullptr),
-//   mRecycleBin(nullptr),
-//   mIsAsync(true),
-//   // mAsyncContainerHandle(aHandle),
-//   mCurrentProducerID(-1)
-// {
-//   // MOZ_ASSERT(mAsyncContainerHandle);
-// }
+ImageContainer::ImageContainer(GeckoMediaDecoderOwner* aOwner)
+  : ImageContainer(aOwner, new ImageFactory())
+{
+}
+
+ImageContainer::ImageContainer(GeckoMediaDecoderOwner* aOwner,
+                               FrameAllocatorObject aAllocator)
+  : ImageContainer(aOwner, new RustImageFactory(aAllocator))
+{
+}
 
 ImageContainer::~ImageContainer()
 {
-  // if (mNotifyCompositeListener) {
-  //   mNotifyCompositeListener->ClearImageContainer();
-  // }
-  // if (mAsyncContainerHandle) {
-  //   if (RefPtr<ImageBridgeChild> imageBridge = ImageBridgeChild::GetSingleton()) {
-  //     imageBridge->ForgetImageContainer(mAsyncContainerHandle);
-  //   }
-  // }
 }
 
 RefPtr<PlanarYCbCrImage>
 ImageContainer::CreatePlanarYCbCrImage()
 {
   RecursiveMutexAutoLock lock(mRecursiveMutex);
-  // EnsureImageClient();
-  // if (mImageClient && mImageClient->AsImageClientSingle()) {
-  //   return new SharedPlanarYCbCrImage(mImageClient);
-  // }
   return mImageFactory->CreatePlanarYCbCrImage(mScaleHint, mRecycleBin);
 }
-
-// RefPtr<SharedRGBImage>
-// ImageContainer::CreateSharedRGBImage()
-// {
-//   RecursiveMutexAutoLock lock(mRecursiveMutex);
-//   EnsureImageClient();
-//   if (!mImageClient || !mImageClient->AsImageClientSingle()) {
-//     return nullptr;
-//   }
-//   return new SharedRGBImage(mImageClient);
-// }
 
 void
 ImageContainer::SetCurrentImageInternal(const nsTArray<NonOwningImage>& aImages)
@@ -360,98 +447,6 @@ private:
   RefPtr<GeckoMediaDecoderOwner> mOwner;
 };
 
-struct ExportedImage {
-  ExportedImage(Image* aImage, ImageContainer* aContainer)
-    : mImage(aImage)
-    , mContainer(aContainer)
-  {
-    MOZ_ASSERT(mImage);
-    MOZ_ASSERT(mContainer);
-  }
-  ExportedImage(const ExportedImage& aOther)
-    : mImage(aOther.mImage)
-    , mContainer(aOther.mContainer)
-  {
-  }
-  ExportedImage(ExportedImage&& aOther)
-    : mImage(Move(aOther.mImage))
-    , mContainer(Move(aOther.mContainer))
-  {
-  }
-  RefPtr<Image> mImage;
-  RefPtr<ImageContainer> mContainer;
-  uint32_t mRefCount = 0;
-};
-
-StaticMutex sImageMutex;
-static nsClassHashtable<nsUint32HashKey, ExportedImage> sImages;
-
-void PlanarYCbCrImage_AddRefPixelData(uint32_t aFrameID)
-{
-  StaticMutexAutoLock lock(sImageMutex);
-  ExportedImage* img = sImages.Get(aFrameID);
-  if (img) {
-    img->mRefCount += 1;
-  }
-}
-
-void PlanarYCbCrImage_FreeData(uint32_t aFrameID) {
-  StaticMutexAutoLock lock(sImageMutex);
-  ExportedImage* img = sImages.Get(aFrameID);
-  if (img && img->mRefCount == 0) {
-    img->mContainer->RecordImageDropped(aFrameID);
-    sImages.Remove(aFrameID);
-  }
-}
-
-const uint8_t*
-PlanarYCbCrImage_GetPixelData(uint32_t aFrameID, PlaneType aPlaneType)
-{
-  RefPtr<Image> img;
-  {
-    StaticMutexAutoLock lock(sImageMutex);
-    ExportedImage* i = sImages.Get(aFrameID);
-    if (!i) {
-      return nullptr;
-    }
-    img = i->mImage;
-  }
-  PlanarYCbCrImage* planarImage = img->AsPlanarYCbCrImage();
-  MOZ_ASSERT(planarImage);
-  if (!planarImage) {
-    return nullptr;
-  }
-  const PlanarYCbCrData* data = planarImage->GetData();
-  switch (aPlaneType) {
-    case PlaneType::Y: return data->mYChannel;
-    case PlaneType::Cb: return data->mCbChannel;
-    case PlaneType::Cr: return data->mCrChannel;
-  }
-  return nullptr;
-}
-
-void
-ImageContainer::DeallocateExportedImages()
-{
-  StaticMutexAutoLock lock(sImageMutex);
-  for (size_t frameId : mExportedImages) {
-    sImages.Remove(frameId);
-  }
-  mExportedImages.Clear();
-}
-
-void
-ImageContainer::RecordImageExported(size_t aFrameID)
-{
-  mExportedImages.AppendElement(aFrameID);
-}
-
-void
-ImageContainer::RecordImageDropped(size_t aFrameID)
-{
-  mExportedImages.RemoveElement(aFrameID);
-}
-
 void
 ImageContainer::NotifyOwnerOfNewImages()
 {
@@ -462,29 +457,15 @@ ImageContainer::NotifyOwnerOfNewImages()
   nsTArray<GeckoPlanarYCbCrImage> images;
   for (const OwningImage& owningImage : mCurrentImages) {
 
-    PlanarYCbCrImage* planarImage = owningImage.mImage->AsPlanarYCbCrImage();
+    RustPlanarYCbCrImage* planarImage = owningImage.mImage->AsRustPlanarYCbCrImage();
     MOZ_ASSERT(planarImage);
     if (!planarImage) {
       continue;
     }
-    const PlanarYCbCrData* data = planarImage->GetData();
 
     GeckoPlanarYCbCrImage* img = images.AppendElement();
-
-    img->mYStride = data->mYStride;
-    img->mYWidth = data->mYSize.width;
-    img->mYHeight = data->mYSize.height;
-    img->mYSkip = data->mYSkip;
-    img->mCbCrStride = data->mCbCrStride;
-    img->mCbCrWidth = data->mCbCrSize.width;
-    img->mCbCrHeight = data->mCbCrSize.height;
-    img->mCbSkip = data->mCbSkip;
-    img->mCrSkip = data->mCrSkip;
-    img->mPicX = data->mPicX;
-    img->mPicY = data->mPicY;
-    img->mPicWidth = data->mPicSize.width;
-    img->mPicHeight = data->mPicSize.height;
     img->mFrameID = owningImage.mFrameID;
+    img->mImageHandle = planarImage->Handle();
 
     // Calculate a TimeStamp in the external frame of reference.
     // Note the OwningImage can have a null TimeStamp if we're
@@ -495,20 +476,6 @@ ImageContainer::NotifyOwnerOfNewImages()
     TimeStamp now = TimeStamp::Now();
     TimeStamp frameTime = !owningImage.mTimeStamp.IsNull() ? owningImage.mTimeStamp : now;
     img->mTimeStamp = rustTime + (frameTime - now).ToMicroseconds() * 1000.0;
-
-    {
-      StaticMutexAutoLock lock(sImageMutex);
-      if (!sImages.Contains(img->mFrameID)) {
-        sImages.Put(img->mFrameID, new ExportedImage(owningImage.mImage, this));
-        RecordImageExported(img->mFrameID);
-      } else {
-        sImages.Get(img->mFrameID)->mRefCount += 1;
-      }
-    }
-
-    img->mAddRefPixelData = &PlanarYCbCrImage_AddRefPixelData;
-    img->mFreePixelData = &PlanarYCbCrImage_FreeData;
-    img->mGetPixelData = &PlanarYCbCrImage_GetPixelData;
   }
 
   RefPtr<Runnable> task = new UpdateCurrentImagesRunnable(mOwner, Move(images));

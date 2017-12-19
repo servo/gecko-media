@@ -10,10 +10,10 @@
 #include "GeckoMediaDecoder.h"
 #include "GeckoMediaDecoderOwner.h"
 #include "GeckoMediaMacros.h"
-#include "mozilla/RefPtr.h"
-#include "nsTArray.h"
 #include "RustMediaResource.h"
 #include "UniquePtr.h"
+#include "mozilla/RefPtr.h"
+#include "nsTArray.h"
 
 using namespace mozilla;
 
@@ -36,8 +36,10 @@ private:
 
 struct Player
 {
-  Player(size_t aId, PlayerCallbackObject aCallback)
-    : mDecoderOwner(new GeckoMediaDecoderOwner(aCallback))
+  Player(size_t aId,
+         PlayerCallbackObject aCallback,
+         FrameAllocatorObject aAllocator)
+    : mDecoderOwner(new GeckoMediaDecoderOwner(aCallback, aAllocator))
     , mId(aId)
   {
   }
@@ -59,14 +61,16 @@ static void
 CreatePlayer(size_t aId,
              MediaResource* aResource,
              const char* aMimeType,
-             PlayerCallbackObject aCallback)
+             PlayerCallbackObject aCallback,
+             FrameAllocatorObject aAllocator)
 {
   mozilla::Maybe<MediaContainerType> mime = MakeMediaContainerType(aMimeType);
   if (!mime) {
     return;
   }
 
-  Player* reflector = sReflectors.AppendElement(Player(aId, aCallback));
+  Player* reflector =
+    sReflectors.AppendElement(Player(aId, aCallback, aAllocator));
   MOZ_ASSERT(GetReflector(aId) == reflector);
 
   MediaDecoderInit decoderInit(reflector->mDecoderOwner.get(),
@@ -86,22 +90,23 @@ void
 GeckoMedia_Player_CreateBlobPlayer(size_t aId,
                                    RustVecU8Object aMediaData,
                                    const char* aMimeType,
-                                   PlayerCallbackObject aCallback)
+                                   PlayerCallbackObject aCallback,
+                                   FrameAllocatorObject aAllocator)
 {
   RefPtr<BufferMediaResource> resource =
     new RustVecU8BufferMediaResource(aMediaData);
-  CreatePlayer(aId, resource, aMimeType, aCallback);
+  CreatePlayer(aId, resource, aMimeType, aCallback, aAllocator);
 }
 
 void
 GeckoMedia_Player_CreateNetworkPlayer(size_t aId,
                                       NetworkResourceObject aNetworkResource,
                                       const char* aMimeType,
-                                      PlayerCallbackObject aCallback)
+                                      PlayerCallbackObject aCallback,
+                                      FrameAllocatorObject aAllocator)
 {
-  RefPtr<RustMediaResource> resource =
-    new RustMediaResource(aNetworkResource);
-  CreatePlayer(aId, resource, aMimeType, aCallback);
+  RefPtr<RustMediaResource> resource = new RustMediaResource(aNetworkResource);
+  CreatePlayer(aId, resource, aMimeType, aCallback, aAllocator);
   IMPL_GECKO_MEDIA_REFLECTOR_GET(Player)
   resource->SetDecoder(reflector->mDecoder);
 }

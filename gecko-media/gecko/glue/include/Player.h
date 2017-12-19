@@ -32,33 +32,32 @@ enum PlaneType
   Cr
 };
 
-struct GeckoPlanarYCbCrImage
+struct GeckoImagePlane
 {
-  // Luminance buffer
-  int32_t mYStride;
-  int32_t mYWidth;
-  int32_t mYHeight;
-  int32_t mYSkip;
+  int32_t mStride;
+  int32_t mWidth;
+  int32_t mHeight;
+  const uint8_t* mPixelData;
+};
 
-  // Chroma buffers
-  int32_t mCbCrStride;
-  int32_t mCbCrWidth;
-  int32_t mCbCrHeight;
-  int32_t mCbSkip;
-  int32_t mCrSkip;
+struct GeckoPlanarYCbCrImageData
+{
+  GeckoImagePlane mYPlane;
+  GeckoImagePlane mCbPlane;
+  GeckoImagePlane mCrPlane;
 
   // Picture region
   uint32_t mPicX;
   uint32_t mPicY;
   int32_t mPicWidth;
   int32_t mPicHeight;
+};
 
+struct GeckoPlanarYCbCrImage
+{
+  size_t mImageHandle;
   uint64_t mTimeStamp;
   uint32_t mFrameID;
-
-  void (*mAddRefPixelData)(uint32_t aFrameID);
-  void (*mFreePixelData)(uint32_t aFrameID);
-  const uint8_t* (*mGetPixelData)(uint32_t aFrameID, PlaneType aPlaneType);
 };
 
 struct PlayerCallbackObject
@@ -79,23 +78,41 @@ struct PlayerCallbackObject
   void (*mFree)(void*);
 };
 
-struct GeckoMediaByteRange {
+struct FrameAllocatorObject
+{
+  void* mContext;
+  size_t (*mAllocateFrame)(void*, const GeckoPlanarYCbCrImageData* aImage);
+  void (*mDropFrame)(void*, size_t);
+  void (*mFree)(void*);
+};
+
+struct GeckoMediaByteRange
+{
   uint64_t mStart;
   uint64_t mEnd;
 };
 
-struct CachedRangesObserverObject {
+struct CachedRangesObserverObject
+{
   void (*mUpdate)(uint32_t, const GeckoMediaByteRange*, size_t);
   uint32_t mResourceID;
 };
 
-struct NetworkResourceObject {
+struct NetworkResourceObject
+{
   void (*mSetRangesObserver)(void*, CachedRangesObserverObject);
-  bool (*mReadAt)(void* aData, uint64_t aOffset, uint8_t* aBytes, uint32_t aLength, uint32_t* aOutBytesRead);
+  bool (*mReadAt)(void* aData,
+                  uint64_t aOffset,
+                  uint8_t* aBytes,
+                  uint32_t aLength,
+                  uint32_t* aOutBytesRead);
   void (*mPin)(void* aData);
   void (*mUnPin)(void* aData);
   int64_t (*mLength)(void* aData);
-  bool (*mReadFromCache)(void* aData, uint64_t aOffset, uint8_t* aBytes, uint32_t aLength);
+  bool (*mReadFromCache)(void* aData,
+                         uint64_t aOffset,
+                         uint8_t* aBytes,
+                         uint32_t aLength);
   void (*mFree)(void*);
   void* mData;
 };
@@ -105,13 +122,15 @@ void
 GeckoMedia_Player_CreateBlobPlayer(size_t aId,
                                    RustVecU8Object aMediaData,
                                    const char* aMimeType,
-                                   PlayerCallbackObject aCallback);
+                                   PlayerCallbackObject aCallback,
+                                   FrameAllocatorObject aAllocator);
 
 void
 GeckoMedia_Player_CreateNetworkPlayer(size_t aId,
                                       NetworkResourceObject aMediaData,
                                       const char* aMimeType,
-                                      PlayerCallbackObject aCallback);
+                                      PlayerCallbackObject aCallback,
+                                      FrameAllocatorObject aAllocator);
 
 void
 GeckoMedia_Player_Play(size_t aId);

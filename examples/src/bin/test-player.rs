@@ -272,7 +272,7 @@ impl webrender::ExternalImageHandler for ImageGenerator {
             source: webrender::ExternalImageSource::RawData(
                 self.current_image
                     .as_ref()
-                    .map(|p| p.pixel_data(channel_index))
+                    .map(|img| &img.plane_for_channel(channel_index).pixels)
                     .unwrap(),
             ),
         }
@@ -320,7 +320,7 @@ impl App {
         api: &RenderApi,
         resources: &mut ResourceUpdates,
         image_key: Option<ImageKey>,
-        plane: Plane,
+        plane: &Plane,
         channel_index: u8,
     ) -> Option<ImageKey> {
         match image_key {
@@ -452,13 +452,13 @@ impl ui::Example for App {
         }
 
         let time_now = TimeStamp(time::precise_time_ns());
-        while self.frame_queue.len() > 1 && self.frame_queue[0].time_stamp > time_now {
+        while self.frame_queue.len() > 1 && self.frame_queue[0].timestamp() > time_now {
             self.frame_queue.remove(0);
         }
 
         if let Some(first_frame) = self.frame_queue.first() {
-            if self.last_frame_id != first_frame.frame_id {
-                self.last_frame_id = first_frame.frame_id;
+            if self.last_frame_id != first_frame.frame_id() {
+                self.last_frame_id = first_frame.frame_id();
                 self.current_frame_sender.as_ref().map(|sender| {
                     sender.send(first_frame.clone()).unwrap();
                 });
@@ -513,7 +513,10 @@ impl ui::Example for App {
             // intrinsic size, we'll just use the frame size.
             let (width, height) = match self.video_dimensions() {
                 Some((width, height)) => (width, height),
-                None => (frame.picture.width, frame.picture.height),
+                None => (
+                    frame.picture_region().width as i32,
+                    frame.picture_region().height as i32,
+                ),
             };
 
             // Resize so that the video is rendered as wide as the window.

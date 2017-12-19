@@ -30,10 +30,10 @@ class HTMLMediaElement;
 class GeckoMediaDecoderOwner : public MediaDecoderOwner
 {
 public:
-
   NS_INLINE_DECL_THREADSAFE_REFCOUNTING(GeckoMediaDecoderOwner)
 
-  GeckoMediaDecoderOwner(PlayerCallbackObject aCallback);
+  GeckoMediaDecoderOwner(PlayerCallbackObject aCallback,
+                         FrameAllocatorObject aAllocator);
   GeckoMediaDecoderOwner();
 
   // Called by the media decoder to indicate that the download is progressing.
@@ -191,8 +191,9 @@ public:
 
   // Called after the MediaStream we're playing rendered a frame to aContainer
   // with a different principalHandle than the previous frame.
-  void PrincipalHandleChangedForVideoFrameContainer(VideoFrameContainer* aContainer,
-                                                    const PrincipalHandle& aNewPrincipalHandle) override;
+  void PrincipalHandleChangedForVideoFrameContainer(
+    VideoFrameContainer* aContainer,
+    const PrincipalHandle& aNewPrincipalHandle) override;
 
   void SetDecoder(GeckoMediaDecoder* aDecoder);
 
@@ -208,6 +209,7 @@ private:
 
   bool mHasError = false;
   PlayerCallbackObject mCallback = { 0 };
+  FrameAllocatorObject mAllocator = { 0 };
   RefPtr<GeckoMediaDecoder> mDecoder;
   RefPtr<VideoFrameContainer> mVideoFrameContainer;
 };

@@ -5,20 +5,21 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "GeckoMediaDecoderOwner.h"
-#include "mozilla/AbstractThread.h"
-#include "VideoFrameContainer.h"
 #include "ImageContainer.h"
+#include "VideoFrameContainer.h"
+#include "mozilla/AbstractThread.h"
 
 namespace mozilla {
 
-GeckoMediaDecoderOwner::GeckoMediaDecoderOwner(PlayerCallbackObject aCallback)
+GeckoMediaDecoderOwner::GeckoMediaDecoderOwner(PlayerCallbackObject aCallback,
+                                               FrameAllocatorObject aAllocator)
   : mCallback(aCallback)
+  , mAllocator(aAllocator)
 {
 }
 
 GeckoMediaDecoderOwner::GeckoMediaDecoderOwner()
 {
-
 }
 
 void
@@ -213,9 +214,9 @@ VideoFrameContainer*
 GeckoMediaDecoderOwner::GetVideoFrameContainer()
 {
   RefPtr<layers::ImageContainer> container =
-    new layers::ImageContainer(this);
-  mVideoFrameContainer =
-    new VideoFrameContainer(this, container.forget());
+    new layers::ImageContainer(this, mAllocator);
+  mAllocator = { 0 };
+  mVideoFrameContainer = new VideoFrameContainer(this, container.forget());
   return mVideoFrameContainer;
 }
 
@@ -246,10 +247,12 @@ GeckoMediaDecoderOwner::SetDecoder(GeckoMediaDecoder* aDecoder)
 }
 
 void
-GeckoMediaDecoderOwner::UpdateCurrentImages(nsTArray<GeckoPlanarYCbCrImage> aImages)
+GeckoMediaDecoderOwner::UpdateCurrentImages(
+  nsTArray<GeckoPlanarYCbCrImage> aImages)
 {
   if (mCallback.mContext && mCallback.mUpdateCurrentImages) {
-    (*mCallback.mUpdateCurrentImages)(mCallback.mContext, aImages.Length(), aImages.Elements());
+    (*mCallback.mUpdateCurrentImages)(
+      mCallback.mContext, aImages.Length(), aImages.Elements());
   }
 }
 
@@ -267,7 +270,7 @@ GeckoMediaDecoderOwner::NotifyBuffered() const
       i++;
     }
     (*mCallback.mNotifyBuffered)(mCallback.mContext, size, ranges);
-    delete [] ranges;
+    delete[] ranges;
   }
 }
 
@@ -285,7 +288,7 @@ GeckoMediaDecoderOwner::NotifySeekable() const
       i++;
     }
     (*mCallback.mNotifySeekable)(mCallback.mContext, size, ranges);
-    delete [] ranges;
+    delete[] ranges;
   }
 }
 
@@ -293,14 +296,6 @@ void
 GeckoMediaDecoderOwner::Shutdown()
 {
   if (mVideoFrameContainer) {
-    // The ImageContainer keeps a list of the images that it sends out to Rust,
-    // so that if we shutdown, we can deallocate and neuter the images
-    // proactively. If we don't do this, we can end up with crashes if Rust
-    // code on another thread tries to use images after we've shutdown.
-    auto imageContainer = mVideoFrameContainer->GetImageContainer();
-    if (imageContainer) {
-      imageContainer->DeallocateExportedImages();
-    }
     mVideoFrameContainer->ForgetElement();
     mVideoFrameContainer = nullptr;
   }
@@ -308,7 +303,7 @@ GeckoMediaDecoderOwner::Shutdown()
   if (mCallback.mContext && mCallback.mFree) {
     (*mCallback.mFree)(mCallback.mContext);
   }
-  mCallback = {0};
+  mCallback = { 0 };
 }
 
 } // namespace mozilla
