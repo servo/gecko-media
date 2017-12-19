@@ -22,7 +22,12 @@
 #include <algorithm>
 
 extern mozilla::LazyLogModule gMediaDemuxerLog;
-#define OGG_DEBUG(arg, ...) MOZ_LOG(gMediaDemuxerLog, mozilla::LogLevel::Debug, ("OggDemuxer(%p)::%s: " arg, this, __func__, ##__VA_ARGS__))
+#define OGG_DEBUG(arg, ...)                                                    \
+  DDMOZ_LOG(gMediaDemuxerLog,                                                  \
+            mozilla::LogLevel::Debug,                                          \
+            "::%s: " arg,                                                      \
+            __func__,                                                          \
+            ##__VA_ARGS__)
 
 // Un-comment to enable logging of seek bisections.
 //#define SEEK_LOGGING
@@ -116,6 +121,8 @@ OggDemuxer::OggDemuxer(MediaResource* aResource)
   , mOnSeekableEvent(nullptr)
 {
   MOZ_COUNT_CTOR(OggDemuxer);
+  // aResource is referenced through inner m{Audio,Video}OffState members.
+  DDLINKCHILD("resource", aResource);
 }
 
 OggDemuxer::~OggDemuxer()
@@ -284,6 +291,7 @@ OggDemuxer::GetTrackDemuxer(TrackInfo::TrackType aType, uint32_t aTrackNumber)
     return nullptr;
   }
   RefPtr<OggTrackDemuxer> e = new OggTrackDemuxer(this, aType, aTrackNumber);
+  DDLINKCHILD("track demuxer", e.get());
   mDemuxers.AppendElement(e);
 
   return e.forget();
@@ -1348,17 +1356,16 @@ OggTrackDemuxer::NextSample()
   if (mType == TrackInfo::kAudioTrack) {
     data->mTrackInfo = mParent->mSharedAudioTrackInfo;
   }
-  // We do not want to perform the adjustment of the timestamp after reading
-  // the ogg chain but before. Otherwise the parent's mDecodedAudioDuration
-  // would be adjusted causing the sample's time to be twice the value it
-  // should be.
-  data->mTime += mParent->mDecodedAudioDuration;
+  // mDecodedAudioDuration gets adjusted during ReadOggChain().
+  TimeUnit totalDuration = mParent->mDecodedAudioDuration;
   if (eos) {
     // We've encountered an end of bitstream packet; check for a chained
     // bitstream following this one.
     // This will also update mSharedAudioTrackInfo.
     mParent->ReadOggChain(data->GetEndTime());
   }
+  // We adjust the start time of the sample to account for the potential ogg chaining.
+  data->mTime += totalDuration;
   return data;
 }
 

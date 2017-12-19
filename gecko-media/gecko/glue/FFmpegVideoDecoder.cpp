@@ -9,7 +9,7 @@
 #include "ImageContainer.h"
 #include "MediaInfo.h"
 #include "MP4Decoder.h"
-// #include "VPXDecoder.h"
+#include "VPXDecoder.h"
 #include "mozilla/layers/KnowsCompositor.h"
 
 #include "libavutil/pixfmt.h"
@@ -376,17 +376,17 @@ FFmpegVideoDecoder<LIBAV_VER>::GetCodecId(const nsACString& aMimeType)
     return AV_CODEC_ID_VP6F;
   }
 
-// #if LIBAVCODEC_VERSION_MAJOR >= 54
-//   if (VPXDecoder::IsVP8(aMimeType)) {
-//     return AV_CODEC_ID_VP8;
-//   }
-// #endif
+#if LIBAVCODEC_VERSION_MAJOR >= 54
+  if (VPXDecoder::IsVP8(aMimeType)) {
+    return AV_CODEC_ID_VP8;
+  }
+#endif
 
-// #if LIBAVCODEC_VERSION_MAJOR >= 55
-//   if (VPXDecoder::IsVP9(aMimeType)) {
-//     return AV_CODEC_ID_VP9;
-//   }
-// #endif
+#if LIBAVCODEC_VERSION_MAJOR >= 55
+  if (VPXDecoder::IsVP9(aMimeType)) {
+    return AV_CODEC_ID_VP9;
+  }
+#endif
 
   return AV_CODEC_ID_NONE;
 }

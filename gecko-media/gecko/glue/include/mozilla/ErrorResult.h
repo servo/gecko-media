@@ -32,7 +32,7 @@
 #include "js/Value.h"
 #endif
 #include "nscore.h"
-#include "nsStringGlue.h"
+#include "nsString.h"
 #include "mozilla/Assertions.h"
 #include "mozilla/Move.h"
 #include "nsTArray.h"

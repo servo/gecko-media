@@ -19,10 +19,8 @@
 // using things defined there. Specifically, with stdlib.h, the use of abs()
 // in gfx/graphite2/src/inc/UtfCodec.h somehow ends up picking the wrong abs()
 #  include <cstdlib>
-#  include <cstring>
 #else
 #  include <stdlib.h>
-#  include <string.h>
 #endif
 
 #if defined(__cplusplus)
@@ -32,14 +30,6 @@
 #endif
 #include "mozilla/Attributes.h"
 #include "mozilla/Types.h"
-
-#if defined(MOZ_ALWAYS_INLINE_EVEN_DEBUG)
-#  define MOZALLOC_INLINE MOZ_ALWAYS_INLINE_EVEN_DEBUG
-#elif defined(HAVE_FORCEINLINE)
-#  define MOZALLOC_INLINE __forceinline
-#else
-#  define MOZALLOC_INLINE inline
-#endif
 
 MOZ_BEGIN_EXTERN_C
 
@@ -115,13 +105,14 @@ MOZ_END_EXTERN_C
  * that can be delete'd by any of
  *
  *   (1) the matching infallible operator delete immediately below
- *   (2) the matching "fallible" operator delete further below
- *   (3) the matching system |operator delete(void*, std::nothrow)|
- *   (4) the matching system |operator delete(void*) throw(std::bad_alloc)|
+ *   (2) the matching system |operator delete(void*, std::nothrow)|
+ *   (3) the matching system |operator delete(void*) throw(std::bad_alloc)|
  *
  * NB: these are declared |throw(std::bad_alloc)|, though they will never
  * throw that exception.  This declaration is consistent with the rule
  * that |::operator new() throw(std::bad_alloc)| will never return NULL.
+ *
+ * NB: mozilla::fallible can be used instead of std::nothrow.
  */
 
 /* NB: This is defined just to silence vacuous warnings about symbol
@@ -133,20 +124,15 @@ MOZ_END_EXTERN_C
 #  define MOZALLOC_EXPORT_NEW
 #endif
 
-#if defined(ANDROID)
-/*
- * It's important to always specify 'throw()' in GCC because it's used to tell
- * GCC that 'new' may return null. That makes GCC null-check the result before
- * potentially initializing the memory to zero.
- * Also, the Android minimalistic headers don't include std::bad_alloc.
- */
-#define MOZALLOC_THROW_IF_HAS_EXCEPTIONS throw()
-#define MOZALLOC_THROW_BAD_ALLOC_IF_HAS_EXCEPTIONS
-#elif defined(_MSC_VER)
+#if defined(_MSC_VER)
 /*
  * Suppress build warning spam (bug 578546).
  */
+#if _MSC_VER < 1912
 #define MOZALLOC_THROW_IF_HAS_EXCEPTIONS
+#else
+#define MOZALLOC_THROW_IF_HAS_EXCEPTIONS throw()
+#endif
 #define MOZALLOC_THROW_BAD_ALLOC_IF_HAS_EXCEPTIONS
 #elif __cplusplus >= 201103
 /*
@@ -166,97 +152,53 @@ MOZALLOC_EXPORT_NEW
 /* gcc's asan somehow doesn't like always_inline on this function. */
 __attribute__((gnu_inline)) inline
 #else
-MOZALLOC_INLINE
+MOZ_ALWAYS_INLINE_EVEN_DEBUG
 #endif
 void* operator new(size_t size) MOZALLOC_THROW_BAD_ALLOC
 {
     return moz_xmalloc(size);
 }
 
-MOZALLOC_EXPORT_NEW MOZALLOC_INLINE
+MOZALLOC_EXPORT_NEW MOZ_ALWAYS_INLINE_EVEN_DEBUG
 void* operator new(size_t size, const std::nothrow_t&) MOZALLOC_THROW_IF_HAS_EXCEPTIONS
 {
     return malloc_impl(size);
 }
 
-MOZALLOC_EXPORT_NEW MOZALLOC_INLINE
+MOZALLOC_EXPORT_NEW MOZ_ALWAYS_INLINE_EVEN_DEBUG
 void* operator new[](size_t size) MOZALLOC_THROW_BAD_ALLOC
 {
     return moz_xmalloc(size);
 }
 
-MOZALLOC_EXPORT_NEW MOZALLOC_INLINE
+MOZALLOC_EXPORT_NEW MOZ_ALWAYS_INLINE_EVEN_DEBUG
 void* operator new[](size_t size, const std::nothrow_t&) MOZALLOC_THROW_IF_HAS_EXCEPTIONS
 {
     return malloc_impl(size);
 }
 
-MOZALLOC_EXPORT_NEW MOZALLOC_INLINE
+MOZALLOC_EXPORT_NEW MOZ_ALWAYS_INLINE_EVEN_DEBUG
 void operator delete(void* ptr) MOZALLOC_THROW_IF_HAS_EXCEPTIONS
 {
     return free_impl(ptr);
 }
 
-MOZALLOC_EXPORT_NEW MOZALLOC_INLINE
+MOZALLOC_EXPORT_NEW MOZ_ALWAYS_INLINE_EVEN_DEBUG
 void operator delete(void* ptr, const std::nothrow_t&) MOZALLOC_THROW_IF_HAS_EXCEPTIONS
 {
     return free_impl(ptr);
 }
 
-MOZALLOC_EXPORT_NEW MOZALLOC_INLINE
+MOZALLOC_EXPORT_NEW MOZ_ALWAYS_INLINE_EVEN_DEBUG
 void operator delete[](void* ptr) MOZALLOC_THROW_IF_HAS_EXCEPTIONS
 {
     return free_impl(ptr);
 }
 
-MOZALLOC_EXPORT_NEW MOZALLOC_INLINE
+MOZALLOC_EXPORT_NEW MOZ_ALWAYS_INLINE_EVEN_DEBUG
 void operator delete[](void* ptr, const std::nothrow_t&) MOZALLOC_THROW_IF_HAS_EXCEPTIONS
 {
     return free_impl(ptr);
-}
-
-
-/*
- * We also add a new allocator variant: "fallible operator new."
- * Unlike libmozalloc's implementations of the standard nofail
- * allocators, this allocator is allowed to return NULL.  It can be used
- * as follows
- *
- *   Foo* f = new (mozilla::fallible) Foo(...);
- *
- * operator delete(fallible) is defined for completeness only.
- *
- * Each operator new below returns a pointer to memory that can be
- * delete'd by any of
- *
- *   (1) the matching "fallible" operator delete below
- *   (2) the matching infallible operator delete above
- *   (3) the matching system |operator delete(void*, std::nothrow)|
- *   (4) the matching system |operator delete(void*) throw(std::bad_alloc)|
- */
-
-MOZALLOC_INLINE
-void* operator new(size_t size, const mozilla::fallible_t&) MOZALLOC_THROW_IF_HAS_EXCEPTIONS
-{
-    return malloc_impl(size);
-}
-
-MOZALLOC_INLINE
-void* operator new[](size_t size, const mozilla::fallible_t&) MOZALLOC_THROW_IF_HAS_EXCEPTIONS
-{
-    return malloc_impl(size);
-}
-
-MOZALLOC_INLINE
-void operator delete(void* ptr, const mozilla::fallible_t&) MOZALLOC_THROW_IF_HAS_EXCEPTIONS
-{
-    free_impl(ptr);
-}
-
-MOZALLOC_INLINE
-void operator delete[](void* ptr, const mozilla::fallible_t&) MOZALLOC_THROW_IF_HAS_EXCEPTIONS
-{
-    free_impl(ptr);
 }
 
 

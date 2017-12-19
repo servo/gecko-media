@@ -7,7 +7,7 @@
 #include "AgnosticDecoderModule.h"
 #include "OpusDecoder.h"
 // #include "TheoraDecoder.h"
-// #include "VPXDecoder.h"
+#include "VPXDecoder.h"
 #include "VorbisDecoder.h"
 #include "WAVDecoder.h"
 #include "mozilla/Logging.h"
@@ -24,7 +24,7 @@ AgnosticDecoderModule::SupportsMimeType(
   DecoderDoctorDiagnostics* aDiagnostics) const
 {
   bool supports =
-    // VPXDecoder::IsVPX(aMimeType) ||
+    VPXDecoder::IsVPX(aMimeType) ||
 #ifdef MOZ_AV1
     AOMDecoder::IsAV1(aMimeType) ||
 #endif
@@ -42,9 +42,9 @@ AgnosticDecoderModule::CreateVideoDecoder(const CreateDecoderParams& aParams)
 {
   RefPtr<MediaDataDecoder> m;
 
-//   if (VPXDecoder::IsVPX(aParams.mConfig.mMimeType)) {
-//     m = new VPXDecoder(aParams);
-//   }
+  if (VPXDecoder::IsVPX(aParams.mConfig.mMimeType)) {
+    m = new VPXDecoder(aParams);
+  }
 // #ifdef MOZ_AV1
 //   else if (AOMDecoder::IsAV1(aParams.mConfig.mMimeType)) {
 //     m = new AOMDecoder(aParams);

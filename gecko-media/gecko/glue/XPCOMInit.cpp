@@ -8,6 +8,7 @@
 #include "nsComponentManager.h"
 #include "nsCategoryManager.h"
 #include "nsCategoryManagerUtils.h"
+#include "nsLocalFile.h"
 #include "nsObserverService.h"
 #include "nsThreadManager.h"
 #include "nsThreadPool.h"
