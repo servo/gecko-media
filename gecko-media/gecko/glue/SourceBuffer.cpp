@@ -35,12 +35,16 @@ SourceBuffer::SourceBuffer(GeckoMediaSourceBufferImpl aImpl,
   mMediaSource = GetMediaSource(aParentId);
   MOZ_ASSERT(mMediaSource);
 
-  mTrackBuffersManager =
-    new TrackBuffersManager(mMediaSource->GetDecoder(), mime.value());
+  RefPtr<MediaSourceDecoder> decoder = mMediaSource->GetDecoder();
+  if (NS_WARN_IF(!decoder)) {
+    return;
+  }
+
+  mTrackBuffersManager = new TrackBuffersManager(decoder, mime.value());
 
   MSE_DEBUG("Create mTrackBuffersManager=%p", mTrackBuffersManager.get());
 
-  mMediaSource->GetDecoder()->GetDemuxer()->AttachSourceBuffer(mTrackBuffersManager);
+  decoder->GetDemuxer()->AttachSourceBuffer(mTrackBuffersManager);
 }
 
 media::TimeIntervals

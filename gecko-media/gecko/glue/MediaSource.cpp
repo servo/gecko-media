@@ -85,7 +85,7 @@ MediaSource::SourceBuffers()
   MOZ_ASSERT(NS_IsMainThread());
 
   CALLBACK_GUARD(GetSourceBuffers, nullptr);
-  size_t* id = (*mImpl.mGetSourceBuffers)(mImpl.mContext);
+  size_t* id = CALLBACK_CALL(GetSourceBuffers);
   if (NS_WARN_IF(!id)) {
     return nullptr;
   }

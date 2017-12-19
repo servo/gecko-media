@@ -1,6 +1,8 @@
 #include <assert.h>
+#include <ctime>
 #include <map>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <string>
 #include <unistd.h>
@@ -18,6 +20,7 @@
 #include "MediaData.h"
 #include "MediaDecoder.h"
 #include "MediaSource.h"
+#include "MediaSourceDecoder.h"
 #include "MediaStreamGraph.h"
 #include "PlatformDecoderModule.h"
 #include "VideoUtils.h"
@@ -559,31 +562,201 @@ TestGeckoDecoder()
   decoder->Shutdown();
 }
 
-struct DummyMediaSource
+/** SourceBuffer **/
+
+void
+SourceBufferFree(void* aContext);
+
+class DummySourceBuffer
 {
-  size_t id;
-  double released;
-  double duration;
-  MediaSourceReadyState readyState;
-  GeckoMediaTimeInterval liveSeekableRange;
+public:
+  NS_INLINE_DECL_REFCOUNTING(DummySourceBuffer)
+
+  DummySourceBuffer(size_t aParentId)
+    : mId(std::rand() % 1000 + std::time(0))
+    , mReleased(false)
+  {
+    mImpl = {
+      this,
+      &SourceBufferFree,
+    };
+    GeckoMedia_SourceBuffer_Create(mId, mImpl, aParentId, "video/mp4", true);
+  }
+
+  GeckoMediaSourceBufferImpl mImpl;
+  size_t mId;
+  double mReleased;
+
+private:
+  ~DummySourceBuffer()
+  {
+    MOZ_ASSERT(mReleased == false);
+    GeckoMedia_SourceBuffer_Shutdown(mId);
+    MOZ_ASSERT(mReleased == true);
+    MOZ_ASSERT(GetSourceBuffer(mId) == nullptr);
+  };
+};
+
+void
+SourceBufferFree(void* aContext)
+{
+  static_cast<DummySourceBuffer*>(aContext)->mReleased = true;
+}
+
+/** SourceBufferList **/
+
+bool
+IndexedGetter(void* aContext, uint32_t aIndex, size_t* aId);
+uint32_t
+Length(void* aContext);
+void
+SourceBufferListFree(void* aContext);
+
+class DummySourceBufferList
+{
+public:
+  NS_INLINE_DECL_REFCOUNTING(DummySourceBufferList)
+
+  DummySourceBufferList()
+    : mId(std::rand() % 1000 + std::time(0))
+    , mReleased(false)
+  {
+    mImpl = {
+      this,
+      &SourceBufferListFree,
+      &IndexedGetter,
+      &Length,
+    };
+    GeckoMedia_SourceBufferList_Create(mId, mImpl);
+  }
+
+  GeckoMediaSourceBufferListImpl mImpl;
+  size_t mId;
+  double mReleased;
+  nsTArray<DummySourceBuffer*> mSourceBuffers;
+
+private:
+  ~DummySourceBufferList()
+  {
+    MOZ_ASSERT(mReleased == false);
+    GeckoMedia_SourceBufferList_Shutdown(mId);
+    MOZ_ASSERT(mReleased == true);
+    MOZ_ASSERT(GetSourceBufferList(mId) == nullptr);
+  };
+};
+
+bool
+IndexedGetter(void* aContext, uint32_t aIndex, size_t* aId)
+{
+  DummySourceBufferList* sbl = static_cast<DummySourceBufferList*>(aContext);
+  if (aIndex > sbl->mSourceBuffers.Length()) {
+    return false;
+  }
+  *aId = sbl->mSourceBuffers[aIndex]->mId;
+  return true;
+}
+
+uint32_t
+Length(void* aContext)
+{
+  return static_cast<DummySourceBufferList*>(aContext)->mSourceBuffers.Length();
+}
+
+void
+SourceBufferListFree(void* aContext)
+{
+  DummySourceBufferList* sbl = static_cast<DummySourceBufferList*>(aContext);
+  sbl->mReleased = true;
+}
+
+/** MediaSource **/
+
+double
+GetDuration(void* aContext);
+MediaSourceReadyState
+GetReadyState(void* aContext);
+void
+SetReadyState(void* aContext, MediaSourceReadyState aState);
+bool
+HasLiveSeekableRange(void* aContext);
+GeckoMediaTimeInterval
+LiveSeekableRange(void* aContext);
+void
+MediaSourceFree(void* aContext);
+size_t*
+GetSourceBuffers(void* aContext);
+size_t*
+GetActiveSourceBuffers(void* aContext);
+void
+ClearSourceBuffers(void* aContext);
+void
+ClearActiveSourceBuffers(void* aContext);
+
+class DummyMediaSource
+{
+public:
+  NS_INLINE_DECL_REFCOUNTING(DummyMediaSource)
+
+  DummyMediaSource()
+    : mId(std::rand() % 1000 + std::time(0))
+    , mReleased(false)
+    , mDuration(1.0)
+    , mReadyState(MediaSourceReadyState::Closed)
+    , mLiveSeekableRange(GeckoMediaTimeInterval{ 1.0, 1.0 })
+    , mSourceBuffers(new DummySourceBufferList())
+    , mActiveSourceBuffers(new DummySourceBufferList())
+  {
+    mImpl = {
+      this,
+      &MediaSourceFree,
+      &GetReadyState,
+      &SetReadyState,
+      &GetDuration,
+      &HasLiveSeekableRange,
+      &LiveSeekableRange,
+      &GetSourceBuffers,
+      &GetActiveSourceBuffers,
+      &ClearSourceBuffers,
+      &ClearActiveSourceBuffers,
+    };
+    GeckoMedia_MediaSource_Create(mId, mImpl);
+  }
+
+  GeckoMediaSourceImpl mImpl;
+  size_t mId;
+  double mReleased;
+  double mDuration;
+  MediaSourceReadyState mReadyState;
+  GeckoMediaTimeInterval mLiveSeekableRange;
+  RefPtr<DummySourceBufferList> mSourceBuffers;
+  RefPtr<DummySourceBufferList> mActiveSourceBuffers;
+
+private:
+  ~DummyMediaSource()
+  {
+    MOZ_ASSERT(mReleased == false);
+    GeckoMedia_MediaSource_Shutdown(mId);
+    MOZ_ASSERT(mReleased == true);
+    MOZ_ASSERT(GetMediaSource(mId) == nullptr);
+  };
 };
 
 double
 GetDuration(void* aContext)
 {
-  return static_cast<DummyMediaSource*>(aContext)->duration;
+  return static_cast<DummyMediaSource*>(aContext)->mDuration;
 }
 
 MediaSourceReadyState
 GetReadyState(void* aContext)
 {
-  return static_cast<DummyMediaSource*>(aContext)->readyState;
+  return static_cast<DummyMediaSource*>(aContext)->mReadyState;
 }
 
 void
 SetReadyState(void* aContext, MediaSourceReadyState aState)
 {
-  static_cast<DummyMediaSource*>(aContext)->readyState = aState;
+  static_cast<DummyMediaSource*>(aContext)->mReadyState = aState;
 }
 
 bool
@@ -595,147 +768,126 @@ HasLiveSeekableRange(void* aContext)
 GeckoMediaTimeInterval
 LiveSeekableRange(void* aContext)
 {
-  return static_cast<DummyMediaSource*>(aContext)->liveSeekableRange;
+  return static_cast<DummyMediaSource*>(aContext)->mLiveSeekableRange;
 }
 
 void
 MediaSourceFree(void* aContext)
 {
-  static_cast<DummyMediaSource*>(aContext)->released = true;
+  static_cast<DummyMediaSource*>(aContext)->mReleased = true;
+}
+
+size_t*
+GetSourceBuffers(void* aContext)
+{
+  return &(static_cast<DummyMediaSource*>(aContext)->mSourceBuffers->mId);
+}
+
+size_t*
+GetActiveSourceBuffers(void* aContext)
+{
+  return &(static_cast<DummyMediaSource*>(aContext)->mActiveSourceBuffers->mId);
+}
+
+void
+ClearSourceBuffers(void* aContext)
+{
+  static_cast<DummyMediaSource*>(aContext)
+    ->mSourceBuffers->mSourceBuffers.Clear();
+}
+
+void
+ClearActiveSourceBuffers(void* aContext)
+{
+  static_cast<DummyMediaSource*>(aContext)
+    ->mActiveSourceBuffers->mSourceBuffers.Clear();
 }
 
 void
 TestGeckoMediaSource()
 {
   using namespace media;
-  double start = 0.5;
+  double start = 1.0;
   double end = 1.0;
   TimeInterval interval(TimeUnit::FromSeconds(start),
                         TimeUnit::FromSeconds(end));
+  RefPtr<DummyMediaSource> ms = new DummyMediaSource();
 
-  DummyMediaSource test1{ 1111,  /* id */
-                          false, /* released */
-                          1.0,   /* duration */
-                          MediaSourceReadyState::Closed,
-                          GeckoMediaTimeInterval{ start, end } };
-  GeckoMediaSourceImpl test1_impl{
-    &test1,                /* mContext */
-    &MediaSourceFree,      /* mFree */
-    &GetReadyState,        /* mGetReadyState */
-    &SetReadyState,        /* mSetReadyState */
-    &GetDuration,          /* mGetDuration */
-    &HasLiveSeekableRange, /* mHasLiveSeekableRange */
-    &LiveSeekableRange     /* mGetLiveSeekableRange */
-  };
-  MOZ_ASSERT(GetMediaSource(test1.id) == nullptr);
-  GeckoMedia_MediaSource_Create(test1.id, test1_impl);
-  auto mediaSource = GetMediaSource(test1.id);
+  /** Construction and initial state. **/
+  auto mediaSource = GetMediaSource(ms->mId);
   MOZ_ASSERT(mediaSource != nullptr);
-  MOZ_ASSERT(mediaSource->Duration() == test1.duration);
-  MOZ_ASSERT(mediaSource->ReadyState() == test1.readyState);
+  MOZ_ASSERT(mediaSource->Duration() == ms->mDuration);
+  MOZ_ASSERT(mediaSource->ReadyState() == ms->mReadyState);
   MOZ_ASSERT(mediaSource->HasLiveSeekableRange());
   MOZ_ASSERT(mediaSource->LiveSeekableRange() == interval);
-  MOZ_ASSERT(test1.released == false);
-  GeckoMedia_MediaSource_Shutdown(test1.id);
-  MOZ_ASSERT(test1.released == true);
-  MOZ_ASSERT(GetMediaSource(test1.id) == nullptr);
-}
+  MOZ_ASSERT(mediaSource->GetDecoder() == nullptr);
+  MOZ_ASSERT(mediaSource->SourceBuffers()->Length() == 0);
+  MOZ_ASSERT(mediaSource->ActiveSourceBuffers()->Length() == 0);
 
-struct DummySourceBuffer
-{
-  size_t id;
-  double released;
-};
+  /** Decoder. **/
+  RefPtr<GeckoMediaDecoderOwner> owner = new GeckoMediaDecoderOwner();
+  MediaDecoderInit decoderInit(
+    owner,
+    0.001, // volume
+    true,  // mPreservesPitch
+    1.0,   // mPlaybackRate
+    false, // mMinimizePreroll
+    false, // mHasSuspendTaint
+    false, // mLooping
+    MediaContainerType(MEDIAMIMETYPE("application/x.mediasource")));
+  RefPtr<MediaSourceDecoder> decoder = new MediaSourceDecoder(decoderInit);
 
-void
-SourceBufferFree(void* aContext)
-{
-  static_cast<DummySourceBuffer*>(aContext)->released = true;
+  ms->mReadyState = MediaSourceReadyState::Open;
+  MOZ_ASSERT(mediaSource->ReadyState() == MediaSourceReadyState::Open);
+  MOZ_ASSERT(
+    mediaSource->Attach(decoder) == false,
+    "Should not be able to attach a decoder if ready state is not Closed");
+  MOZ_ASSERT(mediaSource->GetDecoder() == nullptr);
+  ms->mReadyState = MediaSourceReadyState::Closed;
+  MOZ_ASSERT(mediaSource->ReadyState() == MediaSourceReadyState::Closed);
+  MOZ_ASSERT(mediaSource->Attach(decoder) == true);
+  MOZ_ASSERT(mediaSource->GetDecoder() == decoder);
+  MOZ_ASSERT(mediaSource->ReadyState() == MediaSourceReadyState::Open);
+  MOZ_ASSERT(mediaSource->Attach(decoder) == false,
+             "Should not be able to attach a decoder twice");
+
+  decoder->Load(nullptr);
+
+  /** Source buffers **/
+  RefPtr<DummySourceBuffer> sb = new DummySourceBuffer(ms->mId);
+  ms->mSourceBuffers->mSourceBuffers.AppendElement(sb);
+  ms->mActiveSourceBuffers->mSourceBuffers.AppendElement(sb);
+  MOZ_ASSERT(mediaSource->SourceBuffers()->Length() == 1);
+  MOZ_ASSERT(mediaSource->ActiveSourceBuffers()->Length() == 1);
+
+  mediaSource->Detach();
+  MOZ_ASSERT(mediaSource->ReadyState() == MediaSourceReadyState::Closed);
+  decoder->Shutdown();
 }
 
 void
 TestGeckoMediaSourceBuffer()
 {
-  DummySourceBuffer test1{ 2222, /* id */
-                           false /* released */ };
-  GeckoMediaSourceBufferImpl test1_impl{
-    &test1,           /* mContext */
-    &SourceBufferFree /* mFree */
-  };
-  MOZ_ASSERT(GetSourceBuffer(test1.id) == nullptr);
-  GeckoMedia_SourceBuffer_Create(test1.id, test1_impl, 0, "video/mp4", true);
-  auto sourceBuffer = GetSourceBuffer(test1.id);
+  RefPtr<DummyMediaSource> ms = new DummyMediaSource();
+  RefPtr<DummySourceBuffer> sb = new DummySourceBuffer(ms->mId);
+  auto sourceBuffer = GetSourceBuffer(sb->mId);
   MOZ_ASSERT(sourceBuffer != nullptr);
-  MOZ_ASSERT(test1.released == false);
-  GeckoMedia_SourceBuffer_Shutdown(test1.id);
-  MOZ_ASSERT(test1.released == true);
-  MOZ_ASSERT(GetSourceBuffer(test1.id) == nullptr);
-}
-
-struct DummySourceBufferList
-{
-  size_t id;
-  double released;
-  size_t sourceBuffer;
-};
-
-bool
-IndexedGetter(void* aContext, uint32_t aIndex, size_t* aId)
-{
-  if (aIndex > 0) {
-    return false;
-  }
-  *aId = static_cast<DummySourceBufferList*>(aContext)->sourceBuffer;
-  return true;
-}
-
-uint32_t
-Length(void*)
-{
-  return 1;
-}
-
-void
-SourceBufferListFree(void* aContext)
-{
-  static_cast<DummySourceBufferList*>(aContext)->released = true;
 }
 
 void
 TestGeckoMediaSourceBufferList()
 {
-  DummySourceBuffer test{ 2222, /* id */
-                          false /* released */ };
-  GeckoMediaSourceBufferImpl test_impl{
-    &test,            /* mContext */
-    &SourceBufferFree /* mFree */
-  };
-  MOZ_ASSERT(GetSourceBuffer(test.id) == nullptr);
-  GeckoMedia_SourceBuffer_Create(test.id, test_impl, 0, "video/mp4", true);
-  DummySourceBufferList test1{ 3333,  /* id */
-                               false, /* released */
-                               test.id /* sourceBuffer id */ };
-  GeckoMediaSourceBufferListImpl test1_impl{
-    &test1,                /* mContext */
-    &SourceBufferListFree, /* mFree */
-    &IndexedGetter,        /* mIndexedGetter */
-    &Length                /* mLength */
-  };
-  MOZ_ASSERT(GetSourceBufferList(test1.id) == nullptr);
-  GeckoMedia_SourceBufferList_Create(test1.id, test1_impl);
-  auto sourceBufferList = GetSourceBufferList(test1.id);
+  RefPtr<DummyMediaSource> ms = new DummyMediaSource();
+  RefPtr<DummySourceBuffer> sb = new DummySourceBuffer(ms->mId);
+  RefPtr<DummySourceBufferList> sbl = new DummySourceBufferList();
+  auto sourceBufferList = GetSourceBufferList(sbl->mId);
   MOZ_ASSERT(sourceBufferList != nullptr);
+  MOZ_ASSERT(sourceBufferList->Length() == 0);
+  sbl->mSourceBuffers.AppendElement(sb);
+  MOZ_ASSERT(sourceBufferList->Length() == 1);
   bool found = false;
   auto mediaSource = sourceBufferList->IndexedGetter(0, found);
   MOZ_ASSERT(mediaSource != nullptr && found);
-  mediaSource = sourceBufferList->IndexedGetter(1, found);
-  MOZ_ASSERT(mediaSource == nullptr && !found);
-  MOZ_ASSERT(sourceBufferList->Length() == 1);
-  MOZ_ASSERT(test1.released == false);
-  GeckoMedia_SourceBufferList_Shutdown(test1.id);
-  MOZ_ASSERT(test1.released == true);
-  MOZ_ASSERT(GetSourceBufferList(test1.id) == nullptr);
-  GeckoMedia_SourceBuffer_Shutdown(test.id);
 }
 
 } // namespace mozilla
@@ -744,6 +896,9 @@ extern "C" void
 TestGecko()
 {
   using namespace mozilla;
+
+  srand(std::time(nullptr));
+
   TestPreferences();
   TestString();
   TestArray();

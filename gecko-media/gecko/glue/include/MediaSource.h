@@ -33,7 +33,6 @@ public:
   MediaSourceReadyState ReadyState();
 
   // Attach this MediaSource to Decoder aDecoder.  Returns false if already attached.
-  // FIXME This will likely get a GeckoMediaSourceDecoder at some point.
   bool Attach(MediaSourceDecoder* aDecoder);
   void Detach();
 

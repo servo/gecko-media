@@ -37,7 +37,6 @@ GeckoMediaDecoder::GeckoMediaDecoder(MediaDecoderInit& aInit)
   : MediaDecoder(aInit)
   , mGeckoWatchManager(this, aInit.mOwner->AbstractMainThread())
 {
-  mExplicitDuration.emplace(UnspecifiedNaN<double>());
   mGeckoWatchManager.Watch(mBuffered, &GeckoMediaDecoder::NotifyBuffered);
 }
 

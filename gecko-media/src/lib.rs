@@ -46,10 +46,13 @@ pub use timestamp::TimeStamp;
 #[cfg(test)]
 mod tests {
     use player::{Metadata, PlanarYCbCrImage, Player, PlayerEventSink};
+    use std::cell::Cell;
     use std::ffi::CString;
     use std::fs::File;
     use std::io::prelude::*;
     use std::ops::Range;
+    use std::ptr;
+    use std::rc::Rc;
     use std::sync::{Mutex, mpsc};
     use {CanPlayType, GeckoMedia, GeckoMediaSource, GeckoMediaSourceImpl, GeckoMediaTimeInterval};
 
@@ -94,6 +97,7 @@ mod tests {
         Buffered(Vec<Range<f64>>),
         Seekable(Vec<Range<f64>>),
     }
+
     fn create_test_player(path: &str, mime: &str) -> (Player, mpsc::Receiver<Status>) {
         let (sender, receiver) = mpsc::channel();
         struct Sink {
@@ -278,68 +282,95 @@ mod tests {
         assert!(reached_seekable);
     }
 
-    fn test_media_source() {
-        use std::rc::Rc;
-        #[derive(Clone, Copy)]
-        #[allow(dead_code)]
-        enum MediaSourceReadyState {
-            Closed,
-            Open,
-            Ended,
-            Unknown,
-        }
-        struct MediaSourceValues {
-            pub ready_state: MediaSourceReadyState,
-            pub duration: f64,
-        }
-        struct MediaSourceDom {
-            pub values: Rc<MediaSourceValues>,
-            pub media_source_impl: Rc<MediaSourceImpl>,
-            pub gecko_media_source: GeckoMediaSource,
-        }
-        impl MediaSourceDom {
-            pub fn new() -> Self {
-                let values = Rc::new(MediaSourceValues {
-                    ready_state: MediaSourceReadyState::Closed,
-                    duration: 0.,
-                });
-                let media_source_impl = Rc::new(MediaSourceImpl {
-                    values: values.clone(),
-                });
-                let weak_impl = Rc::downgrade(&media_source_impl);
-                Self {
-                    values,
-                    media_source_impl,
-                    gecko_media_source: GeckoMedia::create_media_source(weak_impl).unwrap(),
-                }
-            }
-        }
-        struct MediaSourceImpl {
-            pub values: Rc<MediaSourceValues>,
-        }
-        impl GeckoMediaSourceImpl for MediaSourceImpl {
-            fn get_ready_state(&self) -> i32 {
-                match self.values.ready_state {
-                    MediaSourceReadyState::Closed => 0,
-                    MediaSourceReadyState::Open => 1,
-                    MediaSourceReadyState::Ended => 2,
-                    MediaSourceReadyState::Unknown => 3,
-                }
-            }
-            fn get_duration(&self) -> f64 {
-                self.values.duration
-            }
-            fn has_live_seekable_range(&self) -> bool {
-                false
-            }
-            fn get_live_seekable_range(&self) -> GeckoMediaTimeInterval {
-                GeckoMediaTimeInterval {
-                    mStart: 0.,
-                    mEnd: 0.,
-                }
-            }
-        }
+    #[derive(Clone, Copy)]
+    #[allow(dead_code)]
+    enum MediaSourceReadyState {
+        Closed,
+        Open,
+        Ended,
+    }
 
+    impl From<MediaSourceReadyState> for i32 {
+        fn from(state: MediaSourceReadyState) -> Self {
+            match state {
+                MediaSourceReadyState::Closed => 0,
+                MediaSourceReadyState::Open => 1,
+                MediaSourceReadyState::Ended => 2,
+            }
+        }
+    }
+
+    impl From<i32> for MediaSourceReadyState {
+        fn from(state: i32) -> Self {
+            match state {
+                0 => MediaSourceReadyState::Closed,
+                1 => MediaSourceReadyState::Open,
+                2 => MediaSourceReadyState::Ended,
+                _ => unreachable!(),
+            }
+        }
+    }
+
+    struct MediaSourceValues {
+        pub ready_state: Cell<MediaSourceReadyState>,
+        pub duration: f64,
+    }
+
+    struct MediaSourceDom {
+        pub values: Rc<MediaSourceValues>,
+        pub media_source_impl: Rc<MediaSourceImpl>,
+        pub gecko_media_source: GeckoMediaSource,
+    }
+    impl MediaSourceDom {
+        pub fn new() -> Self {
+            let values = Rc::new(MediaSourceValues {
+                ready_state: Cell::new(MediaSourceReadyState::Closed),
+                duration: 0.,
+            });
+            let media_source_impl = Rc::new(MediaSourceImpl {
+                values: values.clone(),
+            });
+            let weak_impl = Rc::downgrade(&media_source_impl);
+            Self {
+                values,
+                media_source_impl,
+                gecko_media_source: GeckoMedia::create_media_source(weak_impl).unwrap(),
+            }
+        }
+    }
+    struct MediaSourceImpl {
+        pub values: Rc<MediaSourceValues>,
+    }
+    impl GeckoMediaSourceImpl for MediaSourceImpl {
+        fn get_ready_state(&self) -> i32 {
+            self.values.ready_state.get().into()
+        }
+        fn set_ready_state(&self, state: i32) {
+            self.values.ready_state.set(state.into());
+        }
+        fn get_duration(&self) -> f64 {
+            self.values.duration
+        }
+        fn has_live_seekable_range(&self) -> bool {
+            false
+        }
+        fn get_live_seekable_range(&self) -> GeckoMediaTimeInterval {
+            GeckoMediaTimeInterval {
+                mStart: 0.,
+                mEnd: 0.,
+            }
+        }
+        fn get_source_buffers(&self) -> *mut usize {
+            ptr::null_mut()
+        }
+        fn get_active_source_buffers(&self) -> *mut usize {
+            ptr::null_mut()
+        }
+        fn clear_source_buffers(&self) {}
+        fn clear_active_source_buffers(&self) {}
+    }
+
+    fn test_media_source() {
         let _ = MediaSourceDom::new();
 
         let gecko_media = GeckoMedia::get().unwrap();
