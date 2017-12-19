@@ -139,3 +139,10 @@ GeckoMedia_Player_SetVolume(size_t aId, double volume)
   IMPL_GECKO_MEDIA_REFLECTOR_GET(Player)
   reflector->mDecoder->SetVolume(volume);
 }
+
+void
+GeckoMedia_Player_SetPlaybackRate(size_t aId, double rate)
+{
+  IMPL_GECKO_MEDIA_REFLECTOR_GET(Player)
+    reflector->mDecoder->SetPlaybackRate(rate);
+}
