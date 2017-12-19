@@ -555,7 +555,6 @@ add_library(gecko_core OBJECT
   gecko/glue/CooperativeThreadPool.cpp
   gecko/glue/ContainerParser.cpp
   gecko/glue/CubebUtils.cpp
-  gecko/glue/DecoderTraits.cpp
   gecko/glue/FFmpegRuntimeLinker.cpp
   gecko/glue/GeckoMedia.cpp
   gecko/glue/GeckoMediaDecoder.cpp
@@ -602,10 +601,13 @@ add_library(gecko_core OBJECT
   gecko/glue/VideoSegment.cpp
   gecko/glue/WebAudioUtils.cpp
   gecko/glue/XPCOMInit.cpp
+  gecko/src/dom/media/ADTSDecoder.cpp
+  gecko/src/dom/media/ADTSDemuxer.cpp
   gecko/src/dom/media/AudioConverter.cpp
   gecko/src/dom/media/AudioSegment.cpp
   gecko/src/dom/media/AudioStream.cpp
   gecko/src/dom/media/BitReader.cpp
+  gecko/src/dom/media/DecoderTraits.cpp
   gecko/src/dom/media/MediaDecoder.cpp
   gecko/src/dom/media/MediaDecoderStateMachine.cpp
   gecko/src/dom/media/MediaFormatReader.cpp

@@ -632,11 +632,13 @@ fn main() {
         Some("mp4") => "video/mp4",
         Some("webm") => "video/webm",
         Some("ogv") => "video/ogg",
+        Some("aac") => "audio/aac",
         _ => "",
     };
     assert!(
         mime != "",
-        "Unknown file type. Audio codecs currently supported: wav, mp3, m4a, flac and vorbis.\
+        "Unknown file type. Audio codecs currently supported: aac, ADTS (aac streaming), wav,\
+                mp3, m4a, flac and vorbis.\
                 Video codecs supported: h264, vp8 and vp9."
     );
 
