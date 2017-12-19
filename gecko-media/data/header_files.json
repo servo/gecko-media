@@ -143,6 +143,7 @@
   "SourceBufferTask.h": "dom/media/mediasource/SourceBufferTask.h",
   "SpecialSystemDirectory.h": "xpcom/io/SpecialSystemDirectory.h",
   "StreamTracks.h": "dom/media/StreamTracks.h",
+  "TheoraDecoder.h": "dom/media/platforms/agnostic/TheoraDecoder.h",
   "ThreadAnnotation.h": "toolkit/crashreporter/ThreadAnnotation.h",
   "TimeUnits.h": "dom/media/TimeUnits.h",
   "TimerThread.h": "xpcom/threads/TimerThread.h",

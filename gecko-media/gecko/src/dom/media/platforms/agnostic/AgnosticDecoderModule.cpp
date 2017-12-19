@@ -6,7 +6,7 @@
 
 #include "AgnosticDecoderModule.h"
 #include "OpusDecoder.h"
-// #include "TheoraDecoder.h"
+#include "TheoraDecoder.h"
 #include "VPXDecoder.h"
 #include "VorbisDecoder.h"
 #include "WAVDecoder.h"
@@ -30,8 +30,8 @@ AgnosticDecoderModule::SupportsMimeType(
 #endif
     OpusDataDecoder::IsOpus(aMimeType) ||
     VorbisDataDecoder::IsVorbis(aMimeType) ||
-    WaveDataDecoder::IsWave(aMimeType);//  ||
-    // TheoraDecoder::IsTheora(aMimeType);
+    WaveDataDecoder::IsWave(aMimeType) ||
+    TheoraDecoder::IsTheora(aMimeType);
   MOZ_LOG(sPDMLog, LogLevel::Debug, ("Agnostic decoder %s requested type",
         supports ? "supports" : "rejects"));
   return supports;
@@ -45,14 +45,14 @@ AgnosticDecoderModule::CreateVideoDecoder(const CreateDecoderParams& aParams)
   if (VPXDecoder::IsVPX(aParams.mConfig.mMimeType)) {
     m = new VPXDecoder(aParams);
   }
-// #ifdef MOZ_AV1
-//   else if (AOMDecoder::IsAV1(aParams.mConfig.mMimeType)) {
-//     m = new AOMDecoder(aParams);
-//   }
-// #endif
-//   else if (TheoraDecoder::IsTheora(aParams.mConfig.mMimeType)) {
-//     m = new TheoraDecoder(aParams);
-//   }
+#ifdef MOZ_AV1
+  else if (AOMDecoder::IsAV1(aParams.mConfig.mMimeType)) {
+    m = new AOMDecoder(aParams);
+  }
+#endif
+  else if (TheoraDecoder::IsTheora(aParams.mConfig.mMimeType)) {
+    m = new TheoraDecoder(aParams);
+  }
 
   return m.forget();
 }
