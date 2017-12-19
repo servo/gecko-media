@@ -9,11 +9,13 @@ use std::rc::Rc;
 def_gecko_media_struct!(SourceBuffer);
 
 impl SourceBuffer {
-    pub fn new(gecko_media: GeckoMedia,
-               id: usize,
-               callbacks: Rc<SourceBufferImpl>,
-               parent_id: usize,
-               mime: &str) -> Result<Self, ()> {
+    pub fn new(
+        gecko_media: GeckoMedia,
+        id: usize,
+        callbacks: Rc<SourceBufferImpl>,
+        parent_id: usize,
+        mime: &str,
+    ) -> Result<Self, ()> {
         let callbacks = to_ffi_callbacks(callbacks);
         let mime = match CString::new(mime.as_bytes()) {
             Ok(mime) => mime,

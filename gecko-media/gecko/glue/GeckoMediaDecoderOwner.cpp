@@ -247,10 +247,12 @@ GeckoMediaDecoderOwner::SetDecoder(GeckoMediaDecoder* aDecoder)
 }
 
 void
-GeckoMediaDecoderOwner::UpdateCurrentImages(nsTArray<GeckoPlanarYCbCrImage> aImages)
+GeckoMediaDecoderOwner::UpdateCurrentImages(
+  nsTArray<GeckoPlanarYCbCrImage> aImages)
 {
   if (mCallback.mContext && mCallback.mUpdateCurrentImages) {
-    (*mCallback.mUpdateCurrentImages)(mCallback.mContext, aImages.Length(), aImages.Elements());
+    (*mCallback.mUpdateCurrentImages)(
+      mCallback.mContext, aImages.Length(), aImages.Elements());
   }
 }
 
@@ -268,7 +270,7 @@ GeckoMediaDecoderOwner::NotifyBuffered() const
       i++;
     }
     (*mCallback.mNotifyBuffered)(mCallback.mContext, size, ranges);
-    delete [] ranges;
+    delete[] ranges;
   }
 }
 
