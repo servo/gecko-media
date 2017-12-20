@@ -51,3 +51,5 @@
 // Avoid duplicating symbols from the mozilla namespace used by this repository
 // as well as SpiderMonkey.
 #define mozilla GeckoMedia_mozilla
+
+#define double_conversion GeckoMedia_double_conversion
