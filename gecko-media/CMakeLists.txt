@@ -551,7 +551,6 @@ target_include_directories(ogg PRIVATE
 
 add_library(gecko_core OBJECT
   gecko/glue/AsyncShutdown.cpp
-  gecko/glue/AgnosticDecoderModule.cpp
   gecko/glue/Benchmark.cpp
   gecko/glue/CooperativeThreadPool.cpp
   gecko/glue/ContainerParser.cpp
@@ -671,10 +670,12 @@ add_library(gecko_core OBJECT
   gecko/src/dom/media/platforms/agnostic/bytestreams/Adts.cpp
   gecko/src/dom/media/platforms/agnostic/bytestreams/AnnexB.cpp
   gecko/src/dom/media/platforms/agnostic/bytestreams/H264.cpp
+  gecko/src/dom/media/platforms/agnostic/AgnosticDecoderModule.cpp
   gecko/src/dom/media/platforms/agnostic/BlankDecoderModule.cpp
   gecko/src/dom/media/platforms/agnostic/DummyMediaDataDecoder.cpp
   gecko/src/dom/media/platforms/agnostic/NullDecoderModule.cpp
   gecko/src/dom/media/platforms/agnostic/OpusDecoder.cpp
+  gecko/src/dom/media/platforms/agnostic/TheoraDecoder.cpp
   gecko/src/dom/media/platforms/agnostic/VorbisDecoder.cpp
   gecko/src/dom/media/platforms/agnostic/VPXDecoder.cpp
   gecko/src/dom/media/platforms/agnostic/WAVDecoder.cpp

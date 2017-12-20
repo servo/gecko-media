@@ -70,6 +70,11 @@ mod tests {
             gecko_media.can_play_type("audio/ogg; codecs=\"vorbis\""),
             CanPlayType::Probably
         );
+        assert_eq!(
+            gecko_media.can_play_type("video/ogg; codecs=\"vorbis, theora\""),
+            CanPlayType::Probably
+        );
+        assert_eq!(gecko_media.can_play_type("video/ogg"), CanPlayType::Maybe);
         assert_eq!(gecko_media.can_play_type("video/mp4"), CanPlayType::Maybe);
         assert_eq!(gecko_media.can_play_type("video/webm"), CanPlayType::Maybe);
     }

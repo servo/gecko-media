@@ -631,6 +631,7 @@ fn main() {
         Some("m4a") => "audio/mp4",
         Some("mp4") => "video/mp4",
         Some("webm") => "video/webm",
+        Some("ogv") => "video/ogg",
         _ => "",
     };
     assert!(
