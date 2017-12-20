@@ -1,8 +1,11 @@
 [
+  "dom/media/ADTSDecoder.cpp",
+  "dom/media/ADTSDemuxer.cpp",
   "dom/media/AudioConverter.cpp",
   "dom/media/AudioSegment.cpp",
   "dom/media/AudioStream.cpp",
   "dom/media/BitReader.cpp",
+  "dom/media/DecoderTraits.cpp",
   "dom/media/MediaContainerType.cpp",
   "dom/media/MediaInfo.cpp",
   "dom/media/MediaMIMETypes.cpp",

@@ -1,4 +1,6 @@
 {
+  "ADTSDecoder.h": "dom/media/ADTSDecoder.h",
+  "ADTSDemuxer.h": "dom/media/ADTSDemuxer.h",
   "Adts.h": "dom/media/platforms/agnostic/bytestreams/Adts.h",
   "AgnosticDecoderModule.h": "dom/media/platforms/agnostic/AgnosticDecoderModule.h",
   "AnnexB.h": "dom/media/platforms/agnostic/bytestreams/AnnexB.h",

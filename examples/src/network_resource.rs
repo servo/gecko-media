@@ -131,22 +131,24 @@ impl Downloader {
             ));
             let mut read_offset = offset;
             let work = client.request(req).and_then(|res| {
-                let &ContentLength(length) = res.headers().get::<ContentLength>().unwrap();
-                command_sender
-                    .send(Commands::SetContentLength(length))
-                    .unwrap();
+                if let Some(&ContentLength(length)) = res.headers().get::<ContentLength>() {
+                    command_sender
+                        .send(Commands::SetContentLength(length))
+                        .unwrap();
+                }
                 // Try to get the offset of the response from the HTTP header.
                 // Otherwise, we'll use the offset we requested, and hope it's
                 // what the server returned.
                 {
-                    let &ContentRange(ref range) = res.headers().get::<ContentRange>().unwrap();
-                    if let &ContentRangeSpec::Bytes {
-                        range,
-                        instance_length: _instance_length,
-                    } = range
-                    {
-                        if let Some((start, _end)) = range {
-                            read_offset = start;
+                    if let Some(&ContentRange(ref range)) = res.headers().get::<ContentRange>() {
+                        if let &ContentRangeSpec::Bytes {
+                            range,
+                            instance_length: _instance_length,
+                        } = range
+                        {
+                            if let Some((start, _end)) = range {
+                                read_offset = start;
+                            }
                         }
                     }
                 }
