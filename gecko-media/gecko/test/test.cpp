@@ -566,6 +566,8 @@ TestGeckoDecoder()
 
 void
 SourceBufferFree(void* aContext);
+void*
+SourceBufferOwner(void* aContext);
 
 class DummySourceBuffer
 {
@@ -579,6 +581,7 @@ public:
     mImpl = {
       this,
       &SourceBufferFree,
+      &SourceBufferOwner,
     };
     GeckoMedia_SourceBuffer_Create(mId, mImpl, aParentId, "video/mp4", true);
   }
@@ -597,6 +600,12 @@ private:
   };
 };
 
+void*
+SourceBufferOwner(void* aContext)
+{
+  return aContext;
+}
+
 void
 SourceBufferFree(void* aContext)
 {
@@ -605,12 +614,16 @@ SourceBufferFree(void* aContext)
 
 /** SourceBufferList **/
 
+void
+SourceBufferListFree(void* aContext);
 bool
 IndexedGetter(void* aContext, uint32_t aIndex, size_t* aId);
 uint32_t
 Length(void* aContext);
 void
-SourceBufferListFree(void* aContext);
+Append(void* aContext, void* aSourceBuffer, bool aNotify);
+void
+Clear(void* aContext);
 
 class DummySourceBufferList
 {
@@ -622,10 +635,7 @@ public:
     , mReleased(false)
   {
     mImpl = {
-      this,
-      &SourceBufferListFree,
-      &IndexedGetter,
-      &Length,
+      this, &SourceBufferListFree, &IndexedGetter, &Length, &Append, &Clear,
     };
     GeckoMedia_SourceBufferList_Create(mId, mImpl);
   }
@@ -645,6 +655,13 @@ private:
   };
 };
 
+void
+SourceBufferListFree(void* aContext)
+{
+  DummySourceBufferList* sbl = static_cast<DummySourceBufferList*>(aContext);
+  sbl->mReleased = true;
+}
+
 bool
 IndexedGetter(void* aContext, uint32_t aIndex, size_t* aId)
 {
@@ -663,10 +680,16 @@ Length(void* aContext)
 }
 
 void
-SourceBufferListFree(void* aContext)
+Append(void* aContext, void* aSourceBuffer, bool aNotify)
 {
-  DummySourceBufferList* sbl = static_cast<DummySourceBufferList*>(aContext);
-  sbl->mReleased = true;
+  static_cast<DummySourceBufferList*>(aContext)->mSourceBuffers.AppendElement(
+    static_cast<DummySourceBuffer*>(aSourceBuffer));
+}
+
+void
+Clear(void* aContext)
+{
+  static_cast<DummySourceBufferList*>(aContext)->mSourceBuffers.Clear();
 }
 
 /** MediaSource **/
@@ -687,10 +710,6 @@ size_t*
 GetSourceBuffers(void* aContext);
 size_t*
 GetActiveSourceBuffers(void* aContext);
-void
-ClearSourceBuffers(void* aContext);
-void
-ClearActiveSourceBuffers(void* aContext);
 
 class DummyMediaSource
 {
@@ -716,8 +735,6 @@ public:
       &LiveSeekableRange,
       &GetSourceBuffers,
       &GetActiveSourceBuffers,
-      &ClearSourceBuffers,
-      &ClearActiveSourceBuffers,
     };
     GeckoMedia_MediaSource_Create(mId, mImpl);
   }
@@ -787,20 +804,6 @@ size_t*
 GetActiveSourceBuffers(void* aContext)
 {
   return &(static_cast<DummyMediaSource*>(aContext)->mActiveSourceBuffers->mId);
-}
-
-void
-ClearSourceBuffers(void* aContext)
-{
-  static_cast<DummyMediaSource*>(aContext)
-    ->mSourceBuffers->mSourceBuffers.Clear();
-}
-
-void
-ClearActiveSourceBuffers(void* aContext)
-{
-  static_cast<DummyMediaSource*>(aContext)
-    ->mActiveSourceBuffers->mSourceBuffers.Clear();
 }
 
 void

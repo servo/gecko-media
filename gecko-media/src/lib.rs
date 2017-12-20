@@ -51,6 +51,7 @@ mod tests {
     use std::fs::File;
     use std::io::prelude::*;
     use std::ops::Range;
+    use std::os::raw::c_void;
     use std::ptr;
     use std::rc::Rc;
     use std::sync::{Mutex, mpsc};
@@ -372,8 +373,6 @@ mod tests {
         fn get_active_source_buffers(&self) -> *mut usize {
             ptr::null_mut()
         }
-        fn clear_source_buffers(&self) {}
-        fn clear_active_source_buffers(&self) {}
     }
 
     fn test_media_source() {
@@ -407,6 +406,9 @@ mod tests {
     }
 
     impl GeckoMediaSourceBufferImpl for SourceBufferAttributes {
+        fn owner(&self) -> *mut c_void {
+            ptr::null_mut()
+        }
         fn get_append_window_start(&self) -> f64 {
             0.
         }

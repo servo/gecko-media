@@ -19,6 +19,8 @@ struct GeckoMediaSourceBufferListImpl
   void (*mFree)(void*);
   bool (*mIndexedGetter)(void*, uint32_t, size_t*);
   uint32_t (*mLength)(void*);
+  void (*mAppend)(void*, void*, bool);
+  void (*mClear)(void*);
 };
 
 namespace mozilla {

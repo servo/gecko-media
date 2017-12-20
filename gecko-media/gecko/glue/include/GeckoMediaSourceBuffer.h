@@ -42,6 +42,7 @@ struct GeckoMediaSourceBufferImpl
 {
   void* mContext;
   void (*mFree)(void*);
+  void* (*mOwner)(void*);
   double (*mGetAppendWindowStart)(void*);
   void (*mSetAppendWindowStart)(void*, double);
   double (*mGetAppendWindowEnd)(void*);

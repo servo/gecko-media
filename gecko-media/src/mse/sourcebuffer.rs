@@ -87,6 +87,7 @@ impl_drop_gecko_media_struct!(SourceBuffer, GeckoMedia_SourceBuffer_Shutdown);
 /// Users of SourceBuffer pass in an implementation of this trait when creating
 /// SourceBuffer objects.
 pub trait SourceBufferImpl {
+    fn owner(&self) -> *mut c_void;
     fn get_append_window_start(&self) -> f64;
     fn set_append_window_start(&self, f64);
     fn get_append_window_end(&self) -> f64;
@@ -116,6 +117,7 @@ pub fn to_ffi_callbacks(callbacks: Rc<SourceBufferImpl>) -> GeckoMediaSourceBuff
 
     def_gecko_callbacks_ffi_wrapper!(Rc<SourceBufferImpl>);
 
+    impl_simple_ffi_getter_wrapper!(owner, *mut c_void);
     impl_simple_ffi_getter_wrapper!(get_append_window_start, f64);
     impl_simple_ffi_setter_wrapper!(set_append_window_start, f64);
     impl_simple_ffi_getter_wrapper!(get_append_window_end, f64);
@@ -147,6 +149,7 @@ pub fn to_ffi_callbacks(callbacks: Rc<SourceBufferImpl>) -> GeckoMediaSourceBuff
             callbacks,
         })) as *mut c_void,
         mFree: Some(free),
+        mOwner: Some(owner),
         mGetAppendWindowStart: Some(get_append_window_start),
         mSetAppendWindowStart: Some(set_append_window_start),
         mGetAppendWindowEnd: Some(get_append_window_end),

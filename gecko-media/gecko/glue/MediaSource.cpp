@@ -82,7 +82,6 @@ MediaSource::~MediaSource()
 SourceBufferList*
 MediaSource::SourceBuffers()
 {
-  // TODO cache in mSourceBuffers
   MOZ_ASSERT(NS_IsMainThread());
 
   CALLBACK_GUARD(GetSourceBuffers, nullptr);
@@ -97,7 +96,6 @@ MediaSource::SourceBuffers()
 SourceBufferList*
 MediaSource::ActiveSourceBuffers()
 {
-  // TODO cache in mActiveSourceBuffers
   MOZ_ASSERT(NS_IsMainThread());
 
   CALLBACK_GUARD(GetActiveSourceBuffers, nullptr);
@@ -157,8 +155,6 @@ void
 MediaSource::Detach()
 {
   MOZ_ASSERT(NS_IsMainThread());
-  CALLBACK_GUARD_VOID(ClearActiveSourceBuffers);
-  CALLBACK_GUARD_VOID(ClearSourceBuffers);
   MOZ_RELEASE_ASSERT(mCompletionPromises.IsEmpty());
   MSE_DEBUG("mDecoder=%p owner=%p",
             mDecoder.get(),
@@ -170,8 +166,8 @@ MediaSource::Detach()
     return;
   }
   SetReadyState(MediaSourceReadyState::Closed);
-  CALLBACK_CALL(ClearActiveSourceBuffers);
-  CALLBACK_CALL(ClearSourceBuffers);
+  SourceBuffers()->Clear();
+  ActiveSourceBuffers()->Clear();
   mDecoder->DetachMediaSource();
   mDecoder = nullptr;
 }
