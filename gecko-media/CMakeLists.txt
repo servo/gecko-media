@@ -587,6 +587,7 @@ add_library(gecko_core OBJECT
   gecko/glue/nsObserverService.cpp
   gecko/glue/nsThread.cpp
   gecko/glue/nsTraceRefcnt.cpp
+  gecko/glue/nsUnicharUtils.cpp
   gecko/glue/Preferences.cpp
   gecko/glue/RustServices.cpp
   gecko/glue/RustMediaResource.cpp
@@ -602,10 +603,13 @@ add_library(gecko_core OBJECT
   gecko/glue/VideoSegment.cpp
   gecko/glue/WebAudioUtils.cpp
   gecko/glue/XPCOMInit.cpp
+  gecko/src/dom/media/AudioChannelFormat.cpp
   gecko/src/dom/media/AudioConverter.cpp
+  gecko/src/dom/media/AudioDeviceInfo.cpp
   gecko/src/dom/media/AudioSegment.cpp
   gecko/src/dom/media/AudioStream.cpp
   gecko/src/dom/media/BitReader.cpp
+  gecko/src/dom/media/Latency.cpp
   gecko/src/dom/media/MediaDecoder.cpp
   gecko/src/dom/media/MediaDecoderStateMachine.cpp
   gecko/src/dom/media/MediaFormatReader.cpp
@@ -695,6 +699,7 @@ add_library(gecko_core OBJECT
   gecko/src/mfbt/HashFunctions.cpp
   gecko/src/mfbt/JSONWriter.cpp
   gecko/src/mfbt/Poison.cpp
+  gecko/src/mfbt/TaggedAnonymousMemory.cpp
   gecko/src/mfbt/Unused.cpp
   gecko/src/mfbt/double-conversion/double-conversion/bignum.cc
   gecko/src/mfbt/double-conversion/double-conversion/bignum-dtoa.cc
@@ -717,10 +722,12 @@ add_library(gecko_core OBJECT
   gecko/src/xpcom/base/nsID.cpp
   gecko/src/xpcom/base/nsISupportsImpl.cpp
   gecko/src/xpcom/base/nsMemory.cpp
+  gecko/src/xpcom/base/nsMemoryImpl.cpp
   gecko/src/xpcom/base/nsWeakReference.cpp
   gecko/src/xpcom/components/nsComponentManagerUtils.cpp
   gecko/src/xpcom/components/GenericFactory.cpp
   gecko/src/xpcom/ds/PLDHashTable.cpp
+  gecko/src/xpcom/ds/nsAtomTable.cpp
   gecko/src/xpcom/ds/nsCOMArray.cpp
   gecko/src/xpcom/ds/nsCRT.cpp
   gecko/src/xpcom/ds/nsDeque.cpp
@@ -729,6 +736,9 @@ add_library(gecko_core OBJECT
   gecko/src/xpcom/ds/nsSupportsPrimitives.cpp
   gecko/src/xpcom/ds/nsTArray.cpp
   gecko/src/xpcom/ds/nsTObserverArray.cpp
+  gecko/src/xpcom/io/Base64.cpp
+  gecko/src/xpcom/io/SpecialSystemDirectory.cpp
+  gecko/src/xpcom/io/nsAppFileLocationProvider.cpp
   gecko/src/xpcom/io/nsDirectoryService.cpp
   gecko/src/xpcom/io/nsNativeCharsetUtils.cpp
   gecko/src/xpcom/string/unified.cpp
@@ -744,6 +754,7 @@ add_library(gecko_core OBJECT
   gecko/src/xpcom/threads/PrioritizedEventQueue.cpp
   gecko/src/xpcom/threads/SharedThreadPool.cpp
   gecko/src/xpcom/threads/RecursiveMutex.cpp
+  gecko/src/xpcom/threads/RWLock.cpp
   gecko/src/xpcom/threads/SynchronizedEventQueue.cpp
   gecko/src/xpcom/threads/SystemGroup.cpp
   gecko/src/xpcom/threads/TaskQueue.cpp
@@ -751,21 +762,27 @@ add_library(gecko_core OBJECT
   gecko/src/xpcom/threads/TimerThread.cpp
   gecko/src/nsprpub/lib/libc/src/base64.c
   gecko/src/nsprpub/lib/libc/src/strcase.c
+  gecko/src/nsprpub/lib/libc/src/strcmp.c
   gecko/src/nsprpub/pr/src/io/priometh.c
   gecko/src/nsprpub/pr/src/io/prfdcach.c
+  gecko/src/nsprpub/pr/src/io/pripv6.c
   gecko/src/nsprpub/pr/src/io/prlayer.c
   gecko/src/nsprpub/pr/src/io/prlog.c
   gecko/src/nsprpub/pr/src/io/prmapopt.c
   gecko/src/nsprpub/pr/src/io/prmmap.c
   gecko/src/nsprpub/pr/src/io/prmwait.c
   gecko/src/nsprpub/pr/src/io/prprf.c
+  gecko/src/nsprpub/pr/src/io/prscanf.c
+  gecko/src/nsprpub/pr/src/io/prstdio.c
   gecko/src/nsprpub/pr/src/linking/prlink.c
   gecko/src/nsprpub/pr/src/malloc/prmem.c
   gecko/src/nsprpub/pr/src/md/prosdep.c
   gecko/src/nsprpub/pr/src/md/unix/unix.c
   gecko/src/nsprpub/pr/src/md/unix/unix_errors.c
+  gecko/src/nsprpub/pr/src/md/unix/uxproces.c
   gecko/src/nsprpub/pr/src/memory/prseg.c
   gecko/src/nsprpub/pr/src/misc/pratom.c
+  gecko/src/nsprpub/pr/src/misc/praton.c
   gecko/src/nsprpub/pr/src/misc/prdtoa.c
   gecko/src/nsprpub/pr/src/misc/prenv.c
   gecko/src/nsprpub/pr/src/misc/prerr.c
@@ -773,6 +790,7 @@ add_library(gecko_core OBJECT
   gecko/src/nsprpub/pr/src/misc/prerrortable.c
   gecko/src/nsprpub/pr/src/misc/prinit.c
   gecko/src/nsprpub/pr/src/misc/prinrval.c
+  gecko/src/nsprpub/pr/src/misc/pripc.c
   gecko/src/nsprpub/pr/src/misc/prlog2.c
   gecko/src/nsprpub/pr/src/misc/prnetdb.c
   gecko/src/nsprpub/pr/src/misc/prsystem.c
@@ -790,6 +808,12 @@ if(X86 OR X86_64)
   target_sources(gecko_core PRIVATE
     gecko/src/xpcom/string/nsReadableUtilsSSE2.cpp
     gecko/src/xpcom/string/nsUTF8UtilsSSE2.cpp
+  )
+endif()
+
+if (X86_64 AND LINUX)
+  target_sources(gecko_core PRIVATE
+    gecko/src/nsprpub/pr/src/md/unix/os_Linux_x86_64.s
   )
 endif()
 
@@ -864,7 +888,6 @@ set_target_properties(gecko_core PROPERTIES COMPILE_FLAGS ${GECKO_MEDIA_PREPROCE
 ############
 # ffmpeg
 ############
-if (LINUX OR MACOS AND NOT ANDROID)
 add_library(ffmpeg57 OBJECT
   gecko/src/dom/media/platforms/ffmpeg/FFmpegAudioDecoder.cpp
   gecko/src/dom/media/platforms/ffmpeg/FFmpegDataDecoder.cpp
@@ -882,8 +905,6 @@ target_include_directories(ffmpeg57 PRIVATE
 )
 
 set_target_properties(ffmpeg57 PROPERTIES COMPILE_FLAGS ${GECKO_MEDIA_PREPROCESSOR_INCLUDES})
-
-endif()
 
 ############
 # libnestegg
@@ -1117,7 +1138,6 @@ if(ANDROID)
     gecko/src/media/libopus/silk/arm/LPC_inv_pred_gain_neon_intr.c
     gecko/src/media/libopus/silk/arm/NSQ_del_dec_neon_intr.c
     gecko/src/media/libopus/silk/arm/NSQ_neon.c
-    gecko/src/media/libopus/silk/fixed/arm/warped_autocorrelation_FIX_neon_intr.c
     gecko/src/media/libopus/celt/arm/arm_celt_map.c
     gecko/src/media/libopus/celt/arm/armcpu.c
   )
@@ -1760,7 +1780,7 @@ if (X86_64)
     set(obj_file ${CMAKE_CURRENT_BINARY_DIR}/${file_name}.o)
     add_custom_command(OUTPUT ${obj_file}
       COMMAND ${YASM_EXE}
-      ARGS -f ${yasm_binary_format} -Igecko/src/media/libvpx/libvpx/ -I${vpx_asm_include_dir} -o ${obj_file} ./${asm_file}
+      ARGS -f ${yasm_binary_format} -DPIC -Igecko/src/media/libvpx/libvpx/ -I${vpx_asm_include_dir} -o ${obj_file} ./${asm_file}
       WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
       VERBATIM)
     list(APPEND VPX_OBJS ${obj_file})
@@ -1892,7 +1912,7 @@ elseif (X86)
     set(obj_file ${CMAKE_CURRENT_BINARY_DIR}/${file_name}.o)
     add_custom_command(OUTPUT ${obj_file}
       COMMAND ${YASM_EXE}
-      ARGS -f ${yasm_binary_format} -Igecko/src/media/libvpx/libvpx/ -I${vpx_asm_include_dir} -o ${obj_file} ./${asm_file}
+      ARGS -f ${yasm_binary_format} -DPIC -Igecko/src/media/libvpx/libvpx/ -I${vpx_asm_include_dir} -o ${obj_file} ./${asm_file}
       WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
       VERBATIM)
     list(APPEND VPX_OBJS ${obj_file})
@@ -2037,6 +2057,17 @@ if (ANDROID)
   )
 endif()
 
+if (X86_64 OR X86)
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vp8/common/x86/filter_x86.c PROPERTIES
+    COMPILE_FLAGS "-fvisibility=hidden"
+  )
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vp9/common/vp9_postproc.c PROPERTIES
+    COMPILE_FLAGS "-fvisibility=hidden"
+  )
+  set_source_files_properties(gecko/src/media/libvpx/libvpx/vpx_dsp/deblock.c PROPERTIES
+    COMPILE_FLAGS "-fvisibility=hidden"
+  )
+endif()
 
 #########
 # lgpllibs
@@ -2087,15 +2118,6 @@ set_target_properties(tests PROPERTIES COMPILE_FLAGS ${GECKO_MEDIA_PREPROCESSOR_
 ##########
 # gecko_media
 ##########
-set(FFVPX_OBJS )
-set(FFMPEG57_OBJS )
-if (LINUX OR MACOS)
-  set(FFVPX_OBJS $<TARGET_OBJECTS:ffvpx>)
-endif()
-
-if (NOT ANDROID)
-  set(FFMPEG57_OBJS $<TARGET_OBJECTS:ffmpeg57>)
-endif()
 
 set(VORBIS_OBJS)
 if (ANDROID)
@@ -2116,8 +2138,8 @@ add_library(gecko_media_cmake STATIC
   $<TARGET_OBJECTS:vpx>
   ${VPX_OBJS}
   $<TARGET_OBJECTS:tests>
-  ${FFVPX_OBJS}
-  ${FFMPEG57_OBJS}
+  $<TARGET_OBJECTS:ffvpx>
+  $<TARGET_OBJECTS:ffmpeg57>
 )
 
 

@@ -325,5 +325,13 @@ template nsresult
 Preferences::AddAtomicUintVarCache(Atomic<uint32_t, Relaxed>*,
                                    const char*,
                                    uint32_t);
+template nsresult
+Preferences::AddAtomicBoolVarCache(Atomic<bool, Relaxed>*,
+                                   const char*,
+                                   bool);
+template nsresult
+Preferences::AddAtomicIntVarCache(Atomic<int32_t, Relaxed>*,
+                                  const char*,
+                                  int32_t);
 
 } // namespace mozilla

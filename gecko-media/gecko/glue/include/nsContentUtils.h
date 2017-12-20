@@ -35,6 +35,9 @@ public:
   static mozilla::layers::LayerManager* LayerManagerForDocument(nsIDocument* aDocument) {
     return nullptr;
   }
+
+  static void RegisterShutdownObserver(nsIObserver* aObserver) {}
+  static void UnregisterShutdownObserver(nsIObserver* aObserver) {}
 };
 
 #endif // nsContentUtils_h__
