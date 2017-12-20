@@ -47,13 +47,26 @@ GeckoMedia_SourceBuffer_Create(size_t aId,
 }
 
 void
-GeckoMedia_SourceBuffer_EvictData(size_t aId,
-                                  int64_t aLength,
-                                  bool* aBufferFull)
+GeckoMedia_SourceBuffer_EvictData(size_t aId, size_t aLength, bool* aBufferFull)
 {
   IMPL_GECKO_MEDIA_REFLECTOR_GET(GeckoMediaSourceBuffer)
 
   reflector->mSourceBuffer->EvictData(aLength, aBufferFull);
+}
+
+void
+GeckoMedia_SourceBuffer_AppendData(size_t aId,
+                                   const uint8_t* aData,
+                                   size_t aLength,
+                                   success_callback_t aSuccessCb,
+                                   void* aSuccessCbContext,
+                                   error_callback_t aErrorCb,
+                                   void* aErrorCbContext)
+{
+  IMPL_GECKO_MEDIA_REFLECTOR_GET(GeckoMediaSourceBuffer)
+
+  reflector->mSourceBuffer->AppendData(
+    aData, aLength, aSuccessCb, aSuccessCbContext, aErrorCb, aErrorCbContext);
 }
 
 SourceBuffer*

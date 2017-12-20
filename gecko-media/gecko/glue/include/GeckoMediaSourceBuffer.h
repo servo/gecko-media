@@ -59,10 +59,17 @@ struct GeckoMediaSourceBufferImpl
   void (*mSetGroupEndTimestamp)(void*, double);
   AppendState (*mGetAppendState)(void*);
   void (*mSetAppendState)(void*, AppendState);
+  bool (*mGetUpdating)(void*);
+  void (*mSetUpdating)(void*, bool);
+  bool (*mGetActive)(void*);
+  void (*mSetActive)(void*, bool);
 };
 
 SourceBuffer*
 GetSourceBuffer(const size_t aId);
+
+typedef void (*success_callback_t)(void*);
+typedef void (*error_callback_t)(void*, uint32_t);
 
 extern "C" {
 // TODO error handling (i.e. aId or aParentId may not be valid)
@@ -78,8 +85,17 @@ GeckoMedia_SourceBuffer_Shutdown(size_t aId);
 
 void
 GeckoMedia_SourceBuffer_EvictData(size_t aId,
-                                  int64_t aLength,
+                                  size_t aLength,
                                   bool* aBufferFull);
+
+void
+GeckoMedia_SourceBuffer_AppendData(size_t aId,
+                                   const uint8_t* aData,
+                                   size_t aLength,
+                                   success_callback_t aSuccessCb,
+                                   void* aSuccessCbContext,
+                                   error_callback_t aErrorCb,
+                                   void* aErrorCbContext);
 }
 
 #endif // GeckoMediaSourceBuffer_h_

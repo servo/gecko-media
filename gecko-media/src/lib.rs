@@ -54,7 +54,9 @@ mod tests {
     use std::ptr;
     use std::rc::Rc;
     use std::sync::{Mutex, mpsc};
-    use {CanPlayType, GeckoMedia, GeckoMediaSource, GeckoMediaSourceImpl, GeckoMediaTimeInterval};
+    use {CanPlayType, GeckoMedia, GeckoMediaTimeInterval};
+    use {GeckoMediaSource, GeckoMediaSourceImpl};
+    use {GeckoMediaSourceBuffer, GeckoMediaSourceBufferImpl};
 
     fn test_can_play_type() {
         let gecko_media = GeckoMedia::get().unwrap();
@@ -337,6 +339,10 @@ mod tests {
                 gecko_media_source: GeckoMedia::create_media_source(weak_impl).unwrap(),
             }
         }
+
+        pub fn id(&self) -> usize {
+            self.gecko_media_source.get_id()
+        }
     }
     struct MediaSourceImpl {
         pub values: Rc<MediaSourceValues>,
@@ -392,6 +398,96 @@ mod tests {
         assert_eq!(gecko_media.is_type_supported("audio/wav"), false);
     }
 
+    struct SourceBufferAttributes {}
+
+    impl SourceBufferAttributes {
+        pub fn new() -> Self {
+            SourceBufferAttributes {}
+        }
+    }
+
+    impl GeckoMediaSourceBufferImpl for SourceBufferAttributes {
+        fn get_append_window_start(&self) -> f64 {
+            0.
+        }
+        fn set_append_window_start(&self, _: f64) {}
+        fn get_append_window_end(&self) -> f64 {
+            0.
+        }
+        fn set_append_window_end(&self, _: f64) {}
+        fn get_timestamp_offset(&self) -> f64 {
+            0.
+        }
+        fn set_timestamp_offset(&self, _: f64) {}
+        fn get_append_mode(&self) -> i32 {
+            0
+        }
+        fn set_append_mode(&self, _: i32) {}
+        fn get_group_start_timestamp(&self, _: *mut f64) {}
+        fn set_group_start_timestamp(&self, _: f64) {}
+        fn have_group_start_timestamp(&self) -> bool {
+            false
+        }
+        fn reset_group_start_timestamp(&self) {}
+        fn restart_group_start_timestamp(&self) {}
+        fn get_group_end_timestamp(&self) -> f64 {
+            0.
+        }
+        fn set_group_end_timestamp(&self, _: f64) {}
+        fn get_append_state(&self) -> i32 {
+            0
+        }
+        fn set_append_state(&self, _: i32) {}
+        fn get_updating(&self) -> bool {
+            false
+        }
+        fn set_updating(&self, _: bool) {}
+        fn get_active(&self) -> bool {
+            false
+        }
+        fn set_active(&self, _: bool) {}
+    }
+
+    struct SourceBufferDom {
+        pub attributes: Rc<SourceBufferAttributes>,
+        pub gecko_media: GeckoMediaSourceBuffer,
+    }
+
+    impl SourceBufferDom {
+        pub fn new(parent_media_source: &MediaSourceDom, mime: &str) -> Self {
+            let attributes = Rc::new(SourceBufferAttributes::new());
+            let weak_attributes = Rc::downgrade(&(&attributes));
+            Self {
+                attributes,
+                gecko_media: GeckoMedia::create_source_buffer(weak_attributes, parent_media_source.id(), mime, false)
+                    .unwrap(),
+            }
+        }
+
+        pub fn append_data<S, E>(&self, data: *const u8, len: usize, success_cb: S, error_cb: E)
+            where S: Fn(), E: Fn(u32)
+        {
+            self.gecko_media.append_data(
+                data,
+                len,
+                success_cb,
+                error_cb,
+            );
+        }
+    }
+
+    fn test_source_buffer() {
+        let media_source = MediaSourceDom::new();
+        let source_buffer = SourceBufferDom::new(&media_source, "video/mp4");
+        let empty: [u8; 0] = [];
+        // TODO For now this only tests that the mechanism to send closures through FFI works.
+        // Should throw error because no decoder is attached yet.
+        source_buffer.append_data(empty.as_ptr(), empty.len(), || { unreachable!() }, |_| {
+            // TODO check error code.
+            assert!(true);
+        });
+    }
+
     #[test]
     fn run_tests() {
         GeckoMedia::get().unwrap();
@@ -405,6 +501,7 @@ mod tests {
         test_basic_playback();
         test_seeking();
         test_media_source();
+        test_source_buffer();
         GeckoMedia::shutdown().unwrap();
     }
 }

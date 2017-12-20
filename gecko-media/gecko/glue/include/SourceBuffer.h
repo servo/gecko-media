@@ -31,14 +31,40 @@ public:
 
   void EvictData(size_t aLength, bool* aBufferFull);
 
+  void AppendData(const uint8_t* aData,
+                  size_t aLength,
+                  success_callback_t aSuccessCb,
+                  void* aSuccessCbContext,
+                  error_callback_t aErrorCb,
+                  void* aErrorCbContext);
+
 private:
   ~SourceBuffer(){};
+
+  void ResetParserState();
+
+  // If the media segment contains data beyond the current duration,
+  // then run the duration change algorithm with new duration set to the
+  // maximum of the current duration and the group end timestamp.
+  void CheckEndTime();
+
+  void AppendDataCompletedWithSuccess(
+    const SourceBufferTask::AppendBufferResult& aResult,
+    success_callback_t aSuccessCb,
+    void* aSuccessCbContext);
+  void AppendDataErrored(const MediaResult& aError,
+                         error_callback_t aErrorCb,
+                         void* aErrorCbContext);
 
   SourceBufferAttributes mCurrentAttributes;
 
   RefPtr<MediaSource> mMediaSource;
 
   RefPtr<TrackBuffersManager> mTrackBuffersManager;
+
+  MozPromiseRequestHolder<SourceBufferTask::AppendPromise> mPendingAppend;
+  MozPromiseRequestHolder<MediaSource::ActiveCompletionPromise>
+    mCompletionPromise;
 };
 
 } // namespace dom

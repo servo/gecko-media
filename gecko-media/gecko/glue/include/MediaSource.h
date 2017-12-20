@@ -32,7 +32,8 @@ public:
 
   MediaSourceReadyState ReadyState();
 
-  // Attach this MediaSource to Decoder aDecoder.  Returns false if already attached.
+  // Attach this MediaSource to Decoder aDecoder.  Returns false if already
+  // attached.
   bool Attach(MediaSourceDecoder* aDecoder);
   void Detach();
 
@@ -45,16 +46,32 @@ public:
 
   MediaSourceDecoder* GetDecoder() { return mDecoder; }
 
+  // Resolve all CompletionPromise pending.
+  void CompletePendingTransactions();
+
   static bool IsTypeSupported(const char* aType);
 
 private:
+  // SourceBuffer uses SourceBufferIsActive.
+  friend class mozilla::dom::SourceBuffer;
+
   ~MediaSource();
 
   IMPL_GECKO_MEDIA_SIMPLE_SETTER(SetReadyState, MediaSourceReadyState);
 
+  typedef MozPromise<bool, MediaResult, /* IsExclusive = */ true>
+    ActiveCompletionPromise;
+  // Return a MozPromise that will be resolved once all related operations are
+  // completed, or can't progress any further.
+  // Such as, transition of readyState from HAVE_NOTHING to HAVE_METADATA.
+  RefPtr<ActiveCompletionPromise> SourceBufferIsActive(
+    SourceBuffer* aSourceBuffer);
+
   GeckoMediaSourceImpl mImpl;
 
   RefPtr<MediaSourceDecoder> mDecoder;
+
+  nsTArray<MozPromiseHolder<ActiveCompletionPromise>> mCompletionPromises;
 };
 
 } // namespace dom

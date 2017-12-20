@@ -82,6 +82,7 @@ MediaSource::~MediaSource()
 SourceBufferList*
 MediaSource::SourceBuffers()
 {
+  // TODO cache in mSourceBuffers
   MOZ_ASSERT(NS_IsMainThread());
 
   CALLBACK_GUARD(GetSourceBuffers, nullptr);
@@ -96,6 +97,7 @@ MediaSource::SourceBuffers()
 SourceBufferList*
 MediaSource::ActiveSourceBuffers()
 {
+  // TODO cache in mActiveSourceBuffers
   MOZ_ASSERT(NS_IsMainThread());
 
   CALLBACK_GUARD(GetActiveSourceBuffers, nullptr);
@@ -157,12 +159,13 @@ MediaSource::Detach()
   MOZ_ASSERT(NS_IsMainThread());
   CALLBACK_GUARD_VOID(ClearActiveSourceBuffers);
   CALLBACK_GUARD_VOID(ClearSourceBuffers);
-  // TODO MOZ_RELEASE_ASSERT(mCompletionPromises.IsEmpty());
+  MOZ_RELEASE_ASSERT(mCompletionPromises.IsEmpty());
   MSE_DEBUG("mDecoder=%p owner=%p",
-            mDecoder.get(), mDecoder ? mDecoder->GetOwner() : nullptr);
+            mDecoder.get(),
+            mDecoder ? mDecoder->GetOwner() : nullptr);
   if (!mDecoder) {
     MOZ_ASSERT(ReadyState() == MediaSourceReadyState::Closed);
-    MOZ_ASSERT(ActiveSourceBuffers()->Length() ==0 &&
+    MOZ_ASSERT(ActiveSourceBuffers()->Length() == 0 &&
                SourceBuffers()->Length() == 0);
     return;
   }
@@ -224,6 +227,38 @@ MediaSource::EndOfStreamError(const GeckoMediaEndOfStreamError aError)
     default:
       break;
   }
+}
+
+RefPtr<MediaSource::ActiveCompletionPromise>
+MediaSource::SourceBufferIsActive(SourceBuffer* aSourceBuffer)
+{
+  MOZ_ASSERT(NS_IsMainThread());
+
+  // TODO: append active source buffer
+
+  if (!mDecoder) {
+    return ActiveCompletionPromise::CreateAndResolve(true, __func__);
+  }
+
+  mDecoder->NotifyInitDataArrived();
+
+  // Add our promise to the queue.
+  // It will be resolved once the HTMLMediaElement modifies its readyState.
+  MozPromiseHolder<ActiveCompletionPromise> holder;
+  RefPtr<ActiveCompletionPromise> promise = holder.Ensure(__func__);
+  mCompletionPromises.AppendElement(Move(holder));
+  return promise;
+}
+
+void
+MediaSource::CompletePendingTransactions()
+{
+  MOZ_ASSERT(NS_IsMainThread());
+  MSE_DEBUG("Resolving %u promises", unsigned(mCompletionPromises.Length()));
+  for (auto& promise : mCompletionPromises) {
+    promise.Resolve(true, __func__);
+  }
+  mCompletionPromises.Clear();
 }
 
 /* static */

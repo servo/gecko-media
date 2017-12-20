@@ -6,6 +6,7 @@
 
 #include "SourceBuffer.h"
 
+#include "AbstractThread.h"
 #include "GeckoMediaSource.h"
 #include "MediaSourceDemuxer.h"
 #include "mozilla/Logging.h"
@@ -67,6 +68,119 @@ SourceBuffer::EvictData(size_t aLength, bool* aBufferFull)
     aLength);
 
   *aBufferFull = (evicted == Result::BUFFER_FULL);
+}
+
+void
+SourceBuffer::AppendData(const uint8_t* aData,
+                         size_t aLength,
+                         success_callback_t aSuccessCb,
+                         void* aSuccessCbContext,
+                         error_callback_t aErrorCb,
+                         void* aErrorCbContext)
+{
+  MSE_DEBUG("AppendData(aLength=%zu)", aLength);
+
+  RefPtr<MediaByteBuffer> data = new MediaByteBuffer();
+  if (NS_WARN_IF(!data->AppendElements(aData, aLength, fallible))) {
+    return (*aErrorCb)(aErrorCbContext,
+                       uint32_t(NS_ERROR_DOM_QUOTA_EXCEEDED_ERR));
+  }
+
+  if (NS_WARN_IF(!mTrackBuffersManager)) {
+    return (*aErrorCb)(aErrorCbContext, uint32_t(NS_ERROR_NOT_INITIALIZED));
+  }
+
+  RefPtr<SourceBuffer> self = this;
+  mTrackBuffersManager->AppendData(data.forget(), mCurrentAttributes)
+    ->Then(AbstractThread::MainThread(),
+           __func__,
+           [self, this, aSuccessCb, aSuccessCbContext](
+             const SourceBufferTask::AppendBufferResult& aResult) {
+             AppendDataCompletedWithSuccess(
+               aResult, aSuccessCb, aSuccessCbContext);
+           },
+           [self, this, aErrorCb, aErrorCbContext](const MediaResult& aError) {
+             AppendDataErrored(aError, aErrorCb, aErrorCbContext);
+           })
+    ->Track(mPendingAppend);
+}
+
+void
+SourceBuffer::AppendDataCompletedWithSuccess(
+  const SourceBufferTask::AppendBufferResult& aResult,
+  success_callback_t aSuccessCb,
+  void* aSuccessCbContext)
+{
+  MOZ_ASSERT(mCurrentAttributes.GetUpdating());
+  mPendingAppend.Complete();
+
+  if (aResult.first()) {
+    if (!mCurrentAttributes.GetActive()) {
+      mCurrentAttributes.SetActive(true);
+      MSE_DEBUG("Init segment received");
+      RefPtr<SourceBuffer> self = this;
+      mMediaSource->SourceBufferIsActive(this)
+        ->Then(AbstractThread::MainThread(),
+               __func__,
+               [self, this, aSuccessCb, aSuccessCbContext]() {
+                 MSE_DEBUG("Complete AppendBuffer operation");
+                 mCompletionPromise.Complete();
+                 (*aSuccessCb)(aSuccessCbContext);
+               })
+        ->Track(mCompletionPromise);
+    }
+  }
+  if (mCurrentAttributes.GetActive()) {
+    // Tell our parent decoder that we have received new data
+    // and send progress event.
+    mMediaSource->GetDecoder()->NotifyDataArrived();
+  }
+
+  mCurrentAttributes = aResult.second();
+
+  CheckEndTime();
+
+  if (!mCompletionPromise.Exists()) {
+    (*aSuccessCb)(aSuccessCbContext);
+  }
+
+}
+
+void
+SourceBuffer::AppendDataErrored(const MediaResult& aError,
+                                error_callback_t aErrorCb,
+                                void* aErrorCbContext)
+{
+  MOZ_ASSERT(mCurrentAttributes.GetUpdating());
+  mPendingAppend.Complete();
+
+  switch (aError.Code()) {
+    case NS_ERROR_DOM_MEDIA_CANCELED:
+      // Nothing further to do as the trackbuffer has been shutdown.
+      // or append was aborted and abort() has handled all the events.
+      break;
+    default:
+      (*aErrorCb)(aErrorCbContext, uint32_t(NS_ERROR_DOM_MEDIA_CANCELED));
+      break;
+  }
+}
+
+void
+SourceBuffer::CheckEndTime()
+{
+  MOZ_ASSERT(NS_IsMainThread());
+  // Check if we need to update mMediaSource duration
+  double endTime = mCurrentAttributes.GetGroupEndTimestamp().ToSeconds();
+  double duration = mMediaSource->Duration();
+  if (endTime > duration) {
+    mMediaSource->DurationChange(endTime);
+  }
+}
+
+void
+SourceBuffer::ResetParserState()
+{
+  mTrackBuffersManager->ResetParserState(mCurrentAttributes);
 }
 
 } // namespace dom

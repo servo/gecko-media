@@ -32,7 +32,7 @@ impl MediaSource {
         let id = self.id;
         self.gecko_media.queue_task(move || unsafe {
             GeckoMedia_MediaSource_EndOfStreamError(id, error);
-        })
+        });
     }
 }
 

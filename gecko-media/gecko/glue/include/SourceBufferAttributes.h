@@ -51,6 +51,10 @@ public:
                                  AppendState,
                                  AppendState::WAITING_FOR_SEGMENT)
   IMPL_GECKO_MEDIA_SIMPLE_SETTER(SetAppendState, AppendState)
+  IMPL_GECKO_MEDIA_SIMPLE_GETTER(GetUpdating, bool, false)
+  IMPL_GECKO_MEDIA_SIMPLE_SETTER(SetUpdating, bool)
+  IMPL_GECKO_MEDIA_SIMPLE_GETTER(GetActive, bool, false)
+  IMPL_GECKO_MEDIA_SIMPLE_SETTER(SetActive, bool)
 
   double GetApparentTimestampOffset()
   {

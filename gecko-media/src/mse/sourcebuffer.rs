@@ -2,9 +2,10 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use bindings::GeckoMedia_SourceBuffer_EvictData;
 use bindings::{GeckoMediaSourceBufferImpl, GeckoMedia_SourceBuffer_Create};
+use bindings::{GeckoMedia_SourceBuffer_AppendData, GeckoMedia_SourceBuffer_EvictData};
 use std::ffi::CString;
+use std::os::raw::c_void;
 use std::rc::Rc;
 use std::sync::mpsc;
 
@@ -38,14 +39,46 @@ impl SourceBuffer {
         let (sender, receiver) = mpsc::channel();
         self.gecko_media.queue_task(move || unsafe {
             sender
-                .send(GeckoMedia_SourceBuffer_EvictData(
-                    id,
-                    len as i64,
-                    buffer_full,
-                ))
+                .send(GeckoMedia_SourceBuffer_EvictData(id, len, buffer_full))
                 .unwrap();
         });
         receiver.recv().unwrap();
+    }
+
+    pub fn append_data<F, E>(&self, data: *const u8, len: usize, success_cb: F, error_cb: E)
+    where
+        F: FnOnce(),
+        E: FnOnce(u32),
+    {
+        let id = self.id;
+        let success_cb = &success_cb as *const _ as *mut c_void;
+        let error_cb = &error_cb as *const _ as *mut c_void;
+        self.gecko_media.queue_task(move || unsafe {
+            GeckoMedia_SourceBuffer_AppendData(id, data, len,
+                                               Some(success_callback_wrapper::<F>), success_cb,
+                                               Some(error_callback_wrapper::<E>), error_cb);
+        });
+
+        extern "C" fn success_callback_wrapper<F>(closure: *mut c_void)
+        where
+            F: FnOnce(),
+        {
+            let opt_closure = closure as *mut Option<F>;
+            unsafe {
+                (*opt_closure).take().unwrap()();
+            }
+        }
+
+        extern "C" fn error_callback_wrapper<F>(closure: *mut c_void, error: u32)
+        where
+            F: FnOnce(u32),
+        {
+            let opt_closure = closure as *mut Option<F>;
+            unsafe {
+                (*opt_closure).take().unwrap()(error);
+            }
+        }
+
     }
 }
 
@@ -71,6 +104,10 @@ pub trait SourceBufferImpl {
     fn set_group_end_timestamp(&self, f64);
     fn get_append_state(&self) -> i32;
     fn set_append_state(&self, i32);
+    fn get_updating(&self) -> bool;
+    fn set_updating(&self, bool);
+    fn get_active(&self) -> bool;
+    fn set_active(&self, bool);
 }
 
 pub fn to_ffi_callbacks(callbacks: Rc<SourceBufferImpl>) -> GeckoMediaSourceBufferImpl {
@@ -95,6 +132,10 @@ pub fn to_ffi_callbacks(callbacks: Rc<SourceBufferImpl>) -> GeckoMediaSourceBuff
     impl_simple_ffi_setter_wrapper!(set_group_end_timestamp, f64);
     impl_simple_ffi_getter_wrapper!(get_append_state, i32);
     impl_simple_ffi_setter_wrapper!(set_append_state, i32);
+    impl_simple_ffi_getter_wrapper!(get_updating, bool);
+    impl_simple_ffi_setter_wrapper!(set_updating, bool);
+    impl_simple_ffi_getter_wrapper!(get_active, bool);
+    impl_simple_ffi_setter_wrapper!(set_active, bool);
 
     unsafe extern "C" fn get_group_start_timestamp(ptr: *mut c_void, timestamp: *mut f64) {
         let wrapper = &*(ptr as *mut Wrapper);
@@ -123,5 +164,9 @@ pub fn to_ffi_callbacks(callbacks: Rc<SourceBufferImpl>) -> GeckoMediaSourceBuff
         mSetGroupEndTimestamp: Some(set_group_end_timestamp),
         mGetAppendState: Some(get_append_state),
         mSetAppendState: Some(set_append_state),
+        mGetUpdating: Some(get_updating),
+        mSetUpdating: Some(set_updating),
+        mGetActive: Some(get_active),
+        mSetActive: Some(set_active),
     }
 }
