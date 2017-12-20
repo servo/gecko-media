@@ -60,6 +60,7 @@ mod tests {
             gecko_media.can_play_type("audio/mp4; codecs=\"bogus\""),
             CanPlayType::No
         );
+        assert_eq!(gecko_media.can_play_type("audio/aac"), CanPlayType::Maybe);
         assert_eq!(gecko_media.can_play_type("audio/wav"), CanPlayType::Maybe);
         assert_eq!(gecko_media.can_play_type("audio/mp3"), CanPlayType::Maybe);
         assert_eq!(gecko_media.can_play_type("audio/mp4"), CanPlayType::Maybe);
