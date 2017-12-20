@@ -202,7 +202,10 @@ MediaSourceDecoder::Ended(bool aEnded)
   if (aEnded) {
     // We want the MediaSourceReader to refresh its buffered range as it may
     // have been modified (end lined up).
+    // FIXME: uncomment this for https://github.com/servo/gecko-media/pull/126
+#ifndef GECKO_MEDIA_CRATE
     NotifyDataArrived();
+#endif
   }
   mEnded = aEnded;
 }

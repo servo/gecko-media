@@ -553,6 +553,7 @@ MediaStreamGraphImpl::AudioTrackPresent(bool& aNeedsAEC)
 void
 MediaStreamGraphImpl::UpdateStreamOrder()
 {
+#ifndef GECKO_MEDIA_CRATE
   MOZ_ASSERT(OnGraphThreadOrNotRunning());
   bool shouldAEC = false;
   bool audioTrackPresent = AudioTrackPresent(shouldAEC);
@@ -729,7 +730,6 @@ MediaStreamGraphImpl::UpdateStreamOrder()
     //
     // DelayNodes in cycles must behave differently from those not in cycles,
     // so all DelayNodes in the SCC must be identified.
-#ifndef GECKO_MEDIA_CRATE
     while (next && static_cast<ProcessedMediaStream*>(next)->
            mCycleMarker <= cycleStackMarker) {
       auto ns = next->AsAudioNodeStream();
@@ -747,7 +747,6 @@ MediaStreamGraphImpl::UpdateStreamOrder()
         mStreams[mFirstCycleBreaker] = ns;
       }
     }
-#endif
     auto after_scc = next;
     while ((next = sccStack.getFirst()) != after_scc) {
       next->remove();
@@ -774,6 +773,7 @@ MediaStreamGraphImpl::UpdateStreamOrder()
   }
 
   MOZ_ASSERT(orderedStreamCount == mFirstCycleBreaker);
+#endif
 }
 
 void
@@ -791,6 +791,7 @@ MediaStreamGraphImpl::NotifyHasCurrentData(MediaStream* aStream)
 void
 MediaStreamGraphImpl::CreateOrDestroyAudioStreams(MediaStream* aStream)
 {
+#ifndef GECKO_MEDIA_CRATE
   MOZ_ASSERT(OnGraphThreadOrNotRunning());
   MOZ_ASSERT(mRealtime, "Should only attempt to create audio streams in real-time mode");
 
@@ -853,6 +854,7 @@ MediaStreamGraphImpl::CreateOrDestroyAudioStreams(MediaStream* aStream)
       aStream->mAudioOutputStreams.RemoveElementAt(i);
     }
   }
+#endif
 }
 
 StreamTime
@@ -974,6 +976,7 @@ void
 MediaStreamGraphImpl::OpenAudioInputImpl(int aID,
                                          AudioDataListener *aListener)
 {
+#ifndef GECKO_MEDIA_CRATE
   MOZ_ASSERT(OnGraphThreadOrNotRunning());
   // Bug 1238038 Need support for multiple mics at once
   if (mInputDeviceUsers.Count() > 0 &&
@@ -1019,12 +1022,14 @@ MediaStreamGraphImpl::OpenAudioInputImpl(int aID,
      NS_ASSERTION(false, "Can't open cubeb inputs in shutdown");
     }
   }
+#endif
 }
 
 nsresult
 MediaStreamGraphImpl::OpenAudioInput(int aID,
                                      AudioDataListener *aListener)
 {
+#ifndef GECKO_MEDIA_CRATE
   // So, so, so annoying.  Can't AppendMessage except on Mainthread
   if (!NS_IsMainThread()) {
     RefPtr<nsIRunnable> runnable =
@@ -1050,12 +1055,14 @@ MediaStreamGraphImpl::OpenAudioInput(int aID,
   };
   // XXX Check not destroyed!
   this->AppendMessage(MakeUnique<Message>(this, aID, aListener));
+#endif
   return NS_OK;
 }
 
 void
 MediaStreamGraphImpl::CloseAudioInputImpl(AudioDataListener *aListener)
 {
+#ifndef GECKO_MEDIA_CRATE
   MOZ_ASSERT(OnGraphThreadOrNotRunning());
   uint32_t count;
   DebugOnly<bool> result = mInputDeviceUsers.Get(aListener, &count);
@@ -1094,11 +1101,13 @@ MediaStreamGraphImpl::CloseAudioInputImpl(AudioDataListener *aListener)
       CurrentDriver()->SwitchAtNextIteration(driver);
     } // else SystemClockDriver->SystemClockDriver, no switch
   }
+#endif
 }
 
 void
 MediaStreamGraphImpl::CloseAudioInput(AudioDataListener *aListener)
 {
+#ifndef GECKO_MEDIA_CRATE
   // So, so, so annoying.  Can't AppendMessage except on Mainthread
   if (!NS_IsMainThread()) {
     RefPtr<nsIRunnable> runnable =
@@ -1120,6 +1129,7 @@ MediaStreamGraphImpl::CloseAudioInput(AudioDataListener *aListener)
     RefPtr<AudioDataListener> mListener;
   };
   this->AppendMessage(MakeUnique<Message>(this, aListener));
+#endif
 }
 
 // All AudioInput listeners get the same speaker data (at least for now).
@@ -1377,6 +1387,7 @@ MediaStreamGraphImpl::UpdateGraph(GraphTime aEndBlockingDecisions)
 void
 MediaStreamGraphImpl::Process()
 {
+#ifndef GECKO_MEDIA_CRATE
   MOZ_ASSERT(OnGraphThread());
   // Play stream contents.
   bool allBlockedForever = true;
@@ -1394,7 +1405,6 @@ MediaStreamGraphImpl::Process()
     if (!doneAllProducing) {
       ProcessedMediaStream* ps = stream->AsProcessedStream();
       if (ps) {
-#ifndef GECKO_MEDIA_CRATE
         AudioNodeStream* n = stream->AsAudioNodeStream();
         if (n) {
 #ifdef DEBUG
@@ -1418,7 +1428,6 @@ MediaStreamGraphImpl::Process()
                        GraphTimeToStreamTimeWithBlocking(stream, mStateComputedTime),
                        "Stream did not produce enough data");
         }
-#endif
       }
     }
     NotifyHasCurrentData(stream);
@@ -1456,6 +1465,7 @@ MediaStreamGraphImpl::Process()
   if (!allBlockedForever) {
     EnsureNextIteration();
   }
+#endif
 }
 
 bool
@@ -1725,6 +1735,7 @@ public:
 void
 MediaStreamGraphImpl::RunInStableState(bool aSourceIsMSG)
 {
+#ifndef GECKO_MEDIA_CRATE
   MOZ_ASSERT(NS_IsMainThread(), "Must be called on main thread");
 
   nsTArray<nsCOMPtr<nsIRunnable> > runnables;
@@ -1884,6 +1895,7 @@ MediaStreamGraphImpl::RunInStableState(bool aSourceIsMSG)
   for (uint32_t i = 0; i < runnables.Length(); ++i) {
     runnables[i]->Run();
   }
+#endif
 }
 
 
@@ -3255,6 +3267,9 @@ SourceMediaStream::HasPendingAudioTrack()
 bool
 SourceMediaStream::OpenNewAudioCallbackDriver(AudioDataListener * aListener)
 {
+#ifdef GECKO_MEDIA_CRATE
+  return false;
+#else
   AudioCallbackDriver* nextDriver = new AudioCallbackDriver(GraphImpl());
   nextDriver->SetInputListener(aListener);
   {
@@ -3265,6 +3280,7 @@ SourceMediaStream::OpenNewAudioCallbackDriver(AudioDataListener * aListener)
   }
 
   return true;
+#endif
 }
 
 
@@ -3550,6 +3566,7 @@ MediaStreamGraphImpl::MediaStreamGraphImpl(GraphDriverType aDriverRequested,
   , mCanRunMessagesSynchronously(false)
 #endif
 {
+#ifndef GECKO_MEDIA_CRATE
   if (mRealtime) {
     if (aDriverRequested == AUDIO_THREAD_DRIVER) {
       AudioCallbackDriver* driver = new AudioCallbackDriver(this);
@@ -3564,6 +3581,7 @@ MediaStreamGraphImpl::MediaStreamGraphImpl(GraphDriverType aDriverRequested,
   mLastMainThreadUpdate = TimeStamp::Now();
 
   RegisterWeakAsyncMemoryReporter(this);
+#endif
 }
 
 AbstractThread*
@@ -3881,9 +3899,13 @@ MediaStreamGraph::CreateSourceStream()
 ProcessedMediaStream*
 MediaStreamGraph::CreateTrackUnionStream()
 {
+#ifdef GECKO_MEDIA_CRATE
+  return nullptr;
+#else
   TrackUnionStream* stream = new TrackUnionStream();
   AddStream(stream);
   return stream;
+#endif
 }
 
 ProcessedMediaStream*
@@ -4067,6 +4089,7 @@ MediaStreamGraphImpl::ApplyAudioContextOperationImpl(
     MediaStream* aDestinationStream, const nsTArray<MediaStream*>& aStreams,
     AudioContextOperation aOperation, void* aPromise)
 {
+#ifndef GECKO_MEDIA_CRATE
   MOZ_ASSERT(OnGraphThread());
 
   SuspendOrResumeStreams(aOperation, aStreams);
@@ -4081,7 +4104,6 @@ MediaStreamGraphImpl::ApplyAudioContextOperationImpl(
     }
   }
 
-#ifndef GECKO_MEDIA_CRATE
   // If we have suspended the last AudioContext, and we don't have other
   // streams that have audio, this graph will automatically switch to a
   // SystemCallbackDriver, because it can't find a MediaStream that has an audio
