@@ -8,7 +8,7 @@ use bindings::{GeckoMediaByteRange, GeckoPlanarYCbCrImage, GeckoPlanarYCbCrImage
 use bindings::{GeckoMediaMetadata, GeckoMediaTimeInterval};
 use bindings::{GeckoMedia_Player_CreateBlobPlayer, GeckoMedia_Player_CreateNetworkPlayer};
 use bindings::{GeckoMedia_Player_Pause, GeckoMedia_Player_Play};
-use bindings::{GeckoMedia_Player_Seek, GeckoMedia_Player_SetVolume};
+use bindings::{GeckoMedia_Player_Seek, GeckoMedia_Player_SetPlaybackRate, GeckoMedia_Player_SetVolume};
 use bindings::{PlayerCallbackObject, RustVecU8Object};
 use std::ffi::CStr;
 use std::ffi::CString;
@@ -364,11 +364,21 @@ impl Player {
             GeckoMedia_Player_Seek(player_id, time_offset_seconds);
         });
     }
-    // Changes the volume. Volume is in the range [0, 1.0].
+    /// Changes the volume. Volume is in the range [0, 1.0].
     pub fn set_volume(&self, volume: f64) {
         let player_id = self.id;
         self.gecko_media.queue_task(move || unsafe {
             GeckoMedia_Player_SetVolume(player_id, volume);
+        });
+    }
+
+    /// Changes the playback rate. 1.0 is "normal speed," values lower than 1.0
+    /// make the media play slower than normal, higher values make it play
+    /// faster.
+    pub fn set_playback_rate(&self, rate: f64) {
+        let player_id = self.id;
+        self.gecko_media.queue_task(move || unsafe {
+            GeckoMedia_Player_SetPlaybackRate(player_id, rate);
         });
     }
 }

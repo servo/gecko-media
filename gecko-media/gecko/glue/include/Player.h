@@ -146,6 +146,9 @@ GeckoMedia_Player_Shutdown(size_t aId);
 
 void
 GeckoMedia_Player_SetVolume(size_t aId, double volume);
+
+void
+GeckoMedia_Player_SetPlaybackRate(size_t aId, double rate);
 }
 
 #endif // Player_h_
