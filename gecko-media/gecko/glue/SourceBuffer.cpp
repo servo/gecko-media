@@ -160,6 +160,7 @@ SourceBuffer::AppendDataErrored(const MediaResult& aError,
       // or append was aborted and abort() has handled all the events.
       break;
     default:
+      ResetParserState();
       (*aErrorCb)(aErrorCbContext, uint32_t(NS_ERROR_DOM_MEDIA_CANCELED));
       break;
   }
