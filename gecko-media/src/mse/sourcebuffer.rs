@@ -2,8 +2,10 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use bindings::{GeckoMediaSourceBufferImpl, GeckoMedia_SourceBuffer_Create};
-use bindings::{GeckoMedia_SourceBuffer_AppendData, GeckoMedia_SourceBuffer_EvictData};
+use bindings::GeckoMediaSourceBufferImpl;
+use bindings::GeckoMedia_SourceBuffer_ResetParserState;
+use bindings::{GeckoMedia_SourceBuffer_AbortBufferAppend, GeckoMedia_SourceBuffer_AppendData};
+use bindings::{GeckoMedia_SourceBuffer_Create, GeckoMedia_SourceBuffer_EvictData};
 use std::ffi::CString;
 use std::os::raw::c_void;
 use std::rc::Rc;
@@ -79,6 +81,20 @@ impl SourceBuffer {
             }
         }
 
+    }
+
+    pub fn abort_buffer_append(&self) {
+        let id = self.id;
+        self.gecko_media.queue_task(move || unsafe {
+            GeckoMedia_SourceBuffer_AbortBufferAppend(id);
+        });
+    }
+
+    pub fn reset_parser_state(&self) {
+        let id = self.id;
+        self.gecko_media.queue_task(move || unsafe {
+            GeckoMedia_SourceBuffer_ResetParserState(id);
+        });
     }
 }
 

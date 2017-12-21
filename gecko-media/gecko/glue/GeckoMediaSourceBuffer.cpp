@@ -69,6 +69,22 @@ GeckoMedia_SourceBuffer_AppendData(size_t aId,
     aData, aLength, aSuccessCb, aSuccessCbContext, aErrorCb, aErrorCbContext);
 }
 
+void
+GeckoMedia_SourceBuffer_AbortBufferAppend(size_t aId)
+{
+  IMPL_GECKO_MEDIA_REFLECTOR_GET(GeckoMediaSourceBuffer)
+
+  reflector->mSourceBuffer->AbortBufferAppend();
+}
+
+void
+GeckoMedia_SourceBuffer_ResetParserState(size_t aId)
+{
+  IMPL_GECKO_MEDIA_REFLECTOR_GET(GeckoMediaSourceBuffer)
+
+  reflector->mSourceBuffer->ResetParserState();
+}
+
 SourceBuffer*
 GetSourceBuffer(const size_t aId)
 {

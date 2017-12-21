@@ -38,12 +38,14 @@ public:
                   error_callback_t aErrorCb,
                   void* aErrorCbContext);
 
+  void AbortBufferAppend();
+
+  void ResetParserState();
+
 private:
   friend class MediaSource;
 
   ~SourceBuffer(){};
-
-  void ResetParserState();
 
   // If the media segment contains data beyond the current duration,
   // then run the duration change algorithm with new duration set to the

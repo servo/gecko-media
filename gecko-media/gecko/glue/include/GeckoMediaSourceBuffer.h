@@ -97,6 +97,12 @@ GeckoMedia_SourceBuffer_AppendData(size_t aId,
                                    void* aSuccessCbContext,
                                    error_callback_t aErrorCb,
                                    void* aErrorCbContext);
+
+void
+GeckoMedia_SourceBuffer_AbortBufferAppend(size_t aId);
+
+void
+GeckoMedia_SourceBuffer_ResetParserState(size_t aId);
 }
 
 #endif // GeckoMediaSourceBuffer_h_

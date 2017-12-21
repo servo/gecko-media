@@ -179,6 +179,22 @@ SourceBuffer::CheckEndTime()
 }
 
 void
+SourceBuffer::AbortBufferAppend()
+{
+  MOZ_ASSERT(NS_IsMainThread());
+
+  if (mCurrentAttributes.GetUpdating()) {
+    mCompletionPromise.DisconnectIfExists();
+    if (mPendingAppend.Exists()) {
+      mPendingAppend.Disconnect();
+      mTrackBuffersManager->AbortAppendData();
+    }
+
+    mCurrentAttributes.SetUpdating(false);
+  }
+}
+
+void
 SourceBuffer::ResetParserState()
 {
   mTrackBuffersManager->ResetParserState(mCurrentAttributes);
