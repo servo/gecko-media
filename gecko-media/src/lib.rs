@@ -467,7 +467,9 @@ mod tests {
         }
 
         pub fn append_data<S, E>(&self, data: *const u8, len: usize, success_cb: S, error_cb: E)
-            where S: Fn(), E: Fn(u32)
+        where
+            S: Fn(),
+            E: Fn(u32),
         {
             self.gecko_media.append_data(
                 data,
@@ -484,7 +486,7 @@ mod tests {
         let empty: [u8; 0] = [];
         // TODO For now this only tests that the mechanism to send closures through FFI works.
         // Should throw error because no decoder is attached yet.
-        source_buffer.append_data(empty.as_ptr(), empty.len(), || { unreachable!() }, |_| {
+        source_buffer.append_data(empty.as_ptr(), empty.len(), || unreachable!(), |_| {
             // TODO check error code.
             assert!(true);
         });

@@ -56,9 +56,15 @@ impl SourceBuffer {
         let success_cb = &success_cb as *const _ as *mut c_void;
         let error_cb = &error_cb as *const _ as *mut c_void;
         self.gecko_media.queue_task(move || unsafe {
-            GeckoMedia_SourceBuffer_AppendData(id, data, len,
-                                               Some(success_callback_wrapper::<F>), success_cb,
-                                               Some(error_callback_wrapper::<E>), error_cb);
+            GeckoMedia_SourceBuffer_AppendData(
+                id,
+                data,
+                len,
+                Some(success_callback_wrapper::<F>),
+                success_cb,
+                Some(error_callback_wrapper::<E>),
+                error_cb,
+            );
         });
 
         extern "C" fn success_callback_wrapper<F>(closure: *mut c_void)
