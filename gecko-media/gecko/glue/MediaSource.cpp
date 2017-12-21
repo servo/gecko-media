@@ -15,6 +15,7 @@
 #include "mozilla/Logging.h"
 #include "mozilla/Preferences.h"
 #include "nsThreadManager.h"
+#include "SourceBuffer.h"
 
 mozilla::LogModule*
 GetMediaSourceLog()
@@ -61,6 +62,8 @@ namespace dom {
 
 MediaSource::MediaSource(GeckoMediaSourceImpl aImpl)
   : mImpl(aImpl)
+  , mSourceBuffers(GetSourceBuffers())
+  , mActiveSourceBuffers(GetActiveSourceBuffers())
   , mDecoder(nullptr)
 {
 }
@@ -83,6 +86,14 @@ SourceBufferList*
 MediaSource::SourceBuffers()
 {
   MOZ_ASSERT(NS_IsMainThread());
+  MOZ_ASSERT_IF(ReadyState() == MediaSourceReadyState::Closed, mSourceBuffers->Length() == 0);
+  return mSourceBuffers;
+}
+
+SourceBufferList*
+MediaSource::GetSourceBuffers()
+{
+  MOZ_ASSERT(NS_IsMainThread());
 
   CALLBACK_GUARD(GetSourceBuffers, nullptr);
   size_t* id = CALLBACK_CALL(GetSourceBuffers);
@@ -95,6 +106,14 @@ MediaSource::SourceBuffers()
 
 SourceBufferList*
 MediaSource::ActiveSourceBuffers()
+{
+  MOZ_ASSERT(NS_IsMainThread());
+  MOZ_ASSERT_IF(ReadyState() == MediaSourceReadyState::Closed, mActiveSourceBuffers->Length() == 0);
+  return mActiveSourceBuffers;
+}
+
+SourceBufferList*
+MediaSource::GetActiveSourceBuffers()
 {
   MOZ_ASSERT(NS_IsMainThread());
 
@@ -161,13 +180,13 @@ MediaSource::Detach()
             mDecoder ? mDecoder->GetOwner() : nullptr);
   if (!mDecoder) {
     MOZ_ASSERT(ReadyState() == MediaSourceReadyState::Closed);
-    MOZ_ASSERT(ActiveSourceBuffers()->Length() == 0 &&
-               SourceBuffers()->Length() == 0);
+    MOZ_ASSERT(mActiveSourceBuffers->Length() == 0 &&
+               mSourceBuffers->Length() == 0);
     return;
   }
   SetReadyState(MediaSourceReadyState::Closed);
-  SourceBuffers()->Clear();
-  ActiveSourceBuffers()->Clear();
+  mSourceBuffers->Clear();
+  mActiveSourceBuffers->Clear();
   mDecoder->DetachMediaSource();
   mDecoder = nullptr;
 }
@@ -230,9 +249,21 @@ MediaSource::SourceBufferIsActive(SourceBuffer* aSourceBuffer)
 {
   MOZ_ASSERT(NS_IsMainThread());
 
-  // TODO: append active source buffer
+  bool initMissing = false;
+  bool found = false;
+  for (uint32_t i = 0; i < mSourceBuffers->Length() ; i++) {
+    SourceBuffer* sourceBuffer = mSourceBuffers->IndexedGetter(i, found);
+    MOZ_ALWAYS_TRUE(found);
+    if (sourceBuffer == aSourceBuffer) {
+      sourceBuffer->SetActive(true);
+    } else if (!sourceBuffer->GetActive()) {
+      // Some source buffers haven't yet received an init segment.
+      // There's nothing more we can do at this stage.
+      initMissing = true;
+    }
+  }
 
-  if (!mDecoder) {
+  if (initMissing || !mDecoder) {
     return ActiveCompletionPromise::CreateAndResolve(true, __func__);
   }
 

@@ -53,9 +53,12 @@ public:
 
 private:
   // SourceBuffer uses SourceBufferIsActive.
-  friend class mozilla::dom::SourceBuffer;
+  friend class SourceBuffer;
 
   ~MediaSource();
+
+  SourceBufferList* GetSourceBuffers();
+  SourceBufferList* GetActiveSourceBuffers();
 
   IMPL_GECKO_MEDIA_SIMPLE_SETTER(SetReadyState, MediaSourceReadyState);
 
@@ -68,6 +71,9 @@ private:
     SourceBuffer* aSourceBuffer);
 
   GeckoMediaSourceImpl mImpl;
+
+  RefPtr<SourceBufferList> mSourceBuffers;
+  RefPtr<SourceBufferList> mActiveSourceBuffers;
 
   RefPtr<MediaSourceDecoder> mDecoder;
 

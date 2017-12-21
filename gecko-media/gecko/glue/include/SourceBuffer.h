@@ -39,6 +39,8 @@ public:
                   void* aErrorCbContext);
 
 private:
+  friend class MediaSource;
+
   ~SourceBuffer(){};
 
   void ResetParserState();
@@ -55,6 +57,9 @@ private:
   void AppendDataErrored(const MediaResult& aError,
                          error_callback_t aErrorCb,
                          void* aErrorCbContext);
+
+  bool GetActive() { return mCurrentAttributes.GetActive(); }
+  void SetActive(bool aActive) { mCurrentAttributes.SetActive(aActive); }
 
   SourceBufferAttributes mCurrentAttributes;
 
