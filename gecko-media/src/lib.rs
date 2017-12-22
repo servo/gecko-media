@@ -105,15 +105,23 @@ mod tests {
         let (sender, receiver) = mpsc::channel();
         struct Sink {
             sender: Mutex<mpsc::Sender<Status>>,
+            ended: Mutex<Cell<bool>>,
         }
         impl PlayerEventSink for Sink {
             fn playback_ended(&self) {
+                self.ended.lock().unwrap().set(true);
                 self.sender.lock().unwrap().send(Status::Ended).unwrap();
             }
             fn decode_error(&self) {
+                if self.ended.lock().unwrap().get() {
+                    return;
+                }
                 self.sender.lock().unwrap().send(Status::Error).unwrap();
             }
             fn async_event(&self, name: &str) {
+                if self.ended.lock().unwrap().get() {
+                    return;
+                }
                 self.sender
                     .lock()
                     .unwrap()
@@ -121,6 +129,9 @@ mod tests {
                     .unwrap();
             }
             fn metadata_loaded(&self, metadata: Metadata) {
+                if self.ended.lock().unwrap().get() {
+                    return;
+                }
                 self.sender
                     .lock()
                     .unwrap()
@@ -128,6 +139,9 @@ mod tests {
                     .unwrap();
             }
             fn duration_changed(&self, duration: f64) {
+                if self.ended.lock().unwrap().get() {
+                    return;
+                }
                 self.sender
                     .lock()
                     .unwrap()
@@ -135,6 +149,9 @@ mod tests {
                     .unwrap();
             }
             fn loaded_data(&self) {
+                if self.ended.lock().unwrap().get() {
+                    return;
+                }
                 self.sender
                     .lock()
                     .unwrap()
@@ -142,6 +159,9 @@ mod tests {
                     .unwrap();
             }
             fn time_update(&self, time: f64) {
+                if self.ended.lock().unwrap().get() {
+                    return;
+                }
                 self.sender
                     .lock()
                     .unwrap()
@@ -149,6 +169,9 @@ mod tests {
                     .unwrap();
             }
             fn seek_started(&self) {
+                if self.ended.lock().unwrap().get() {
+                    return;
+                }
                 self.sender
                     .lock()
                     .unwrap()
@@ -156,6 +179,9 @@ mod tests {
                     .unwrap();
             }
             fn seek_completed(&self) {
+                if self.ended.lock().unwrap().get() {
+                    return;
+                }
                 self.sender
                     .lock()
                     .unwrap()
@@ -163,6 +189,9 @@ mod tests {
                     .unwrap();
             }
             fn update_current_images(&self, images: Vec<PlanarYCbCrImage>) {
+                if self.ended.lock().unwrap().get() {
+                    return;
+                }
                 self.sender
                     .lock()
                     .unwrap()
@@ -170,6 +199,9 @@ mod tests {
                     .unwrap();
             }
             fn buffered(&self, ranges: Vec<Range<f64>>) {
+                if self.ended.lock().unwrap().get() {
+                    return;
+                }
                 self.sender
                     .lock()
                     .unwrap()
@@ -177,6 +209,9 @@ mod tests {
                     .unwrap();
             }
             fn seekable(&self, ranges: Vec<Range<f64>>) {
+                if self.ended.lock().unwrap().get() {
+                    return;
+                }
                 self.sender
                     .lock()
                     .unwrap()
@@ -186,6 +221,7 @@ mod tests {
         }
         let sink = Box::new(Sink {
             sender: Mutex::new(sender),
+            ended: Mutex::new(Cell::new(false)),
         });
         let mut file = File::open(path).unwrap();
         let mut bytes = vec![];
