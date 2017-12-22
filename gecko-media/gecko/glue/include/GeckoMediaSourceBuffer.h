@@ -64,13 +64,12 @@ struct GeckoMediaSourceBufferImpl
   void (*mSetUpdating)(void*, bool);
   bool (*mGetActive)(void*);
   void (*mSetActive)(void*, bool);
+  void (*mOnDataAppended)(void*, uint32_t);
+  void (*mOnRangeRemoved)(void*);
 };
 
 SourceBuffer*
 GetSourceBuffer(const size_t aId);
-
-typedef void (*success_callback_t)(void*);
-typedef void (*error_callback_t)(void*, uint32_t);
 
 extern "C" {
 // TODO error handling (i.e. aId or aParentId may not be valid)
@@ -92,11 +91,7 @@ GeckoMedia_SourceBuffer_EvictData(size_t aId,
 void
 GeckoMedia_SourceBuffer_AppendData(size_t aId,
                                    const uint8_t* aData,
-                                   size_t aLength,
-                                   success_callback_t aSuccessCb,
-                                   void* aSuccessCbContext,
-                                   error_callback_t aErrorCb,
-                                   void* aErrorCbContext);
+                                   size_t aLength);
 
 void
 GeckoMedia_SourceBuffer_AbortBufferAppend(size_t aId);
@@ -107,9 +102,7 @@ GeckoMedia_SourceBuffer_ResetParserState(size_t aId);
 void
 GeckoMedia_SourceBuffer_RangeRemoval(size_t aId,
                                      double aStart,
-                                     double aEnd,
-                                     success_callback_t aSuccessCb,
-                                     void* aSuccessCbContext);
+                                     double aEnd);
 }
 
 #endif // GeckoMediaSourceBuffer_h_

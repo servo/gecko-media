@@ -47,24 +47,10 @@ impl SourceBuffer {
         receiver.recv().unwrap();
     }
 
-    pub fn append_data<F, E>(&self, data: *const u8, len: usize, success_cb: F, error_cb: E)
-    where
-        F: FnOnce(),
-        E: FnOnce(u32),
-    {
+    pub fn append_data(&self, data: *const u8, len: usize) {
         let id = self.id;
-        let success_cb = &success_cb as *const _ as *mut c_void;
-        let error_cb = &error_cb as *const _ as *mut c_void;
         self.gecko_media.queue_task(move || unsafe {
-            GeckoMedia_SourceBuffer_AppendData(
-                id,
-                data,
-                len,
-                Some(success_callback_wrapper::<F>),
-                success_cb,
-                Some(error_callback_wrapper::<E>),
-                error_cb,
-            );
+            GeckoMedia_SourceBuffer_AppendData(id, data, len);
         });
     }
 
@@ -82,20 +68,10 @@ impl SourceBuffer {
         });
     }
 
-    pub fn range_removal<F>(&self, start: f64, end: f64, success_cb: F)
-    where
-        F: FnOnce(),
-    {
+    pub fn range_removal(&self, start: f64, end: f64) {
         let id = self.id;
-        let success_cb = &success_cb as *const _ as *mut c_void;
         self.gecko_media.queue_task(move || unsafe {
-            GeckoMedia_SourceBuffer_RangeRemoval(
-                id,
-                start,
-                end,
-                Some(success_callback_wrapper::<F>),
-                success_cb,
-            );
+            GeckoMedia_SourceBuffer_RangeRemoval(id, start, end);
         });
     }
 }
@@ -127,6 +103,8 @@ pub trait SourceBufferImpl {
     fn set_updating(&self, bool);
     fn get_active(&self) -> bool;
     fn set_active(&self, bool);
+    fn on_data_appended(&self, u32);
+    fn on_range_removed(&self);
 }
 
 pub fn to_ffi_callbacks(callbacks: Rc<SourceBufferImpl>) -> GeckoMediaSourceBufferImpl {
@@ -156,10 +134,16 @@ pub fn to_ffi_callbacks(callbacks: Rc<SourceBufferImpl>) -> GeckoMediaSourceBuff
     impl_simple_ffi_setter_wrapper!(set_updating, bool);
     impl_simple_ffi_getter_wrapper!(get_active, bool);
     impl_simple_ffi_setter_wrapper!(set_active, bool);
+    impl_simple_ffi_callback_wrapper!(on_range_removed);
 
     unsafe extern "C" fn get_group_start_timestamp(ptr: *mut c_void, timestamp: *mut f64) {
         let wrapper = &*(ptr as *mut Wrapper);
         wrapper.callbacks.get_group_start_timestamp(timestamp);
+    }
+
+    unsafe extern "C" fn on_data_appended(ptr: *mut c_void, result: u32) {
+        let wrapper = &*(ptr as *mut Wrapper);
+        wrapper.callbacks.on_data_appended(result);
     }
 
     GeckoMediaSourceBufferImpl {
@@ -189,25 +173,7 @@ pub fn to_ffi_callbacks(callbacks: Rc<SourceBufferImpl>) -> GeckoMediaSourceBuff
         mSetUpdating: Some(set_updating),
         mGetActive: Some(get_active),
         mSetActive: Some(set_active),
-    }
-}
-
-extern "C" fn success_callback_wrapper<F>(closure: *mut c_void)
-where
-    F: FnOnce(),
-{
-    let opt_closure = closure as *mut Option<F>;
-    unsafe {
-        (*opt_closure).take().unwrap()();
-    }
-}
-
-extern "C" fn error_callback_wrapper<F>(closure: *mut c_void, error: u32)
-where
-    F: FnOnce(u32),
-{
-    let opt_closure = closure as *mut Option<F>;
-    unsafe {
-        (*opt_closure).take().unwrap()(error);
+        mOnDataAppended: Some(on_data_appended),
+        mOnRangeRemoved: Some(on_range_removed),
     }
 }

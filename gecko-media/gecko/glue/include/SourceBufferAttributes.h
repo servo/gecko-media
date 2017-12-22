@@ -109,6 +109,18 @@ public:
                                    aGroupEndTimestamp.ToSeconds());
   }
 
+  void OnDataAppended(uint32_t aResult)
+  {
+    CALLBACK_GUARD_VOID(OnDataAppended);
+    (*mImpl.mOnDataAppended)(mImpl.mContext, aResult);
+  }
+
+  void OnRangeRemoved()
+  {
+    CALLBACK_GUARD_VOID(OnRangeRemoved);
+    (*mImpl.mOnRangeRemoved)(mImpl.mContext);
+  }
+
   // mGenerateTimestamp isn't mutable once the source buffer has been
   // constructed
   bool mGenerateTimestamps;

@@ -73,45 +73,33 @@ SourceBuffer::EvictData(size_t aLength, bool* aBufferFull)
 }
 
 void
-SourceBuffer::AppendData(const uint8_t* aData,
-                         size_t aLength,
-                         success_callback_t aSuccessCb,
-                         void* aSuccessCbContext,
-                         error_callback_t aErrorCb,
-                         void* aErrorCbContext)
+SourceBuffer::AppendData(const uint8_t* aData, size_t aLength)
 {
   MSE_DEBUG("AppendData(aLength=%zu)", aLength);
 
   RefPtr<MediaByteBuffer> data = new MediaByteBuffer();
   if (NS_WARN_IF(!data->AppendElements(aData, aLength, fallible))) {
-    return (*aErrorCb)(aErrorCbContext,
-                       uint32_t(NS_ERROR_DOM_QUOTA_EXCEEDED_ERR));
+    return mCurrentAttributes.OnDataAppended(
+      uint32_t(NS_ERROR_DOM_QUOTA_EXCEEDED_ERR));
   }
 
   if (NS_WARN_IF(!mTrackBuffersManager)) {
-    return (*aErrorCb)(aErrorCbContext, uint32_t(NS_ERROR_NOT_INITIALIZED));
+    return mCurrentAttributes.OnDataAppended(
+      uint32_t(NS_ERROR_NOT_INITIALIZED));
   }
 
-  RefPtr<SourceBuffer> self = this;
   mTrackBuffersManager->AppendData(data.forget(), mCurrentAttributes)
     ->Then(AbstractThread::MainThread(),
            __func__,
-           [self, this, aSuccessCb, aSuccessCbContext](
-             const SourceBufferTask::AppendBufferResult& aResult) {
-             AppendDataCompletedWithSuccess(
-               aResult, aSuccessCb, aSuccessCbContext);
-           },
-           [self, this, aErrorCb, aErrorCbContext](const MediaResult& aError) {
-             AppendDataErrored(aError, aErrorCb, aErrorCbContext);
-           })
+           this,
+           &SourceBuffer::AppendDataCompletedWithSuccess,
+           &SourceBuffer::AppendDataErrored)
     ->Track(mPendingAppend);
 }
 
 void
 SourceBuffer::AppendDataCompletedWithSuccess(
-  const SourceBufferTask::AppendBufferResult& aResult,
-  success_callback_t aSuccessCb,
-  void* aSuccessCbContext)
+  const SourceBufferTask::AppendBufferResult& aResult)
 {
   MOZ_ASSERT(mCurrentAttributes.GetUpdating());
   mPendingAppend.Complete();
@@ -120,14 +108,13 @@ SourceBuffer::AppendDataCompletedWithSuccess(
     if (!mCurrentAttributes.GetActive()) {
       mCurrentAttributes.SetActive(true);
       MSE_DEBUG("Init segment received");
-      RefPtr<SourceBuffer> self = this;
       mMediaSource->SourceBufferIsActive(this)
         ->Then(AbstractThread::MainThread(),
                __func__,
-               [self, this, aSuccessCb, aSuccessCbContext]() {
+               [this]() {
                  MSE_DEBUG("Complete AppendBuffer operation");
                  mCompletionPromise.Complete();
-                 (*aSuccessCb)(aSuccessCbContext);
+                 mCurrentAttributes.OnDataAppended(0 /* success */);
                })
         ->Track(mCompletionPromise);
     }
@@ -143,14 +130,12 @@ SourceBuffer::AppendDataCompletedWithSuccess(
   CheckEndTime();
 
   if (!mCompletionPromise.Exists()) {
-    (*aSuccessCb)(aSuccessCbContext);
+    mCurrentAttributes.OnDataAppended(0 /* success */);
   }
 }
 
 void
-SourceBuffer::AppendDataErrored(const MediaResult& aError,
-                                error_callback_t aErrorCb,
-                                void* aErrorCbContext)
+SourceBuffer::AppendDataErrored(const MediaResult& aError)
 {
   MOZ_ASSERT(mCurrentAttributes.GetUpdating());
   mPendingAppend.Complete();
@@ -162,7 +147,7 @@ SourceBuffer::AppendDataErrored(const MediaResult& aError,
       break;
     default:
       ResetParserState();
-      (*aErrorCb)(aErrorCbContext, uint32_t(NS_ERROR_DOM_MEDIA_CANCELED));
+      mCurrentAttributes.OnDataAppended(uint32_t(NS_ERROR_DOM_MEDIA_CANCELED));
       break;
   }
 }
@@ -202,21 +187,17 @@ SourceBuffer::ResetParserState()
 }
 
 void
-SourceBuffer::RangeRemoval(double aStart,
-                           double aEnd,
-                           success_callback_t aSuccessCb,
-                           void* aSuccessCbContext)
+SourceBuffer::RangeRemoval(double aStart, double aEnd)
 {
   MOZ_ASSERT(NS_IsMainThread());
 
-  RefPtr<SourceBuffer> self = this;
   mTrackBuffersManager
     ->RangeRemoval(TimeUnit::FromSeconds(aStart), TimeUnit::FromSeconds(aEnd))
     ->Then(AbstractThread::MainThread(),
            __func__,
-           [self, aSuccessCb, aSuccessCbContext](bool) {
-             self->mPendingRemoval.Complete();
-             (*aSuccessCb)(aSuccessCbContext);
+           [this](bool) {
+             mPendingRemoval.Complete();
+             mCurrentAttributes.OnRangeRemoved();
            },
            []() { MOZ_ASSERT(false); })
     ->Track(mPendingRemoval);

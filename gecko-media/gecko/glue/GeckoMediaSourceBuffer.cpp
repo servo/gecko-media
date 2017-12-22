@@ -57,16 +57,11 @@ GeckoMedia_SourceBuffer_EvictData(size_t aId, size_t aLength, bool* aBufferFull)
 void
 GeckoMedia_SourceBuffer_AppendData(size_t aId,
                                    const uint8_t* aData,
-                                   size_t aLength,
-                                   success_callback_t aSuccessCb,
-                                   void* aSuccessCbContext,
-                                   error_callback_t aErrorCb,
-                                   void* aErrorCbContext)
+                                   size_t aLength)
 {
   IMPL_GECKO_MEDIA_REFLECTOR_GET(GeckoMediaSourceBuffer)
 
-  reflector->mSourceBuffer->AppendData(
-    aData, aLength, aSuccessCb, aSuccessCbContext, aErrorCb, aErrorCbContext);
+  reflector->mSourceBuffer->AppendData(aData, aLength);
 }
 
 void
@@ -88,13 +83,11 @@ GeckoMedia_SourceBuffer_ResetParserState(size_t aId)
 void
 GeckoMedia_SourceBuffer_RangeRemoval(size_t aId,
                                      double aStart,
-                                     double aEnd,
-                                     success_callback_t aSuccessCb,
-                                     void* aSuccessCbContext)
+                                     double aEnd)
 {
   IMPL_GECKO_MEDIA_REFLECTOR_GET(GeckoMediaSourceBuffer)
 
-  reflector->mSourceBuffer->RangeRemoval(aStart, aEnd, aSuccessCb, aSuccessCbContext);
+  reflector->mSourceBuffer->RangeRemoval(aStart, aEnd);
 }
 
 SourceBuffer*

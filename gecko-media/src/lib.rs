@@ -433,11 +433,15 @@ mod tests {
         assert_eq!(gecko_media.is_type_supported("audio/wav"), false);
     }
 
-    struct SourceBufferAttributes {}
+    struct SourceBufferAttributes {
+        pub expect_data_appended_success: Cell<bool>,
+    }
 
     impl SourceBufferAttributes {
         pub fn new() -> Self {
-            SourceBufferAttributes {}
+            SourceBufferAttributes {
+                expect_data_appended_success: Cell::new(true),
+            }
         }
     }
 
@@ -484,6 +488,14 @@ mod tests {
             false
         }
         fn set_active(&self, _: bool) {}
+        fn on_data_appended(&self, result: u32) {
+            if self.expect_data_appended_success.get() {
+                assert!(result == 0);
+            } else {
+                assert!(result != 0);
+            }
+        }
+        fn on_range_removed(&self) {}
     }
 
     struct SourceBufferDom {
@@ -502,30 +514,24 @@ mod tests {
             }
         }
 
-        pub fn append_data<S, E>(&self, data: *const u8, len: usize, success_cb: S, error_cb: E)
-        where
-            S: Fn(),
-            E: Fn(u32),
-        {
-            self.gecko_media.append_data(
-                data,
-                len,
-                success_cb,
-                error_cb,
+        pub fn append_data(&self, data: *const u8, len: usize, expect_success: bool) {
+            self.attributes.expect_data_appended_success.set(
+                expect_success,
             );
+            self.gecko_media.append_data(data, len);
         }
     }
 
     fn test_source_buffer() {
         let media_source = MediaSourceDom::new();
-        let source_buffer = SourceBufferDom::new(&media_source, "video/mp4");
+        let source_buffer = Box::new(SourceBufferDom::new(&media_source, "video/mp4"));
         let empty: [u8; 0] = [];
-        // TODO For now this only tests that the mechanism to send closures through FFI works.
         // Should throw error because no decoder is attached yet.
-        source_buffer.append_data(empty.as_ptr(), empty.len(), || unreachable!(), |_| {
-            // TODO check error code.
-            assert!(true);
-        });
+        source_buffer.append_data(
+            empty.as_ptr(),
+            empty.len(),
+            false, /* expect error: no decoder */
+        );
     }
 
     #[test]

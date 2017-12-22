@@ -31,21 +31,13 @@ public:
 
   void EvictData(size_t aLength, bool* aBufferFull);
 
-  void AppendData(const uint8_t* aData,
-                  size_t aLength,
-                  success_callback_t aSuccessCb,
-                  void* aSuccessCbContext,
-                  error_callback_t aErrorCb,
-                  void* aErrorCbContext);
+  void AppendData(const uint8_t* aData, size_t aLength);
 
   void AbortBufferAppend();
 
   void ResetParserState();
 
-  void RangeRemoval(double aStart,
-                    double aEnd,
-                    success_callback_t aSuccessCb,
-                    void* aSuccessCbContext);
+  void RangeRemoval(double aStart, double aEnd);
 
 private:
   friend class MediaSource;
@@ -58,12 +50,8 @@ private:
   void CheckEndTime();
 
   void AppendDataCompletedWithSuccess(
-    const SourceBufferTask::AppendBufferResult& aResult,
-    success_callback_t aSuccessCb,
-    void* aSuccessCbContext);
-  void AppendDataErrored(const MediaResult& aError,
-                         error_callback_t aErrorCb,
-                         void* aErrorCbContext);
+    const SourceBufferTask::AppendBufferResult& aResult);
+  void AppendDataErrored(const MediaResult& aError);
 
   bool GetActive() { return mCurrentAttributes.GetActive(); }
   void SetActive(bool aActive) { mCurrentAttributes.SetActive(aActive); }
@@ -75,7 +63,8 @@ private:
   RefPtr<TrackBuffersManager> mTrackBuffersManager;
 
   MozPromiseRequestHolder<SourceBufferTask::AppendPromise> mPendingAppend;
-  MozPromiseRequestHolder<SourceBufferTask::RangeRemovalPromise> mPendingRemoval;
+  MozPromiseRequestHolder<SourceBufferTask::RangeRemovalPromise>
+    mPendingRemoval;
   MozPromiseRequestHolder<MediaSource::ActiveCompletionPromise>
     mCompletionPromise;
 };
