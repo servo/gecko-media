@@ -3,9 +3,9 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use bindings::GeckoMediaSourceBufferImpl;
-use bindings::GeckoMedia_SourceBuffer_ResetParserState;
 use bindings::{GeckoMedia_SourceBuffer_AbortBufferAppend, GeckoMedia_SourceBuffer_AppendData};
 use bindings::{GeckoMedia_SourceBuffer_Create, GeckoMedia_SourceBuffer_EvictData};
+use bindings::{GeckoMedia_SourceBuffer_RangeRemoval, GeckoMedia_SourceBuffer_ResetParserState};
 use std::ffi::CString;
 use std::os::raw::c_void;
 use std::rc::Rc;
@@ -66,27 +66,6 @@ impl SourceBuffer {
                 error_cb,
             );
         });
-
-        extern "C" fn success_callback_wrapper<F>(closure: *mut c_void)
-        where
-            F: FnOnce(),
-        {
-            let opt_closure = closure as *mut Option<F>;
-            unsafe {
-                (*opt_closure).take().unwrap()();
-            }
-        }
-
-        extern "C" fn error_callback_wrapper<F>(closure: *mut c_void, error: u32)
-        where
-            F: FnOnce(u32),
-        {
-            let opt_closure = closure as *mut Option<F>;
-            unsafe {
-                (*opt_closure).take().unwrap()(error);
-            }
-        }
-
     }
 
     pub fn abort_buffer_append(&self) {
@@ -100,6 +79,23 @@ impl SourceBuffer {
         let id = self.id;
         self.gecko_media.queue_task(move || unsafe {
             GeckoMedia_SourceBuffer_ResetParserState(id);
+        });
+    }
+
+    pub fn range_removal<F>(&self, start: f64, end: f64, success_cb: F)
+    where
+        F: FnOnce(),
+    {
+        let id = self.id;
+        let success_cb = &success_cb as *const _ as *mut c_void;
+        self.gecko_media.queue_task(move || unsafe {
+            GeckoMedia_SourceBuffer_RangeRemoval(
+                id,
+                start,
+                end,
+                Some(success_callback_wrapper::<F>),
+                success_cb,
+            );
         });
     }
 }
@@ -193,5 +189,25 @@ pub fn to_ffi_callbacks(callbacks: Rc<SourceBufferImpl>) -> GeckoMediaSourceBuff
         mSetUpdating: Some(set_updating),
         mGetActive: Some(get_active),
         mSetActive: Some(set_active),
+    }
+}
+
+extern "C" fn success_callback_wrapper<F>(closure: *mut c_void)
+where
+    F: FnOnce(),
+{
+    let opt_closure = closure as *mut Option<F>;
+    unsafe {
+        (*opt_closure).take().unwrap()();
+    }
+}
+
+extern "C" fn error_callback_wrapper<F>(closure: *mut c_void, error: u32)
+where
+    F: FnOnce(u32),
+{
+    let opt_closure = closure as *mut Option<F>;
+    unsafe {
+        (*opt_closure).take().unwrap()(error);
     }
 }

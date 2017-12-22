@@ -42,6 +42,11 @@ public:
 
   void ResetParserState();
 
+  void RangeRemoval(double aStart,
+                    double aEnd,
+                    success_callback_t aSuccessCb,
+                    void* aSuccessCbContext);
+
 private:
   friend class MediaSource;
 
@@ -70,6 +75,7 @@ private:
   RefPtr<TrackBuffersManager> mTrackBuffersManager;
 
   MozPromiseRequestHolder<SourceBufferTask::AppendPromise> mPendingAppend;
+  MozPromiseRequestHolder<SourceBufferTask::RangeRemovalPromise> mPendingRemoval;
   MozPromiseRequestHolder<MediaSource::ActiveCompletionPromise>
     mCompletionPromise;
 };

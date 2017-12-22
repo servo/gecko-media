@@ -22,6 +22,8 @@ GetMediaSourceLog();
 namespace mozilla {
 namespace dom {
 
+using namespace media;
+
 SourceBuffer::SourceBuffer(GeckoMediaSourceBufferImpl aImpl,
                            size_t aParentId,
                            const char* aMimeType,
@@ -143,7 +145,6 @@ SourceBuffer::AppendDataCompletedWithSuccess(
   if (!mCompletionPromise.Exists()) {
     (*aSuccessCb)(aSuccessCbContext);
   }
-
 }
 
 void
@@ -198,6 +199,27 @@ void
 SourceBuffer::ResetParserState()
 {
   mTrackBuffersManager->ResetParserState(mCurrentAttributes);
+}
+
+void
+SourceBuffer::RangeRemoval(double aStart,
+                           double aEnd,
+                           success_callback_t aSuccessCb,
+                           void* aSuccessCbContext)
+{
+  MOZ_ASSERT(NS_IsMainThread());
+
+  RefPtr<SourceBuffer> self = this;
+  mTrackBuffersManager
+    ->RangeRemoval(TimeUnit::FromSeconds(aStart), TimeUnit::FromSeconds(aEnd))
+    ->Then(AbstractThread::MainThread(),
+           __func__,
+           [self, aSuccessCb, aSuccessCbContext](bool) {
+             self->mPendingRemoval.Complete();
+             (*aSuccessCb)(aSuccessCbContext);
+           },
+           []() { MOZ_ASSERT(false); })
+    ->Track(mPendingRemoval);
 }
 
 } // namespace dom

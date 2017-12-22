@@ -85,6 +85,18 @@ GeckoMedia_SourceBuffer_ResetParserState(size_t aId)
   reflector->mSourceBuffer->ResetParserState();
 }
 
+void
+GeckoMedia_SourceBuffer_RangeRemoval(size_t aId,
+                                     double aStart,
+                                     double aEnd,
+                                     success_callback_t aSuccessCb,
+                                     void* aSuccessCbContext)
+{
+  IMPL_GECKO_MEDIA_REFLECTOR_GET(GeckoMediaSourceBuffer)
+
+  reflector->mSourceBuffer->RangeRemoval(aStart, aEnd, aSuccessCb, aSuccessCbContext);
+}
+
 SourceBuffer*
 GetSourceBuffer(const size_t aId)
 {

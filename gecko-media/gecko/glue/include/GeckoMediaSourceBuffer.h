@@ -103,6 +103,13 @@ GeckoMedia_SourceBuffer_AbortBufferAppend(size_t aId);
 
 void
 GeckoMedia_SourceBuffer_ResetParserState(size_t aId);
+
+void
+GeckoMedia_SourceBuffer_RangeRemoval(size_t aId,
+                                     double aStart,
+                                     double aEnd,
+                                     success_callback_t aSuccessCb,
+                                     void* aSuccessCbContext);
 }
 
 #endif // GeckoMediaSourceBuffer_h_
