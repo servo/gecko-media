@@ -165,7 +165,7 @@ public:
   void NotifyWaitingForKey() override;
 
   /*
-   * Methods that are used only in Gecko go here. We provide defaul
+   * Methods that are used only in Gecko go here. We provide default
    * implementations so they can compile in Servo without modification.
    */
   // Return an abstract thread on which to run main thread runnables.

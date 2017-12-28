@@ -10,6 +10,9 @@
 #include "GeckoMediaDecoder.h"
 #include "GeckoMediaDecoderOwner.h"
 #include "GeckoMediaMacros.h"
+#include "GeckoMediaSource.h"
+#include "MediaSource.h"
+#include "MediaSourceDecoder.h"
 #include "RustMediaResource.h"
 #include "UniquePtr.h"
 #include "mozilla/RefPtr.h"
@@ -111,6 +114,42 @@ GeckoMedia_Player_CreateNetworkPlayer(size_t aId,
   resource->SetDecoder(reflector->mDecoder);
 }
 
+bool
+GeckoMedia_Player_CreateMediaSourcePlayer(size_t aId,
+                                          size_t aMediaSourceId,
+                                          PlayerCallbackObject aCallback,
+                                          FrameAllocatorObject aAllocator)
+{
+  Player* reflector =
+    sReflectors.AppendElement(Player(aId, aCallback, aAllocator));
+  MOZ_ASSERT(GetReflector(aId) == reflector);
+
+  MediaDecoderInit decoderInit(
+    reflector->mDecoderOwner.get(),
+    1.0,   // volume
+    true,  // mPreservesPitch
+    1.0,   // mPlaybackRate
+    false, // mMinimizePreroll
+    false, // mHasSuspendTaint
+    false, // mLooping
+    MediaContainerType(MEDIAMIMETYPE("application/x.mediasource")));
+  RefPtr<MediaSourceDecoder> decoder = new MediaSourceDecoder(decoderInit);
+  reflector->mDecoder = static_cast<GeckoMediaDecoder*>(decoder);
+  reflector->mDecoderOwner->SetDecoder(reflector->mDecoder);
+
+  RefPtr<mozilla::dom::MediaSource> mediaSource =
+    GetMediaSource(aMediaSourceId);
+  if (NS_WARN_IF(!mediaSource || !mediaSource->Attach(decoder))) {
+    return false;
+  }
+
+  if (NS_WARN_IF(reflector->mDecoder->Load(nullptr) != NS_OK)) {
+    return false;
+  }
+
+  return true;
+}
+
 void
 GeckoMedia_Player_Play(size_t aId)
 {
@@ -144,5 +183,5 @@ void
 GeckoMedia_Player_SetPlaybackRate(size_t aId, double rate)
 {
   IMPL_GECKO_MEDIA_REFLECTOR_GET(Player)
-    reflector->mDecoder->SetPlaybackRate(rate);
+  reflector->mDecoder->SetPlaybackRate(rate);
 }
