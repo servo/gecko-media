@@ -8,12 +8,33 @@
 #define GeckoMediaSourceBuffer_h_
 
 #include <stddef.h>
+#include <stdint.h>
 
 namespace mozilla {
 namespace dom {
+
 class SourceBuffer;
+
+// https://w3c.github.io/media-source/#idl-def-appendmode
+enum class SourceBufferAppendMode
+{
+  Segments,
+  Sequence,
+};
+
+// Current state as per Segment Parser Loop Algorithm
+// http://w3c.github.io/media-source/index.html#sourcebuffer-segment-parser-loop
+// ** This needs to go in capital letters cause it is used by non-glued code **
+enum class AppendState
+{
+  WAITING_FOR_SEGMENT,
+  PARSING_INIT_SEGMENT,
+  PARSING_MEDIA_SEGMENT,
+};
 }
 }
+
+using namespace mozilla::dom;
 
 struct GeckoMediaSourceBuffer;
 
@@ -21,20 +42,67 @@ struct GeckoMediaSourceBufferImpl
 {
   void* mContext;
   void (*mFree)(void*);
+  void* (*mOwner)(void*);
+  double (*mGetAppendWindowStart)(void*);
+  void (*mSetAppendWindowStart)(void*, double);
+  double (*mGetAppendWindowEnd)(void*);
+  void (*mSetAppendWindowEnd)(void*, double);
+  double (*mGetTimestampOffset)(void*);
+  void (*mSetTimestampOffset)(void*, double);
+  SourceBufferAppendMode (*mGetAppendMode)(void*);
+  void (*mSetAppendMode)(void*, SourceBufferAppendMode);
+  void (*mGetGroupStartTimestamp)(void*, double&);
+  void (*mSetGroupStartTimestamp)(void*, double);
+  bool (*mHaveGroupStartTimestamp)(void*);
+  void (*mResetGroupStartTimestamp)(void*);
+  void (*mRestartGroupStartTimestamp)(void*);
+  double (*mGetGroupEndTimestamp)(void*);
+  void (*mSetGroupEndTimestamp)(void*, double);
+  AppendState (*mGetAppendState)(void*);
+  void (*mSetAppendState)(void*, AppendState);
+  bool (*mGetUpdating)(void*);
+  void (*mSetUpdating)(void*, bool);
+  bool (*mGetActive)(void*);
+  void (*mSetActive)(void*, bool);
+  void (*mOnDataAppended)(void*, uint32_t);
+  void (*mOnRangeRemoved)(void*);
 };
 
-mozilla::dom::SourceBuffer*
+SourceBuffer*
 GetSourceBuffer(const size_t aId);
 
 extern "C" {
+// TODO error handling (i.e. aId or aParentId may not be valid)
 void
 GeckoMedia_SourceBuffer_Create(size_t aId,
                                GeckoMediaSourceBufferImpl aImpl,
                                size_t aParentId,
-                               const char* aMimeType);
+                               const char* aMimeType,
+                               bool aGenerateTimestamps);
 
 void
 GeckoMedia_SourceBuffer_Shutdown(size_t aId);
+
+void
+GeckoMedia_SourceBuffer_EvictData(size_t aId,
+                                  size_t aLength,
+                                  bool* aBufferFull);
+
+void
+GeckoMedia_SourceBuffer_AppendData(size_t aId,
+                                   const uint8_t* aData,
+                                   size_t aLength);
+
+void
+GeckoMedia_SourceBuffer_AbortBufferAppend(size_t aId);
+
+void
+GeckoMedia_SourceBuffer_ResetParserState(size_t aId);
+
+void
+GeckoMedia_SourceBuffer_RangeRemoval(size_t aId,
+                                     double aStart,
+                                     double aEnd);
 }
 
 #endif // GeckoMediaSourceBuffer_h_

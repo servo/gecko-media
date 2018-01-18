@@ -15,6 +15,7 @@
 #include "mozilla/Logging.h"
 #include "mozilla/Preferences.h"
 #include "nsThreadManager.h"
+#include "SourceBuffer.h"
 
 mozilla::LogModule*
 GetMediaSourceLog()
@@ -61,6 +62,8 @@ namespace dom {
 
 MediaSource::MediaSource(GeckoMediaSourceImpl aImpl)
   : mImpl(aImpl)
+  , mSourceBuffers(GetSourceBuffers())
+  , mActiveSourceBuffers(GetActiveSourceBuffers())
   , mDecoder(nullptr)
 {
 }
@@ -79,14 +82,56 @@ MediaSource::~MediaSource()
   (*mImpl.mFree)(mImpl.mContext);
 }
 
+SourceBufferList*
+MediaSource::SourceBuffers()
+{
+  MOZ_ASSERT(NS_IsMainThread());
+  MOZ_ASSERT_IF(ReadyState() == MediaSourceReadyState::Closed, mSourceBuffers->Length() == 0);
+  return mSourceBuffers;
+}
+
+SourceBufferList*
+MediaSource::GetSourceBuffers()
+{
+  MOZ_ASSERT(NS_IsMainThread());
+
+  CALLBACK_GUARD(GetSourceBuffers, nullptr);
+  size_t* id = CALLBACK_CALL(GetSourceBuffers);
+  if (NS_WARN_IF(!id)) {
+    return nullptr;
+  }
+
+  return GetSourceBufferList(*id);
+}
+
+SourceBufferList*
+MediaSource::ActiveSourceBuffers()
+{
+  MOZ_ASSERT(NS_IsMainThread());
+  MOZ_ASSERT_IF(ReadyState() == MediaSourceReadyState::Closed, mActiveSourceBuffers->Length() == 0);
+  return mActiveSourceBuffers;
+}
+
+SourceBufferList*
+MediaSource::GetActiveSourceBuffers()
+{
+  MOZ_ASSERT(NS_IsMainThread());
+
+  CALLBACK_GUARD(GetActiveSourceBuffers, nullptr);
+  size_t* id = (*mImpl.mGetActiveSourceBuffers)(mImpl.mContext);
+  if (NS_WARN_IF(!id)) {
+    return nullptr;
+  }
+
+  return GetSourceBufferList(*id);
+}
+
 double
 MediaSource::Duration()
 {
   MOZ_ASSERT(NS_IsMainThread());
-  if (NS_WARN_IF(!mImpl.mContext || !mImpl.mGetDuration)) {
-    return 0;
-  }
-  return (*mImpl.mGetDuration)(mImpl.mContext);
+  CALLBACK_GUARD(GetDuration, 0);
+  return CALLBACK_CALL(GetDuration);
 }
 
 void
@@ -104,22 +149,54 @@ MediaSourceReadyState
 MediaSource::ReadyState()
 {
   MOZ_ASSERT(NS_IsMainThread());
-  if (NS_WARN_IF(!mImpl.mContext || !mImpl.mGetReadyState)) {
-    return MediaSourceReadyState::Unknown;
-  }
+  CALLBACK_GUARD(GetReadyState, MediaSourceReadyState::Unknown);
+  return CALLBACK_CALL(GetReadyState);
+}
 
-  return (*mImpl.mGetReadyState)(mImpl.mContext);
+bool
+MediaSource::Attach(MediaSourceDecoder* aDecoder)
+{
+  MOZ_ASSERT(NS_IsMainThread());
+  MSE_DEBUG("Attach(aDecoder=%p) owner=%p", aDecoder, aDecoder->GetOwner());
+  MOZ_ASSERT(aDecoder);
+  MOZ_ASSERT(aDecoder->GetOwner());
+  if (ReadyState() != MediaSourceReadyState::Closed) {
+    return false;
+  }
+  MOZ_ASSERT(!mDecoder);
+  mDecoder = aDecoder;
+  mDecoder->AttachMediaSource(this);
+  SetReadyState(MediaSourceReadyState::Open);
+  return true;
+}
+
+void
+MediaSource::Detach()
+{
+  MOZ_ASSERT(NS_IsMainThread());
+  MOZ_RELEASE_ASSERT(mCompletionPromises.IsEmpty());
+  MSE_DEBUG("mDecoder=%p owner=%p",
+            mDecoder.get(),
+            mDecoder ? mDecoder->GetOwner() : nullptr);
+  if (!mDecoder) {
+    MOZ_ASSERT(ReadyState() == MediaSourceReadyState::Closed);
+    MOZ_ASSERT(mActiveSourceBuffers->Length() == 0 &&
+               mSourceBuffers->Length() == 0);
+    return;
+  }
+  SetReadyState(MediaSourceReadyState::Closed);
+  mSourceBuffers->Clear();
+  mActiveSourceBuffers->Clear();
+  mDecoder->DetachMediaSource();
+  mDecoder = nullptr;
 }
 
 bool
 MediaSource::HasLiveSeekableRange()
 {
   MOZ_ASSERT(NS_IsMainThread());
-  if (NS_WARN_IF(!mImpl.mContext || !mImpl.mHasLiveSeekableRange)) {
-    return false;
-  }
-
-  return (*mImpl.mHasLiveSeekableRange)(mImpl.mContext);
+  CALLBACK_GUARD(HasLiveSeekableRange, false);
+  return CALLBACK_CALL(HasLiveSeekableRange);
 }
 
 media::TimeInterval
@@ -165,6 +242,50 @@ MediaSource::EndOfStreamError(const GeckoMediaEndOfStreamError aError)
     default:
       break;
   }
+}
+
+RefPtr<MediaSource::ActiveCompletionPromise>
+MediaSource::SourceBufferIsActive(SourceBuffer* aSourceBuffer)
+{
+  MOZ_ASSERT(NS_IsMainThread());
+
+  bool initMissing = false;
+  bool found = false;
+  for (uint32_t i = 0; i < mSourceBuffers->Length() ; i++) {
+    SourceBuffer* sourceBuffer = mSourceBuffers->IndexedGetter(i, found);
+    MOZ_ALWAYS_TRUE(found);
+    if (sourceBuffer == aSourceBuffer) {
+      sourceBuffer->SetActive(true);
+    } else if (!sourceBuffer->GetActive()) {
+      // Some source buffers haven't yet received an init segment.
+      // There's nothing more we can do at this stage.
+      initMissing = true;
+    }
+  }
+
+  if (initMissing || !mDecoder) {
+    return ActiveCompletionPromise::CreateAndResolve(true, __func__);
+  }
+
+  mDecoder->NotifyInitDataArrived();
+
+  // Add our promise to the queue.
+  // It will be resolved once the HTMLMediaElement modifies its readyState.
+  MozPromiseHolder<ActiveCompletionPromise> holder;
+  RefPtr<ActiveCompletionPromise> promise = holder.Ensure(__func__);
+  mCompletionPromises.AppendElement(Move(holder));
+  return promise;
+}
+
+void
+MediaSource::CompletePendingTransactions()
+{
+  MOZ_ASSERT(NS_IsMainThread());
+  MSE_DEBUG("Resolving %u promises", unsigned(mCompletionPromises.Length()));
+  for (auto& promise : mCompletionPromises) {
+    promise.Resolve(true, __func__);
+  }
+  mCompletionPromises.Clear();
 }
 
 /* static */

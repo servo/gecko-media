@@ -27,7 +27,7 @@ using namespace mozilla::media;
 namespace mozilla {
 
 MediaSourceDecoder::MediaSourceDecoder(MediaDecoderInit& aInit)
-  : MediaDecoder(aInit)
+  : GeckoMediaDecoder(aInit)
   , mMediaSource(nullptr)
   , mEnded(false)
 {
@@ -177,7 +177,7 @@ MediaSourceDecoder::Shutdown()
   }
   mDemuxer = nullptr;
 
-  MediaDecoder::Shutdown();
+  GeckoMediaDecoder::Shutdown();
 }
 
 void
@@ -352,6 +352,16 @@ MediaSourceDecoder::NotifyInitDataArrived()
   if (mDemuxer) {
     mDemuxer->NotifyInitDataArrived();
   }
+}
+
+void
+MediaSourceDecoder::NotifyDataArrived()
+{
+  MOZ_ASSERT(NS_IsMainThread());
+  MOZ_DIAGNOSTIC_ASSERT(!IsShutdown());
+  AbstractThread::AutoEnter context(AbstractMainThread());
+  NotifyReaderDataArrived();
+  GetOwner()->DownloadProgressed();
 }
 
 already_AddRefed<nsIPrincipal>

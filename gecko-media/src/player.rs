@@ -2,6 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+use bindings::GeckoMedia_Player_CreateMediaSourcePlayer;
 use bindings::NetworkResourceObject;
 use bindings::{CachedRangesObserverObject, FrameAllocatorObject, GeckoImagePlane};
 use bindings::{GeckoMediaByteRange, GeckoPlanarYCbCrImage, GeckoPlanarYCbCrImageData};
@@ -16,7 +17,7 @@ use std::mem;
 use std::ops::Range;
 use std::os::raw::c_char;
 use std::slice;
-use std::sync::{Arc, Mutex};
+use std::sync::{mpsc, Arc, Mutex};
 use timestamp::TimeStamp;
 
 /// Holds useful metadata extracted from a media resource during loading.
@@ -287,10 +288,7 @@ impl Player {
             _ => return Err(()),
         };
         let ffi_frame_allocator = to_ffi_frame_allocator(video_frame_allocator.clone());
-        let player = Player {
-            gecko_media,
-            id,
-        };
+        let player = Player { gecko_media, id };
         player.gecko_media.queue_task(move || unsafe {
             GeckoMedia_Player_CreateBlobPlayer(
                 id,
@@ -318,10 +316,7 @@ impl Player {
         let callback = to_ffi_callback(sink, video_frame_allocator.clone());
         let ffi_frame_allocator = to_ffi_frame_allocator(video_frame_allocator.clone());
         let resource = to_ffi_resource(resource);
-        let player = Player {
-            gecko_media,
-            id,
-        };
+        let player = Player { gecko_media, id };
         player.gecko_media.queue_task(move || unsafe {
             GeckoMedia_Player_CreateNetworkPlayer(
                 id,
@@ -332,6 +327,34 @@ impl Player {
             );
         });
         Ok(player)
+    }
+
+    pub fn from_media_source(
+        gecko_media: GeckoMedia,
+        id: usize,
+        media_source_id: usize,
+        sink: Box<PlayerEventSink>,
+    ) -> Result<Player, ()> {
+        let video_frame_allocator = Arc::new(Mutex::new(VideoFrameAllocator::new()));
+        let callback = to_ffi_callback(sink, video_frame_allocator.clone());
+        let ffi_frame_allocator = to_ffi_frame_allocator(video_frame_allocator.clone());
+        let player = Player { gecko_media, id };
+        let (sender, receiver) = mpsc::channel();
+        player.gecko_media.queue_task(move || unsafe {
+            sender
+                .send(GeckoMedia_Player_CreateMediaSourcePlayer(
+                    id,
+                    media_source_id,
+                    callback,
+                    ffi_frame_allocator,
+                ))
+                .unwrap();
+        });
+        if receiver.recv().unwrap() {
+            Ok(player)
+        } else {
+            Err(())
+        }
     }
 
     /// Starts playback of the media resource. While playing,
@@ -405,9 +428,10 @@ impl CachedRangesSink {
             });
         }
         unsafe {
-            self.observer.mUpdate.as_ref().map(|f| {
-                f(self.observer.mResourceID, data.as_ptr(), data.len())
-            });
+            self.observer
+                .mUpdate
+                .as_ref()
+                .map(|f| f(self.observer.mResourceID, data.as_ptr(), data.len()));
         }
     }
 }
@@ -451,11 +475,14 @@ fn to_ffi_callback(
         drop(Box::from_raw(ptr as *mut Wrapper));
     }
 
-    impl_simple_ffi_callback_wrapper!(decode_error, ());
-    impl_simple_ffi_callback_wrapper!(playback_ended, ());
-    impl_simple_ffi_callback_wrapper!(loaded_data, ());
-    impl_simple_ffi_callback_wrapper!(seek_started, ());
-    impl_simple_ffi_callback_wrapper!(seek_completed, ());
+    impl_simple_ffi_callback_wrapper!(decode_error);
+    impl_simple_ffi_callback_wrapper!(playback_ended);
+    impl_simple_ffi_callback_wrapper!(loaded_data);
+    impl_simple_ffi_callback_wrapper!(seek_started);
+    impl_simple_ffi_callback_wrapper!(seek_completed);
+
+    impl_simple_ffi_setter_wrapper!(duration_changed, f64);
+    impl_simple_ffi_setter_wrapper!(time_update, f64);
 
     unsafe extern "C" fn async_event(ptr: *mut c_void, name: *const c_char) {
         let wrapper = &*(ptr as *mut Wrapper);
@@ -472,14 +499,6 @@ fn to_ffi_callback(
             metadata.video_dimensions = Some((gecko_metadata.mVideoWidth, gecko_metadata.mVideoHeight));
         }
         wrapper.callbacks.metadata_loaded(metadata);
-    }
-    unsafe extern "C" fn duration_changed(ptr: *mut c_void, duration: f64) {
-        let wrapper = &*(ptr as *mut Wrapper);
-        wrapper.callbacks.duration_changed(duration);
-    }
-    unsafe extern "C" fn time_update(ptr: *mut c_void, time: f64) {
-        let wrapper = &*(ptr as *mut Wrapper);
-        wrapper.callbacks.time_update(time);
     }
     unsafe extern "C" fn update_current_images(ptr: *mut c_void, size: usize, elements: *mut GeckoPlanarYCbCrImage) {
         let wrapper = &*(ptr as *mut Wrapper);
@@ -551,9 +570,9 @@ fn to_ffi_resource(callbacks: Box<NetworkResource>) -> NetworkResourceObject {
 
     unsafe extern "C" fn set_ranges_observer(ptr: *mut c_void, observer: CachedRangesObserverObject) {
         let wrapper = &*(ptr as *mut Wrapper);
-        wrapper.callbacks.set_cached_ranges_sink(CachedRangesSink {
-            observer,
-        })
+        wrapper
+            .callbacks
+            .set_cached_ranges_sink(CachedRangesSink { observer })
     }
 
     unsafe extern "C" fn read_at(
@@ -604,9 +623,7 @@ fn to_ffi_resource(callbacks: Box<NetworkResource>) -> NetworkResourceObject {
         mLength: Some(length),
         mReadFromCache: Some(read_from_cache),
         mFree: Some(free),
-        mData: Box::into_raw(Box::new(Wrapper {
-            callbacks,
-        })) as *mut c_void,
+        mData: Box::into_raw(Box::new(Wrapper { callbacks })) as *mut c_void,
     }
 }
 

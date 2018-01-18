@@ -141,6 +141,13 @@ impl GeckoMedia {
         Player::from_network_resource(handle, id, resource, mime_type, sink)
     }
 
+    /// Creates a Player to play from a MediaSource.
+    pub fn create_media_source_player(media_source_id: usize, sink: Box<PlayerEventSink>) -> Result<Player, ()> {
+        let handle = GeckoMedia::get()?;
+        let id = NEXT_PLAYER_ID.fetch_add(1, Ordering::SeqCst);
+        Player::from_media_source(handle, id, media_source_id, sink)
+    }
+
     /// Creates a MediaSource instance and its corresponding GeckoMediaSource reflector.
     impl_gecko_media_struct_constructor!(
         create_media_source,
@@ -154,11 +161,12 @@ impl GeckoMedia {
         callbacks: Weak<SourceBufferImpl>,
         parent_id: usize,
         mime: &str,
+        generate_timestamps: bool,
     ) -> Result<SourceBuffer, ()> {
         let handle = GeckoMedia::get()?;
         let id = NEXT_SOURCE_BUFFER_ID.fetch_add(1, Ordering::SeqCst);
         if let Some(callbacks) = callbacks.upgrade() {
-            SourceBuffer::new(handle, id, callbacks, parent_id, mime)
+            SourceBuffer::new(handle, id, callbacks, parent_id, mime, generate_timestamps)
         } else {
             panic!("Callbacks gone")
         }

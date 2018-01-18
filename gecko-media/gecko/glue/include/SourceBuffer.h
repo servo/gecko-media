@@ -8,7 +8,9 @@
 #define mozilla_dom_SourceBuffer_h_
 
 #include "GeckoMediaSourceBuffer.h"
+#include "MediaSource.h"
 #include "nsISupportsImpl.h"
+#include "SourceBufferAttributes.h"
 #include "TimeUnits.h"
 #include "TrackBuffersManager.h"
 
@@ -22,22 +24,49 @@ public:
 
   SourceBuffer(GeckoMediaSourceBufferImpl aImpl,
                size_t aParentId,
-               const char* aMimeType);
+               const char* aMimeType,
+               bool aGenerateTimestamps);
 
-  media::TimeIntervals GetTimeIntervals()
-  {
-    // TODO get from mImpl
-    return media::TimeIntervals::Invalid();
-  }
+  media::TimeIntervals GetTimeIntervals();
 
-  void Detach() { /* TODO */}
+  void EvictData(size_t aLength, bool* aBufferFull);
+
+  void AppendData(const uint8_t* aData, size_t aLength);
+
+  void AbortBufferAppend();
+
+  void ResetParserState();
+
+  void RangeRemoval(double aStart, double aEnd);
 
 private:
-  ~SourceBuffer();
+  friend class MediaSource;
 
-  GeckoMediaSourceBufferImpl mImpl;
+  ~SourceBuffer(){};
+
+  // If the media segment contains data beyond the current duration,
+  // then run the duration change algorithm with new duration set to the
+  // maximum of the current duration and the group end timestamp.
+  void CheckEndTime();
+
+  void AppendDataCompletedWithSuccess(
+    const SourceBufferTask::AppendBufferResult& aResult);
+  void AppendDataErrored(const MediaResult& aError);
+
+  bool GetActive() { return mCurrentAttributes.GetActive(); }
+  void SetActive(bool aActive) { mCurrentAttributes.SetActive(aActive); }
+
+  SourceBufferAttributes mCurrentAttributes;
+
+  RefPtr<MediaSource> mMediaSource;
 
   RefPtr<TrackBuffersManager> mTrackBuffersManager;
+
+  MozPromiseRequestHolder<SourceBufferTask::AppendPromise> mPendingAppend;
+  MozPromiseRequestHolder<SourceBufferTask::RangeRemovalPromise>
+    mPendingRemoval;
+  MozPromiseRequestHolder<MediaSource::ActiveCompletionPromise>
+    mCompletionPromise;
 };
 
 } // namespace dom

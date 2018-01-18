@@ -3,6 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use bindings::GeckoMediaSourceBufferListImpl;
+use std::os::raw::c_void;
 use std::rc::Rc;
 
 def_gecko_media_struct!(SourceBufferList);
@@ -20,6 +21,10 @@ pub trait SourceBufferListImpl {
     fn indexed_getter(&self, index: u32, source_buffer: *mut usize) -> bool;
     /// Get the number of SourceBuffer objects in the list.
     fn length(&self) -> u32;
+    /// Append a new SourceBuffer object to the list and optionaly trigger the addsourcebuffer event.
+    fn append(&self, source_buffer: *mut c_void, notify: bool);
+    /// Clear the list of SourceBuffer objects.
+    fn clear(&self);
 }
 
 pub fn to_ffi_callbacks(callbacks: Rc<SourceBufferListImpl>) -> GeckoMediaSourceBufferListImpl {
@@ -28,11 +33,17 @@ pub fn to_ffi_callbacks(callbacks: Rc<SourceBufferListImpl>) -> GeckoMediaSource
 
     def_gecko_callbacks_ffi_wrapper!(Rc<SourceBufferListImpl>);
 
-    impl_simple_ffi_callback_wrapper!(length, u32);
+    impl_simple_ffi_getter_wrapper!(length, u32);
+    impl_simple_ffi_callback_wrapper!(clear);
 
     unsafe extern "C" fn indexed_getter(ptr: *mut c_void, index: u32, id: *mut usize) -> bool {
         let wrapper = &*(ptr as *mut Wrapper);
         wrapper.callbacks.indexed_getter(index, id)
+    }
+
+    unsafe extern "C" fn append(ptr: *mut c_void, source_buffer: *mut c_void, notify: bool) {
+        let wrapper = &*(ptr as *mut Wrapper);
+        wrapper.callbacks.append(source_buffer, notify);
     }
 
     GeckoMediaSourceBufferListImpl {
@@ -42,5 +53,7 @@ pub fn to_ffi_callbacks(callbacks: Rc<SourceBufferListImpl>) -> GeckoMediaSource
         mFree: Some(free),
         mIndexedGetter: Some(indexed_getter),
         mLength: Some(length),
+        mAppend: Some(append),
+        mClear: Some(clear),
     }
 }

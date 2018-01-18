@@ -22,11 +22,8 @@ SourceBufferList::~SourceBufferList()
 {
   MOZ_ASSERT(NS_IsMainThread());
 
-  if (NS_WARN_IF(!mImpl.mContext || !mImpl.mFree)) {
-    return;
-  }
-
-  (*mImpl.mFree)(mImpl.mContext);
+  CALLBACK_GUARD_VOID(Free);
+  CALLBACK_CALL(Free);
 }
 
 SourceBuffer*
@@ -55,16 +52,14 @@ SourceBufferList::IndexedGetter(uint32_t aIndex, bool& aFound)
   return sourceBuffer;
 }
 
-uint32_t
-SourceBufferList::Length()
+void
+SourceBufferList::Append(SourceBuffer* aSourceBuffer, bool aNotify)
 {
   MOZ_ASSERT(NS_IsMainThread());
 
-  if (NS_WARN_IF(!mImpl.mContext || !mImpl.mLength)) {
-    return 0;
-  }
+  CALLBACK_GUARD_VOID(Append);
 
-  return (*mImpl.mLength)(mImpl.mContext);
+  (*mImpl.mAppend)(mImpl.mContext, (void*)(aSourceBuffer), aNotify);
 }
 
 } // namespace dom

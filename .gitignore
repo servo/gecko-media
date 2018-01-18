@@ -6,3 +6,4 @@ glue_diffs/
 *~
 .cargo/
 /NDK/
+**/.DS_Store

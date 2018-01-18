@@ -7,6 +7,7 @@
 #ifndef mozilla_dom_MediaSource_h_
 #define mozilla_dom_MediaSource_h_
 
+#include "GeckoMediaMacros.h"
 #include "GeckoMediaSource.h"
 #include "MediaSourceDecoder.h"
 #include "nsISupportsImpl.h"
@@ -23,20 +24,18 @@ public:
 
   MediaSource(GeckoMediaSourceImpl aGeckoMediaSourceImpl);
 
-  SourceBufferList* ActiveSourceBuffers()
-  {
-    // TODO get from mImpl.
-    RefPtr<SourceBufferList> list =
-      new SourceBufferList(GeckoMediaSourceBufferListImpl());
-    return list;
-  }
+  SourceBufferList* SourceBuffers();
+  SourceBufferList* ActiveSourceBuffers();
 
   double Duration();
   void DurationChange(const double aDuration);
 
   MediaSourceReadyState ReadyState();
 
-  void Detach() { /* TODO */}
+  // Attach this MediaSource to Decoder aDecoder.  Returns false if already
+  // attached.
+  bool Attach(MediaSourceDecoder* aDecoder);
+  void Detach();
 
   bool HasLiveSeekableRange();
   media::TimeInterval LiveSeekableRange();
@@ -47,14 +46,38 @@ public:
 
   MediaSourceDecoder* GetDecoder() { return mDecoder; }
 
+  // Resolve all CompletionPromise pending.
+  void CompletePendingTransactions();
+
   static bool IsTypeSupported(const char* aType);
 
 private:
+  // SourceBuffer uses SourceBufferIsActive.
+  friend class SourceBuffer;
+
   ~MediaSource();
+
+  SourceBufferList* GetSourceBuffers();
+  SourceBufferList* GetActiveSourceBuffers();
+
+  IMPL_GECKO_MEDIA_SIMPLE_SETTER(SetReadyState, MediaSourceReadyState);
+
+  typedef MozPromise<bool, MediaResult, /* IsExclusive = */ true>
+    ActiveCompletionPromise;
+  // Return a MozPromise that will be resolved once all related operations are
+  // completed, or can't progress any further.
+  // Such as, transition of readyState from HAVE_NOTHING to HAVE_METADATA.
+  RefPtr<ActiveCompletionPromise> SourceBufferIsActive(
+    SourceBuffer* aSourceBuffer);
 
   GeckoMediaSourceImpl mImpl;
 
+  RefPtr<SourceBufferList> mSourceBuffers;
+  RefPtr<SourceBufferList> mActiveSourceBuffers;
+
   RefPtr<MediaSourceDecoder> mDecoder;
+
+  nsTArray<MozPromiseHolder<ActiveCompletionPromise>> mCompletionPromises;
 };
 
 } // namespace dom

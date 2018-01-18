@@ -132,6 +132,12 @@ GeckoMedia_Player_CreateNetworkPlayer(size_t aId,
                                       PlayerCallbackObject aCallback,
                                       FrameAllocatorObject aAllocator);
 
+bool
+GeckoMedia_Player_CreateMediaSourcePlayer(size_t aId,
+                                          size_t aMediaSourceId,
+                                          PlayerCallbackObject aCallback,
+                                          FrameAllocatorObject aAllocator);
+
 void
 GeckoMedia_Player_Play(size_t aId);
 

@@ -35,9 +35,12 @@ struct GeckoMediaSourceImpl
   void* mContext;
   void (*mFree)(void*);
   mozilla::dom::MediaSourceReadyState (*mGetReadyState)(void*);
+  void (*mSetReadyState)(void*, mozilla::dom::MediaSourceReadyState);
   double (*mGetDuration)(void*);
   bool (*mHasLiveSeekableRange)(void*);
   GeckoMediaTimeInterval (*mGetLiveSeekableRange)(void*);
+  size_t* (*mGetSourceBuffers)(void*);
+  size_t* (*mGetActiveSourceBuffers)(void*);
 };
 
 mozilla::dom::MediaSource*

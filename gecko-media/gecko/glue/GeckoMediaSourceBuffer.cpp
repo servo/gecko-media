@@ -17,8 +17,10 @@ struct GeckoMediaSourceBuffer
   GeckoMediaSourceBuffer(size_t aId,
                          GeckoMediaSourceBufferImpl aImpl,
                          size_t aParentId,
-                         const char* aMimeType)
-    : mSourceBuffer(new SourceBuffer(aImpl, aParentId, aMimeType))
+                         const char* aMimeType,
+                         bool aGenerateTimestamps)
+    : mSourceBuffer(
+        new SourceBuffer(aImpl, aParentId, aMimeType, aGenerateTimestamps))
     , mId(aId)
   {
   }
@@ -35,11 +37,57 @@ void
 GeckoMedia_SourceBuffer_Create(size_t aId,
                                GeckoMediaSourceBufferImpl aImpl,
                                size_t aParentId,
-                               const char* aMimeType)
+                               const char* aMimeType,
+                               bool aGenerateTimestamps)
 {
   GeckoMediaSourceBuffer* reflector =
-    sReflectors.AppendElement(GeckoMediaSourceBuffer(aId, aImpl, aParentId, aMimeType));
+    sReflectors.AppendElement(GeckoMediaSourceBuffer(
+      aId, aImpl, aParentId, aMimeType, aGenerateTimestamps));
   MOZ_ASSERT(GetReflector(aId) == reflector);
+}
+
+void
+GeckoMedia_SourceBuffer_EvictData(size_t aId, size_t aLength, bool* aBufferFull)
+{
+  IMPL_GECKO_MEDIA_REFLECTOR_GET(GeckoMediaSourceBuffer)
+
+  reflector->mSourceBuffer->EvictData(aLength, aBufferFull);
+}
+
+void
+GeckoMedia_SourceBuffer_AppendData(size_t aId,
+                                   const uint8_t* aData,
+                                   size_t aLength)
+{
+  IMPL_GECKO_MEDIA_REFLECTOR_GET(GeckoMediaSourceBuffer)
+
+  reflector->mSourceBuffer->AppendData(aData, aLength);
+}
+
+void
+GeckoMedia_SourceBuffer_AbortBufferAppend(size_t aId)
+{
+  IMPL_GECKO_MEDIA_REFLECTOR_GET(GeckoMediaSourceBuffer)
+
+  reflector->mSourceBuffer->AbortBufferAppend();
+}
+
+void
+GeckoMedia_SourceBuffer_ResetParserState(size_t aId)
+{
+  IMPL_GECKO_MEDIA_REFLECTOR_GET(GeckoMediaSourceBuffer)
+
+  reflector->mSourceBuffer->ResetParserState();
+}
+
+void
+GeckoMedia_SourceBuffer_RangeRemoval(size_t aId,
+                                     double aStart,
+                                     double aEnd)
+{
+  IMPL_GECKO_MEDIA_REFLECTOR_GET(GeckoMediaSourceBuffer)
+
+  reflector->mSourceBuffer->RangeRemoval(aStart, aEnd);
 }
 
 SourceBuffer*

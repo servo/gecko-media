@@ -46,12 +46,18 @@ pub use timestamp::TimeStamp;
 #[cfg(test)]
 mod tests {
     use player::{Metadata, PlanarYCbCrImage, Player, PlayerEventSink};
+    use std::cell::Cell;
     use std::ffi::CString;
     use std::fs::File;
     use std::io::prelude::*;
     use std::ops::Range;
+    use std::os::raw::c_void;
+    use std::ptr;
+    use std::rc::Rc;
     use std::sync::{Mutex, mpsc};
-    use {CanPlayType, GeckoMedia, GeckoMediaSource, GeckoMediaSourceImpl, GeckoMediaTimeInterval};
+    use {CanPlayType, GeckoMedia, GeckoMediaTimeInterval};
+    use {GeckoMediaSource, GeckoMediaSourceImpl};
+    use {GeckoMediaSourceBuffer, GeckoMediaSourceBufferImpl};
 
     fn test_can_play_type() {
         let gecko_media = GeckoMedia::get().unwrap();
@@ -94,19 +100,28 @@ mod tests {
         Buffered(Vec<Range<f64>>),
         Seekable(Vec<Range<f64>>),
     }
+
     fn create_test_player(path: &str, mime: &str) -> (Player, mpsc::Receiver<Status>) {
         let (sender, receiver) = mpsc::channel();
         struct Sink {
             sender: Mutex<mpsc::Sender<Status>>,
+            ended: Mutex<Cell<bool>>,
         }
         impl PlayerEventSink for Sink {
             fn playback_ended(&self) {
+                self.ended.lock().unwrap().set(true);
                 self.sender.lock().unwrap().send(Status::Ended).unwrap();
             }
             fn decode_error(&self) {
+                if self.ended.lock().unwrap().get() {
+                    return;
+                }
                 self.sender.lock().unwrap().send(Status::Error).unwrap();
             }
             fn async_event(&self, name: &str) {
+                if self.ended.lock().unwrap().get() {
+                    return;
+                }
                 self.sender
                     .lock()
                     .unwrap()
@@ -114,6 +129,9 @@ mod tests {
                     .unwrap();
             }
             fn metadata_loaded(&self, metadata: Metadata) {
+                if self.ended.lock().unwrap().get() {
+                    return;
+                }
                 self.sender
                     .lock()
                     .unwrap()
@@ -121,6 +139,9 @@ mod tests {
                     .unwrap();
             }
             fn duration_changed(&self, duration: f64) {
+                if self.ended.lock().unwrap().get() {
+                    return;
+                }
                 self.sender
                     .lock()
                     .unwrap()
@@ -128,6 +149,9 @@ mod tests {
                     .unwrap();
             }
             fn loaded_data(&self) {
+                if self.ended.lock().unwrap().get() {
+                    return;
+                }
                 self.sender
                     .lock()
                     .unwrap()
@@ -135,6 +159,9 @@ mod tests {
                     .unwrap();
             }
             fn time_update(&self, time: f64) {
+                if self.ended.lock().unwrap().get() {
+                    return;
+                }
                 self.sender
                     .lock()
                     .unwrap()
@@ -142,6 +169,9 @@ mod tests {
                     .unwrap();
             }
             fn seek_started(&self) {
+                if self.ended.lock().unwrap().get() {
+                    return;
+                }
                 self.sender
                     .lock()
                     .unwrap()
@@ -149,6 +179,9 @@ mod tests {
                     .unwrap();
             }
             fn seek_completed(&self) {
+                if self.ended.lock().unwrap().get() {
+                    return;
+                }
                 self.sender
                     .lock()
                     .unwrap()
@@ -156,6 +189,9 @@ mod tests {
                     .unwrap();
             }
             fn update_current_images(&self, images: Vec<PlanarYCbCrImage>) {
+                if self.ended.lock().unwrap().get() {
+                    return;
+                }
                 self.sender
                     .lock()
                     .unwrap()
@@ -163,6 +199,9 @@ mod tests {
                     .unwrap();
             }
             fn buffered(&self, ranges: Vec<Range<f64>>) {
+                if self.ended.lock().unwrap().get() {
+                    return;
+                }
                 self.sender
                     .lock()
                     .unwrap()
@@ -170,6 +209,9 @@ mod tests {
                     .unwrap();
             }
             fn seekable(&self, ranges: Vec<Range<f64>>) {
+                if self.ended.lock().unwrap().get() {
+                    return;
+                }
                 self.sender
                     .lock()
                     .unwrap()
@@ -179,6 +221,7 @@ mod tests {
         }
         let sink = Box::new(Sink {
             sender: Mutex::new(sender),
+            ended: Mutex::new(Cell::new(false)),
         });
         let mut file = File::open(path).unwrap();
         let mut bytes = vec![];
@@ -278,68 +321,97 @@ mod tests {
         assert!(reached_seekable);
     }
 
-    fn test_media_source() {
-        use std::rc::Rc;
-        #[derive(Clone, Copy)]
-        #[allow(dead_code)]
-        enum MediaSourceReadyState {
-            Closed,
-            Open,
-            Ended,
-            Unknown,
-        }
-        struct MediaSourceValues {
-            pub ready_state: MediaSourceReadyState,
-            pub duration: f64,
-        }
-        struct MediaSourceDom {
-            pub values: Rc<MediaSourceValues>,
-            pub media_source_impl: Rc<MediaSourceImpl>,
-            pub gecko_media_source: GeckoMediaSource,
-        }
-        impl MediaSourceDom {
-            pub fn new() -> Self {
-                let values = Rc::new(MediaSourceValues {
-                    ready_state: MediaSourceReadyState::Closed,
-                    duration: 0.,
-                });
-                let media_source_impl = Rc::new(MediaSourceImpl {
-                    values: values.clone(),
-                });
-                let weak_impl = Rc::downgrade(&media_source_impl);
-                Self {
-                    values,
-                    media_source_impl,
-                    gecko_media_source: GeckoMedia::create_media_source(weak_impl).unwrap(),
-                }
+    #[derive(Clone, Copy)]
+    #[allow(dead_code)]
+    enum MediaSourceReadyState {
+        Closed,
+        Open,
+        Ended,
+    }
+
+    impl From<MediaSourceReadyState> for i32 {
+        fn from(state: MediaSourceReadyState) -> Self {
+            match state {
+                MediaSourceReadyState::Closed => 0,
+                MediaSourceReadyState::Open => 1,
+                MediaSourceReadyState::Ended => 2,
             }
         }
-        struct MediaSourceImpl {
-            pub values: Rc<MediaSourceValues>,
+    }
+
+    impl From<i32> for MediaSourceReadyState {
+        fn from(state: i32) -> Self {
+            match state {
+                0 => MediaSourceReadyState::Closed,
+                1 => MediaSourceReadyState::Open,
+                2 => MediaSourceReadyState::Ended,
+                _ => unreachable!(),
+            }
         }
-        impl GeckoMediaSourceImpl for MediaSourceImpl {
-            fn get_ready_state(&self) -> i32 {
-                match self.values.ready_state {
-                    MediaSourceReadyState::Closed => 0,
-                    MediaSourceReadyState::Open => 1,
-                    MediaSourceReadyState::Ended => 2,
-                    MediaSourceReadyState::Unknown => 3,
-                }
-            }
-            fn get_duration(&self) -> f64 {
-                self.values.duration
-            }
-            fn has_live_seekable_range(&self) -> bool {
-                false
-            }
-            fn get_live_seekable_range(&self) -> GeckoMediaTimeInterval {
-                GeckoMediaTimeInterval {
-                    mStart: 0.,
-                    mEnd: 0.,
-                }
+    }
+
+    struct MediaSourceValues {
+        pub ready_state: Cell<MediaSourceReadyState>,
+        pub duration: f64,
+    }
+
+    struct MediaSourceDom {
+        pub values: Rc<MediaSourceValues>,
+        pub media_source_impl: Rc<MediaSourceImpl>,
+        pub gecko_media_source: GeckoMediaSource,
+    }
+    impl MediaSourceDom {
+        pub fn new() -> Self {
+            let values = Rc::new(MediaSourceValues {
+                ready_state: Cell::new(MediaSourceReadyState::Closed),
+                duration: 0.,
+            });
+            let media_source_impl = Rc::new(MediaSourceImpl {
+                values: values.clone(),
+            });
+            let weak_impl = Rc::downgrade(&media_source_impl);
+            Self {
+                values,
+                media_source_impl,
+                gecko_media_source: GeckoMedia::create_media_source(weak_impl).unwrap(),
             }
         }
 
+        pub fn id(&self) -> usize {
+            self.gecko_media_source.get_id()
+        }
+    }
+    struct MediaSourceImpl {
+        pub values: Rc<MediaSourceValues>,
+    }
+    impl GeckoMediaSourceImpl for MediaSourceImpl {
+        fn get_ready_state(&self) -> i32 {
+            self.values.ready_state.get().into()
+        }
+        fn set_ready_state(&self, state: i32) {
+            self.values.ready_state.set(state.into());
+        }
+        fn get_duration(&self) -> f64 {
+            self.values.duration
+        }
+        fn has_live_seekable_range(&self) -> bool {
+            false
+        }
+        fn get_live_seekable_range(&self) -> GeckoMediaTimeInterval {
+            GeckoMediaTimeInterval {
+                mStart: 0.,
+                mEnd: 0.,
+            }
+        }
+        fn get_source_buffers(&self) -> *mut usize {
+            ptr::null_mut()
+        }
+        fn get_active_source_buffers(&self) -> *mut usize {
+            ptr::null_mut()
+        }
+    }
+
+    fn test_media_source() {
         let _ = MediaSourceDom::new();
 
         let gecko_media = GeckoMedia::get().unwrap();
@@ -361,6 +433,107 @@ mod tests {
         assert_eq!(gecko_media.is_type_supported("audio/wav"), false);
     }
 
+    struct SourceBufferAttributes {
+        pub expect_data_appended_success: Cell<bool>,
+    }
+
+    impl SourceBufferAttributes {
+        pub fn new() -> Self {
+            SourceBufferAttributes {
+                expect_data_appended_success: Cell::new(true),
+            }
+        }
+    }
+
+    impl GeckoMediaSourceBufferImpl for SourceBufferAttributes {
+        fn owner(&self) -> *mut c_void {
+            ptr::null_mut()
+        }
+        fn get_append_window_start(&self) -> f64 {
+            0.
+        }
+        fn set_append_window_start(&self, _: f64) {}
+        fn get_append_window_end(&self) -> f64 {
+            0.
+        }
+        fn set_append_window_end(&self, _: f64) {}
+        fn get_timestamp_offset(&self) -> f64 {
+            0.
+        }
+        fn set_timestamp_offset(&self, _: f64) {}
+        fn get_append_mode(&self) -> i32 {
+            0
+        }
+        fn set_append_mode(&self, _: i32) {}
+        fn get_group_start_timestamp(&self, _: *mut f64) {}
+        fn set_group_start_timestamp(&self, _: f64) {}
+        fn have_group_start_timestamp(&self) -> bool {
+            false
+        }
+        fn reset_group_start_timestamp(&self) {}
+        fn restart_group_start_timestamp(&self) {}
+        fn get_group_end_timestamp(&self) -> f64 {
+            0.
+        }
+        fn set_group_end_timestamp(&self, _: f64) {}
+        fn get_append_state(&self) -> i32 {
+            0
+        }
+        fn set_append_state(&self, _: i32) {}
+        fn get_updating(&self) -> bool {
+            false
+        }
+        fn set_updating(&self, _: bool) {}
+        fn get_active(&self) -> bool {
+            false
+        }
+        fn set_active(&self, _: bool) {}
+        fn on_data_appended(&self, result: u32) {
+            if self.expect_data_appended_success.get() {
+                assert!(result == 0);
+            } else {
+                assert!(result != 0);
+            }
+        }
+        fn on_range_removed(&self) {}
+    }
+
+    struct SourceBufferDom {
+        pub attributes: Rc<SourceBufferAttributes>,
+        pub gecko_media: GeckoMediaSourceBuffer,
+    }
+
+    impl SourceBufferDom {
+        pub fn new(parent_media_source: &MediaSourceDom, mime: &str) -> Self {
+            let attributes = Rc::new(SourceBufferAttributes::new());
+            let weak_attributes = Rc::downgrade(&(&attributes));
+            Self {
+                attributes,
+                gecko_media: GeckoMedia::create_source_buffer(weak_attributes, parent_media_source.id(), mime, false)
+                    .unwrap(),
+            }
+        }
+
+        pub fn append_data(&self, data: *const u8, len: usize, expect_success: bool) {
+            self.attributes.expect_data_appended_success.set(
+                expect_success,
+            );
+            self.gecko_media.append_data(data, len);
+        }
+    }
+
+    fn test_source_buffer() {
+        let media_source = MediaSourceDom::new();
+        let source_buffer = Box::new(SourceBufferDom::new(&media_source, "video/mp4"));
+        let empty: [u8; 0] = [];
+        // Should throw error because no decoder is attached yet.
+        source_buffer.append_data(
+            empty.as_ptr(),
+            empty.len(),
+            false, /* expect error: no decoder */
+        );
+    }
+
     #[test]
     fn run_tests() {
         GeckoMedia::get().unwrap();
@@ -374,6 +547,7 @@ mod tests {
         test_basic_playback();
         test_seeking();
         test_media_source();
+        test_source_buffer();
         GeckoMedia::shutdown().unwrap();
     }
 }

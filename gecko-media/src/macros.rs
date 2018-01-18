@@ -79,10 +79,28 @@ macro_rules! def_gecko_callbacks_ffi_wrapper (
 );
 
 macro_rules! impl_simple_ffi_callback_wrapper (
+    ($fn:ident) => (
+        unsafe extern "C" fn $fn(ptr: *mut c_void) {
+            let wrapper = &*(ptr as *mut Wrapper);
+            wrapper.callbacks.$fn();
+        }
+    );
+);
+
+macro_rules! impl_simple_ffi_getter_wrapper (
     ($fn:ident, $return:ty) => (
         unsafe extern "C" fn $fn(ptr: *mut c_void) -> $return {
             let wrapper = &*(ptr as *mut Wrapper);
             wrapper.callbacks.$fn()
+        }
+    );
+);
+
+macro_rules! impl_simple_ffi_setter_wrapper (
+    ($fn:ident, $value_type:ty) => (
+        unsafe extern "C" fn $fn(ptr: *mut c_void, value: $value_type) -> () {
+            let wrapper = &*(ptr as *mut Wrapper);
+            wrapper.callbacks.$fn(value);
         }
     );
 );

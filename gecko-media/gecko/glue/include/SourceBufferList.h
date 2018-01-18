@@ -7,13 +7,12 @@
 #ifndef mozilla_dom_SourceBufferList_h_
 #define mozilla_dom_SourceBufferList_h_
 
+#include "GeckoMediaMacros.h"
 #include "GeckoMediaSourceBufferList.h"
 #include "nsISupportsImpl.h"
 
-namespace mozilla
-{
-namespace dom
-{
+namespace mozilla {
+namespace dom {
 
 class SourceBuffer;
 
@@ -26,10 +25,16 @@ public:
 
   SourceBuffer* IndexedGetter(uint32_t aIndex, bool& aFound);
 
-  uint32_t Length();
+  IMPL_GECKO_MEDIA_SIMPLE_GETTER(Length, uint32_t, 0);
 
 private:
+  friend class MediaSource;
+
   ~SourceBufferList();
+
+  void Append(SourceBuffer* aSourceBuffer, bool aNotify);
+
+  IMPL_GECKO_MEDIA_CALLBACK(Clear);
 
   GeckoMediaSourceBufferListImpl mImpl;
 };
