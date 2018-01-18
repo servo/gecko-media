@@ -211,7 +211,7 @@ public:
     if (!mAllocator.mContext || !mAllocator.mAllocateFrame) {
       return 0;
     }
-    (*mAllocator.mAllocateFrame)(mAllocator.mContext, aImage);
+    return (*mAllocator.mAllocateFrame)(mAllocator.mContext, aImage);
   }
   void DropFrame(size_t aHandle) {
     if (aHandle && mAllocator.mContext && mAllocator.mDropFrame) {
